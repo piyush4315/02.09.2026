@@ -8771,7 +8771,7 @@ function refreshDerivedDOM(lotIdx) {
         td.classList.add('flash');
       }
     });
-    ['total_receivables', 'fp_expected', 'total_received', 'outstanding',  'settlement_status'].forEach(function (f) {
+    ['gst', 'mat_value_plus_gst', 'tcs', 'tds194o', 'service_charge_mstc', 'tds194h', 'net_service_charge', 'service_charge_to_mstc', 'gst_tds', 'total_receivables', 'sd_expected', 'fp_expected', 'total_received', 'outstanding', 'settlement_status'].forEach(function (f) {
       var td = tr.querySelector('td[data-field="' + f + '"]');
       if (!td || td.querySelector('input')) return;
       var v = r[f];
@@ -8779,9 +8779,8 @@ function refreshDerivedDOM(lotIdx) {
         td.innerHTML = settlementLabelHtml(r);
         td.className = 'status';
       } else {
-        td.textContent = moneyFmt(v);
-        var base = f === 'total_receivables' || f === 'total_received' ? 'strong' : (f === 'outstanding' ? (v > 1 ? 'pos' : (v < -1 ? 'neg' : 'zero')) : '');
-        td.className = base;
+        td.innerHTML = formatCellValue(r, f);
+        td.className = cellClassFor(f, v);
       }
       td.classList.remove('flash');
       void td.offsetWidth;
@@ -8849,7 +8848,9 @@ function onEditInput(input) {
   var table = input.closest('table');
   if (table) updateFormulaBar(table, input.closest('td'));
 
-  refreshDerivedDisplays();
+  // Refresh derived cells (GST TDS, Total Receivables, FP Expected, …) plus
+  // footer totals, KPI cards and pivot — for the row being edited.
+  refreshDerivedDOM(pendingEdit.idx);
 }
 
 function endEdit(input, skipNormalize) {
