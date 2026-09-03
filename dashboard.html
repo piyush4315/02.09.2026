@@ -4074,9 +4074,9 @@ th.left .th-wrap, th.center .th-wrap {
             <div class="pbi-card-head">
               <div class="pbi-card-title">
                 <span class="pbi-icon">⏱️</span>
-                <h3>Payment Ageing &amp; Delayed Charges</h3>
+                <h3>Payment Ageing &amp; Late Fee</h3>
               </div>
-              <span class="muted" style="font-size:11px">Charges @ 1.18%/wk from 24.08.2026</span>
+              <span class="muted" style="font-size:11px">Late Fee @ 1.18%/wk from 24.08.2026</span>
             </div>
             <div class="pbi-chart-body" id="chartAgeing"></div>
           </div>
@@ -4524,7 +4524,7 @@ function recalcRow(r, changed) {
     r.fp_expected = (standardRates && !r._manual.sd_expected) ? Math.round(mv * 0.9265 - n('gst_tds')) : (r.total_receivables - r.sd_expected);
   }
 
-  // Delayed Payment Charges (1.18% per week on Material Value from 24.08.2026)
+  // Late Fee (1.18% per week on Material Value from 24.08.2026)
   if (changed.indexOf('late_fee') !== -1) {
     r._manual.late_fee = true;
   } else if (!r._manual.late_fee) {
@@ -4798,7 +4798,7 @@ var XLSX_COLS = [
   ['fp_expected', 'FP Expected', 'f:ROUND(H{r}*92.65%-R{r},0)'],
   ['fp_received', 'FP Received', 'n'],
   ['fp_date', 'FP Date', 's'],
-  ['late_fee', 'Delayed Payment Charges', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,24))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,24))/7,0)*0.0118, 0), 0))'],
+  ['late_fee', 'Late Fee', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,24))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,24))/7,0)*0.0118, 0), 0))'],
   ['total_received', 'Total Received', 'f:ROUND(U{r}+X{r},0)'],
   ['outstanding', 'Outstanding', 'f:ROUND(S{r}+Z{r}-AA{r},0)'],
   ['settlement_status', 'Settled / Unsettled', 'f:IF(AB{r}<=5,"Settled","Unsettled")'],
@@ -7604,7 +7604,7 @@ var FIELD_META = {
   fp_expected: { label: 'FP Ex\u00ADpect\u00ADed', kind: 'edit', sum: true, edit: true },
   fp_received: { label: 'FP Re\u00ADceived', kind: 'edit', sum: true, edit: true },
   fp_date: { label: 'FP Date', kind: 'date-edit', sum: false, edit: true },
-  late_fee: { label: 'De­layed Pay­ment Charges', kind: 'edit', sum: true, edit: true },
+  late_fee: { label: 'Late Fee', kind: 'edit', sum: true, edit: true },
   settlement_status: { label: 'Set\u00ADtled / Un\u00ADset\u00ADtled', kind: 'status', sum: false },
   invoice_no: { label: 'In\u00ADvoice No.', kind: 'edit-text', sum: false },
   sap_document_date: { label: 'SAP Doc\u00ADu\u00ADment No.', kind: 'edit-text', sum: false },
@@ -9206,7 +9206,7 @@ function getCellFormulaInfo(table, td) {
       var wks = calcLateFeeWeeks(r);
       var html = '<span class="fx-fn">IF</span>(<span class="fx-field">FP Date</span> <span class="fx-op">&gt;</span> <span class="fx-num">24.08.2026</span>, <span class="fx-fn">ROUND</span>(<span class="fx-field">Mat Value</span> <span class="fx-op">×</span> <span class="fx-fn">CEIL</span>((<span class="fx-field">FP Date</span><span class="fx-op">-</span><span class="fx-num">24.08.2026</span>)<span class="fx-op">/</span><span class="fx-num">7</span>) <span class="fx-op">×</span> <span class="fx-num">1.18%</span>, <span class="fx-num">0</span>), <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> ' + (r.late_fee > 0 ? ('<span class="fx-eval">₹ ' + inr(r.mat_value) + ' × ' + wks + ' wk(s) × 1.18% =</span> <span class="fx-res">₹ ' + inr(r.late_fee) + '</span>') : '<span class="fx-eval">No delay (FP remitted on/before 24.08.2026) =</span> <span class="fx-res">₹ 0</span>') +
-                 '<span class="fx-expl">' + (r.late_fee > 0 ? (pctOfMat(r.late_fee) + ' · ') : '') + 'Delayed Charges @ 1.18%/wk</span>';
+                 '<span class="fx-expl">' + (r.late_fee > 0 ? (pctOfMat(r.late_fee) + ' · ') : '') + 'Late Fee @ 1.18%/wk</span>';
       var plain = '=IF(FP_Date > 24.08.2026, ROUND(Mat_Value * Weeks * 1.18%, 0), 0) = ' + (r.late_fee || 0) + (r.late_fee > 0 ? (' [' + pctOfMat(r.late_fee) + ']') : '');
       return { name: cellName, html: html, plain: plain };
     }
@@ -9223,10 +9223,10 @@ function getCellFormulaInfo(table, td) {
       var isPos = r.outstanding > 1;
       var isNeg = r.outstanding < -1;
       var outColor = isPos ? '#f43f5e' : (isNeg ? '#10b981' : '#94a3b8');
-      var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">Total Receivables</span> <span class="fx-op">+</span> <span class="fx-field">Delayed Charges</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
+      var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">Total Receivables</span> <span class="fx-op">+</span> <span class="fx-field">Late Fee</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> <span class="fx-eval">₹ ' + inr(r.total_receivables) + ' + ₹ ' + inr(r.late_fee || 0) + ' - ₹ ' + inr(r.total_received) + ' =</span> <span class="fx-res" style="color:' + outColor + '">₹ ' + inr(r.outstanding) + '</span>' +
                  '<span class="fx-expl">' + pctOfMat(r.outstanding) + ' · Net Pending Due</span>';
-      var plain = '=Total_Receivables + Delayed_Charges - Total_Received = ' + r.outstanding + ' [' + pctOfMat(r.outstanding) + ']';
+      var plain = '=Total_Receivables + Late_Fee - Total_Received = ' + r.outstanding + ' [' + pctOfMat(r.outstanding) + ']';
       return { name: cellName, html: html, plain: plain };
     }
 
@@ -9491,7 +9491,7 @@ function renderPbiKpis(rows) {
       color: totOut > 1 ? '#f43f5e' : '#10b981'
     },
     {
-      label: 'Delayed Payment Charges',
+      label: 'Late Fee',
       val: '₹ ' + inr(totLate),
       sub: 'Accrued @ 1.18%/wk on Mat Value',
       barVal: Math.min(100, totMat > 0 ? Math.round((totLate / totMat) * 100 * 5) : 0),
@@ -9824,7 +9824,7 @@ function renderAgeingChart(rows) {
     var barH = Math.max(3, (b.mat / maxMat) * plotH);
     var y = (h - padB) - barH;
 
-    var tip = '<b>' + escHtml(b.label) + '</b><br/>Lots: <b>' + b.count + '</b><br/>Material Value: <b>₹ ' + inr(b.mat) + '</b><br/>Delayed Charges: <b>₹ ' + inr(b.late) + '</b>';
+    var tip = '<b>' + escHtml(b.label) + '</b><br/>Lots: <b>' + b.count + '</b><br/>Material Value: <b>₹ ' + inr(b.mat) + '</b><br/>Late Fee: <b>₹ ' + inr(b.late) + '</b>';
     svg += '<rect x="' + x + '" y="' + y + '" width="' + colW + '" height="' + barH + '" rx="2" fill="' + b.color + '" opacity="0.9" data-pbi-tip="' + escHtml(tip) + '" style="cursor:pointer"/>';
     svg += '<text x="' + (x + colW / 2) + '" y="' + (y - 5) + '" font-size="8.5" font-weight="700" fill="currentColor" text-anchor="middle">' + b.count + ' lots</text>';
     svg += '<text x="' + (x + colW / 2) + '" y="' + (h - padB + 14) + '" font-size="8" fill="currentColor" fill-opacity="0.65" text-anchor="middle">' + escHtml(b.label.split(' ')[0]) + '</text>';
@@ -11766,9 +11766,9 @@ function generateWhatsAppAdviceText(lotsList, buyerTitle) {
 
   var sdRecLine = '   • SD Received: ₹ ' + inr(b.totSdRec) + (b.totSdRec > 0 && b.sdDatesStr ? (' _(Rec Date: ' + b.sdDatesStr + ')') : '') + '\n';
   var fpRecLine = '   • FP Received: ₹ ' + inr(b.totFpRec) + (b.totFpRec > 0 && b.fpDatesStr ? (' _(Rec Date: ' + b.fpDatesStr + ')') : '') + '\n';
-  var lateFeeLine = '3️⃣ *Delayed Payment Charges (from 24.08.2026):*\n' +
+  var lateFeeLine = '3️⃣ *Late Fee (from 24.08.2026):*\n' +
     '   • Delay Basis: 1.18% per week or part thereof after 24.08.2026\n' +
-    '   • *Delayed Payment Charges Payable:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n';
+    '   • *Late Fee Payable:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n';
 
   var msg = 
     '🏛️ *MSETCL LIMITED — PAYMENT DEMAND ADVICE*\n' +
@@ -11864,9 +11864,9 @@ function generateEmailAdviceText(lotsList, buyerTitle) {
     '   - Expected : Rs. ' + inr(b.totFpExp) + '\n' +
     '   ' + fpRecEmail + '\n' +
     '   - Balance Due : Rs. ' + inr(b.totFpDue) + (b.totFpDue <= 1 ? ' (SETTLED)' : ' (DUE)') + '\n\n' +
-    '3. Delayed Payment Charges (from 24.08.2026):\n' +
+    '3. Late Fee (from 24.08.2026):\n' +
     '   - Delay Basis      : 1.18% per week or part thereof after 24.08.2026\n' +
-    '   - Accrued Charges  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n\n' +
+    '   - Accrued Late Fee  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n\n' +
     '------------------------------------------------------\n' +
     'Total Amount Received to Date      : Rs. ' + inr(b.totReceived) + '\n' +
     'NET OUTSTANDING AMOUNT PAYABLE     : Rs. ' + inr(b.totOut) + '\n' +
@@ -12083,7 +12083,7 @@ function printPaymentAdvice(lotsList, buyerTitle) {
             "<td class=\"cen\">" + (b.totFpDue <= 1 ? "<span class=\"pill-settled\">PAID / SETTLED</span>" : "<span class=\"pill-due\">PENDING PAYMENT</span>") + "</td>" +
           "</tr>" +
           (b.totLateFee > 0 ? ("<tr style=\"background:#fff1f2\">" +
-            "<td><b>3. Delayed Payment Charges (1.18%/wk from 24.08.2026)</b></td>" +
+            "<td><b>3. Late Fee (1.18%/wk from 24.08.2026)</b></td>" +
             "<td class=\"num\">₹ " + inr(b.totLateFee) + "</td>" +
             "<td class=\"num\">—</td>" +
             "<td class=\"cen\">—</td>" +
@@ -12821,7 +12821,7 @@ function openLotDetails(idx) {
             '<div class="lic-row"><span class="lic-k">FP Expected</span><span class="lic-v">₹ ' + moneyFmt(r.fp_expected || 0) + pTag(r.fp_expected) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">FP Received</span><span class="lic-v">₹ ' + moneyFmt(r.fp_received || 0) + pTag(r.fp_received) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">FP Date</span><span class="lic-v">' + escHtml(dottedDate(r.fp_date) || '—') + '</span></div>' +
-            '<div class="lic-row"><span class="lic-k">Delayed Payment Charges</span><span class="lic-v strong" style="color:#f9a8d4">₹ ' + moneyFmt(r.late_fee || 0) + (r.late_fee ? pTag(r.late_fee) : '') + '</span></div>' +
+            '<div class="lic-row"><span class="lic-k">Late Fee</span><span class="lic-v strong" style="color:#f9a8d4">₹ ' + moneyFmt(r.late_fee || 0) + (r.late_fee ? pTag(r.late_fee) : '') + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Total Received</span><span class="lic-v success strong">₹ ' + moneyFmt(r.total_received || 0) + pTag(r.total_received) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Outstanding</span><span class="lic-v ' + outClass + ' strong">₹ ' + moneyFmt(r.outstanding || 0) + (r.outstanding ? pTag(r.outstanding) : '') + '</span></div>' +
           '</div>' +
