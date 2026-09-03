@@ -3972,6 +3972,23 @@ th.left .th-wrap, th.center .th-wrap {
             <div class="spacer"></div>
             <input type="text" id="search" placeholder="Search buyer, lot no, material..."/>
           </div>
+          <div class="controls" style="margin-bottom:10px">
+            <div>
+              <label>Layout</label>
+              <div class="seg-control" id="pivotGroupLayout" role="group" aria-label="Grouping layout">
+                <button type="button" class="seg-btn" data-layout="sections" title="A section header row above each group; every lot row stays visible">Sections</button>
+                <button type="button" class="seg-btn" data-layout="collapse" title="Section headers that collapse / expand each group of lots">Collapsible</button>
+                <button type="button" class="seg-btn" data-layout="summary" title="One roll-up summary row per group with summed totals">Summary</button>
+              </div>
+            </div>
+            <div>
+              <label>Default view</label>
+              <div class="seg-control" id="pivotDefaultView" role="group" aria-label="Default startup view">
+                <button type="button" class="seg-btn" data-default="buyer" title="Start Buyer Ledger Analytics grouped by Buyer">Group by Buyer</button>
+                <button type="button" class="seg-btn" data-default="flat" title="Start Buyer Ledger Analytics as a flat Lot details list">Flat</button>
+              </div>
+            </div>
+          </div>
           <div id="pivotActiveFiltersBar" class="active-filters-bar" style="display:none"></div>
           <div class="col-toggles" id="pivotColToggles"></div>
           <div class="table-wrap">
@@ -6574,7 +6591,7 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat' };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat', pivotGroupLayout: 'summary', pivotDefaultView: 'buyer' };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
 var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
@@ -6582,6 +6599,7 @@ var view = 'dashboard';
 var lastSaved = null;
 var detailRows = [];
 var detailCollapsedGroups = {}; /* 'groupKey|groupValue' -> true while collapsed (Collapsible layout) */
+var pivotCollapsedGroups = {}; /* same, for Buyer Ledger Analytics grouped layouts */
 /* One-time canonical-order migration. Once applied, user rearrangements such
    as “Consolidate after Buyer” are preserved across reloads. */
 var detailLayoutVersion = 0;
@@ -7271,7 +7289,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7322,6 +7340,8 @@ function loadState() {
       ui.detailGroupBy = data.ui.detailGroupBy || 'default';
       ui.detailGroupLayout = data.ui.detailGroupLayout || 'sections';
       ui.detailDefaultView = data.ui.detailDefaultView || 'flat';
+      ui.pivotGroupLayout = data.ui.pivotGroupLayout || 'summary';
+      ui.pivotDefaultView = data.ui.pivotDefaultView || 'buyer';
     }
     if (Array.isArray(data.customCols)) customCols = data.customCols;
     if (data.colLayout && typeof data.colLayout === 'object') {
@@ -7561,7 +7581,7 @@ function colDistinctValues(field, tableKind) {
   }
 
   // For grouped Pivot Analytics: metric columns and group dimension use aggregated figures
-  if (isPivot && groupKey !== 'default') {
+  if (isPivot && pivotLayoutKind() === 'pivotMetric') {
     var pData = computePivotRowsData();
     var pRows = pData.rows || [];
     var seen = {}, out = [];
@@ -7870,7 +7890,7 @@ function thPickerHtml(field, table, place, layoutKind) {
   var isCenter = (kind === 'center' || kind === 'date' || kind === 'date-edit' || kind === 'status' || field === 'lot_no' || field === 'unit' || field === 'invoice_no' || field === 'sap_document_date' || field === 'sd_date' || field === 'fp_date' || field === 'doc_invoice_date' || field === 'late_fee_received_date' || field === 'auction' || field === 'settlement_status');
   var cls = isCenter ? 'center' : ((kind === 'left') ? 'left' : '');
   var dragAttr = (layoutKind === 'detail' || layoutKind === 'pivotLot' || layoutKind === 'pivotMetric') ? ' draggable="true"' : '';
-  var filterKey = (table === 'pivot' && ui.groupBy !== 'default' && field !== ui.groupBy && field !== 'key' && field !== 'settlement_status' && field !== 'settled_breakdown')
+  var filterKey = (table === 'pivot' && pivotLayoutKind() === 'pivotMetric' && field !== ui.groupBy && field !== 'key' && field !== 'settlement_status' && field !== 'settled_breakdown')
     ? ('pivot_' + field)
     : (field === 'key' ? ui.groupBy : field);
   var hasFilter = colFilterOn(filterKey);
@@ -7919,6 +7939,106 @@ function cellClassFor(key, v) {
 function scrollToDashDetail() {
   var el = document.getElementById('dashDetailPanel');
   if (el && view === 'dashboard') el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* Buyer Ledger Analytics column layout kind. When grouped with the Sections or
+   Collapsible layout the pivot shows per-lot columns (pivotLot); only the
+   Summary layout shows the roll-up metric columns (pivotMetric). */
+function pivotLayoutKind() {
+  if (ui.groupBy === 'default') return 'pivotLot';
+  if (ui.pivotGroupLayout === 'sections' || ui.pivotGroupLayout === 'collapse') return 'pivotLot';
+  return 'pivotMetric';
+}
+function pivotLotRowHtml(r, cols) {
+  var isSelected = selectedGroup && (
+    (selectedGroup.groupKey === 'buyer' && selectedGroup.value === String(r.buyer)) ||
+    (selectedGroup.groupKey === 'lot_no' && selectedGroup.value === String(r.lot_no))
+  );
+  var li = lots.indexOf(r);
+  return '<tr class="' + (isSelected ? 'selected' : '') + (settlementStatus(r) === 'Settled' ? ' settled' : '') + '" data-lotno="' + escHtml(r.lot_no) + '" data-lot="' + li + '">' + cols.map(function (f) {
+    var v = getLotField(r, f);
+    var lotClickTitle = (f === 'lot_no' || f === 'buyer') ? ' title="Click to view lot details"' : '';
+    if (f === 'settlement_status') return '<td tabindex="0" class="status" data-field="settlement_status">' + settlementLabelHtml(r) + '</td>';
+    if (f === 'invoice_no') return '<td class="left invno" data-field="invoice_no">' + invoiceCellHtml(r) + '</td>';
+    return '<td tabindex="0" class="' + cellClassFor(f, v) + '" data-field="' + escHtml(f) + '"' + lotClickTitle + '>' + formatCellValue(r, f) + '</td>';
+  }).join('') + '</tr>';
+}
+function pivotGroupHeaderHtml(group, groupKey, isCollapsible, colspan, collapsed) {
+  var label = detailGroupLabel(groupKey);
+  var caret = isCollapsible ? '<span class="g-caret" aria-hidden="true">' + (collapsed ? '▸' : '▾') + '</span>' : '';
+  return '<tr class="detail-group-hdr pivot-group-hdr' + (isCollapsible ? ' is-collapsible' : '') + '" data-dgroup="' + escHtml(groupKey) + '" data-dgval="' + escHtml(group.key) + '">' +
+    '<td colspan="' + colspan + '">' + caret +
+    '<span class="g-label">' + escHtml(label) + ':</span> ' +
+    '<span class="g-value">' + escHtml(group.key) + '</span>' +
+    ' <span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span>' +
+    '</td></tr>';
+}
+/* Sections / Collapsible rendering for the grouped pivot: a section header row
+   per group with the individual lot rows (pivotLot columns) underneath. */
+function renderPivotGroupedSections(rows, groupKey, layout) {
+  var thead = document.querySelector('#pivotTable thead');
+  var tbody = document.querySelector('#pivotTable tbody');
+  var tfoot = document.querySelector('#pivotTable tfoot');
+  var cols = pivotLotCols();
+  var dRows = rows.slice();
+  if (sortState.table === 'pivot' && sortState.key) {
+    dRows = sortRows(dRows, sortState.key, sortState.dir);
+  } else {
+    dRows = sortRows(dRows, 'total_receivables', -1);
+  }
+  var pinnedTop = (ui.settlement === 'Settled' || ui.settlement === 'Unsettled') ? ui.settlement : null;
+  if (pinnedTop) {
+    dRows = dRows.slice().sort(function (a, b) {
+      var aTop = settlementStatus(a) === pinnedTop ? 0 : 1;
+      var bTop = settlementStatus(b) === pinnedTop ? 0 : 1;
+      if (aTop !== bTop) return aTop - bTop;
+      return 0;
+    });
+  }
+  thead.innerHTML = '<tr>' + cols.map(function (f, i) { return thPickerHtml(f, 'pivot', i, 'pivotLot'); }).join('') + '</tr>';
+  var groups = detailGroupsFor(dRows, groupKey);
+  var isCollapsible = (layout === 'collapse');
+  var html = '';
+  groups.forEach(function (g) {
+    var collapsed = isCollapsible && !!pivotCollapsedGroups[groupKey + '|' + g.key];
+    html += pivotGroupHeaderHtml(g, groupKey, isCollapsible, cols.length, collapsed);
+    if (!collapsed) {
+      g.lots.forEach(function (r) {
+        html += pivotLotRowHtml(r, cols);
+      });
+    }
+  });
+  tbody.innerHTML = html;
+  tfoot.innerHTML = '<tr>' + cols.map(function (f, i) {
+    if (i === 0) return '<td class="left">Total (' + dRows.length + ' lots)</td>';
+    var meta = FIELD_META[f];
+    if (meta && meta.sum) {
+      var s = sumField(dRows, f);
+      var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received');
+      var isOut = (f === 'outstanding');
+      var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
+      if (f === 'tds194h') return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (s ? '- ' + moneyFmt(Math.abs(s)) : '—') + '</td>';
+      return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>';
+    }
+    return '<td></td>';
+  }).join('') + '</tr>';
+  tbody.querySelectorAll('tr').forEach(function (tr) {
+    tr.style.cursor = 'default';
+  });
+  if (isCollapsible) {
+    tbody.querySelectorAll('.detail-group-hdr').forEach(function (hdr) {
+      hdr.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var gk = hdr.getAttribute('data-dgroup');
+        var gv = hdr.getAttribute('data-dgval');
+        var key = gk + '|' + gv;
+        pivotCollapsedGroups[key] = !pivotCollapsedGroups[key];
+        renderPivot();
+      });
+    });
+  }
+  markInvoiceButtons();
+  applyFreezePanes(document.getElementById('pivotTable'));
 }
 function renderPivot() {
   renderActiveFiltersBar();
@@ -7983,6 +8103,11 @@ function renderPivot() {
     });
     markInvoiceButtons();
     applyFreezePanes(document.getElementById('pivotTable'));
+    return;
+  }
+
+  if (ui.pivotGroupLayout === 'sections' || ui.pivotGroupLayout === 'collapse') {
+    renderPivotGroupedSections(rows, groupKey, ui.pivotGroupLayout);
     return;
   }
 
@@ -11408,7 +11533,7 @@ function hideColumnByHeader(th) {
     toggleColumnVisibility(field, false);
     return;
   }
-  var layoutKind = th.dataset.layout || (ui.groupBy === 'default' ? 'pivotLot' : 'pivotMetric');
+  var layoutKind = th.dataset.layout || pivotLayoutKind();
   var arr = colLayout[layoutKind];
   if (!arr) return;
   if (arr.length <= 1) { showToast('Keep at least one column visible.', 'error'); return; }
@@ -13646,7 +13771,7 @@ function renderActiveFiltersBar() {
 function openTableFilterModal(tableKind) {
   var isPivot = tableKind === 'pivot';
   var title = isPivot ? 'Buyer Ledger Analytics — Column Filters' : 'Lot Details — Column Filters';
-  var layoutKind = isPivot ? (ui.groupBy === 'default' ? 'pivotLot' : 'pivotMetric') : 'detail';
+  var layoutKind = isPivot ? pivotLayoutKind() : 'detail';
   var catalog = allAssignableFields(layoutKind);
   
   var body = '<div style="margin-bottom:12px">' +
@@ -13691,7 +13816,7 @@ function openTableFilterModal(tableKind) {
     }
 
     listEl.innerHTML = fieldsToShow.map(function (c) {
-      var filterKey = (isPivot && ui.groupBy !== 'default' && c.key !== ui.groupBy && c.key !== 'key' && c.key !== 'settlement_status' && c.key !== 'settled_breakdown')
+      var filterKey = (isPivot && pivotLayoutKind() === 'pivotMetric' && c.key !== ui.groupBy && c.key !== 'key' && c.key !== 'settlement_status' && c.key !== 'settled_breakdown')
         ? ('pivot_' + c.key)
         : (c.key === 'key' ? ui.groupBy : c.key);
       var hasFilter = colFilterOn(filterKey);
@@ -13728,8 +13853,8 @@ function renderAll() {
   renderPivot();
   renderDetail();
   paintDetailGroupControls();
-  var pivotLayoutKind = (ui.groupBy === 'default') ? 'pivotLot' : 'pivotMetric';
-  renderColToggles('pivotColToggles', pivotLayoutKind);
+  var pLayoutKind = pivotLayoutKind();
+  renderColToggles('pivotColToggles', pLayoutKind);
   renderColToggles('dashColToggles', 'detail');
   updateUndoRedoUI();
   paintColSelection();
@@ -13901,6 +14026,9 @@ function init() {
     buyerViewVersion = 1;
   }
   buildStaticUI();
+  /* Apply the saved "Default view" startup preference for the pivot. */
+  if (ui.pivotDefaultView === 'flat') ui.groupBy = 'default';
+  else if (ui.pivotDefaultView === 'buyer') ui.groupBy = 'buyer';
   document.getElementById('groupBy').value = ui.groupBy || 'default';
   document.getElementById('auctionFilter').value = ui.auction || 'all';
   document.getElementById('search').value = ui.dashSearch || '';
@@ -13909,6 +14037,7 @@ function init() {
   if (ui.detailDefaultView === 'buyer') ui.detailGroupBy = 'buyer';
   else if (ui.detailDefaultView === 'flat') ui.detailGroupBy = 'default';
   paintDetailGroupControls();
+  paintPivotGroupControls();
   if (resetBuyerView) saveState();
 
   /* Live search: typing in either search box filters the matching view
@@ -13990,6 +14119,34 @@ function init() {
       renderDetail(); saveState();
     });
   }
+  var pivotLayoutEl = document.getElementById('pivotGroupLayout');
+  if (pivotLayoutEl) {
+    pivotLayoutEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !pivotLayoutEl.contains(b)) return;
+      ui.pivotGroupLayout = b.dataset.layout;
+      pivotCollapsedGroups = {};
+      sortState = { table: 'pivot', key: null, dir: -1 };
+      paintPivotGroupControls();
+      renderAll(); saveState();
+    });
+  }
+  var pivotDefaultEl = document.getElementById('pivotDefaultView');
+  if (pivotDefaultEl) {
+    pivotDefaultEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !pivotDefaultEl.contains(b)) return;
+      ui.pivotDefaultView = b.dataset.default;
+      ui.groupBy = (b.dataset.default === 'flat') ? 'default' : 'buyer';
+      selectedGroup = null;
+      sortState = { table: 'pivot', key: null, dir: -1 };
+      pivotCollapsedGroups = {};
+      var gEl = document.getElementById('groupBy');
+      if (gEl) gEl.value = ui.groupBy;
+      paintPivotGroupControls();
+      renderAll(); saveState();
+    });
+  }
   
   function resetPivotFilters() {
     ui.groupBy = 'buyer';
@@ -13997,6 +14154,9 @@ function init() {
     ui.settlement = 'all';
     ui.dashSearch = '';
     ui.colFilters = {};
+    ui.pivotGroupLayout = 'summary';
+    ui.pivotDefaultView = 'buyer';
+    pivotCollapsedGroups = {};
     selectedGroup = null;
     clearGridSelection();
     sortState = { table: 'pivot', key: null, dir: -1 };
@@ -14006,6 +14166,7 @@ function init() {
     if (aucEl) aucEl.value = 'all';
     var searchEl = document.getElementById('search');
     if (searchEl) searchEl.value = '';
+    paintPivotGroupControls();
     renderAll();
     saveState();
     showToast('Buyer Ledger Analytics filters reset — showing all data.', 'ok');
@@ -14053,6 +14214,22 @@ function init() {
     }
   }
   window.paintDetailGroupControls = paintDetailGroupControls;
+
+  function paintPivotGroupControls() {
+    var lEl = document.getElementById('pivotGroupLayout');
+    if (lEl) {
+      lEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.layout === (ui.pivotGroupLayout || 'summary'));
+      });
+    }
+    var dEl = document.getElementById('pivotDefaultView');
+    if (dEl) {
+      dEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.default === (ui.pivotDefaultView || 'buyer'));
+      });
+    }
+  }
+  window.paintPivotGroupControls = paintPivotGroupControls;
 
 var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   if (resetPivotBtn) {
@@ -14187,7 +14364,7 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     }
     draggingHeader = th.dataset.field;
     draggingTable = table;
-    draggingLayout = th.dataset.layout || (table === 'detail' ? 'detail' : (ui.groupBy === 'default' ? 'pivotLot' : 'pivotMetric'));
+    draggingLayout = th.dataset.layout || (table === 'detail' ? 'detail' : pivotLayoutKind());
     e.dataTransfer.setData('text/plain', JSON.stringify({ field: th.dataset.field, table: table, layout: draggingLayout }));
     e.dataTransfer.effectAllowed = 'move';
     th.classList.add('th-dragging');
@@ -14252,7 +14429,7 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     var mid = rect.left + rect.width / 2;
     var insertAfter = e.clientX >= mid;
     
-    var layoutKind = th.dataset.layout || (table === 'detail' ? 'detail' : (ui.groupBy === 'default' ? 'pivotLot' : 'pivotMetric'));
+    var layoutKind = th.dataset.layout || (table === 'detail' ? 'detail' : pivotLayoutKind());
     var arr = colLayout[layoutKind];
     if (!arr) return;
     
@@ -14290,7 +14467,7 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   function hideSelectedCols() {
     var n = colSel.selected.size;
     if (n === 0) { showToast('No columns selected.', 'info'); return; }
-    var layoutKind = (colSel.lastTable === 'pivot') ? ((ui.groupBy === 'default') ? 'pivotLot' : 'pivotMetric') : 'detail';
+    var layoutKind = (colSel.lastTable === 'pivot') ? pivotLayoutKind() : 'detail';
     var arr = colLayout[layoutKind];
     if (!arr) return;
     pushHistory();
@@ -14646,11 +14823,11 @@ function showHeaderContextMenu(x, y, th) {
     var tableKind = th.dataset.table;
     var isDetail = tableKind === 'detail';
     var isPivot = tableKind === 'pivot';
-    var layoutKind = isDetail ? 'detail' : (ui.groupBy === 'default' ? 'pivotLot' : 'pivotMetric');
+    var layoutKind = isDetail ? 'detail' : pivotLayoutKind();
     var arr = colLayout[layoutKind] || [];
     var isSingle = arr.length <= 1;
 
-    var filterKey = (isPivot && ui.groupBy !== 'default' && field !== ui.groupBy && field !== 'key' && field !== 'settlement_status' && field !== 'settled_breakdown') ? ('pivot_' + field) : (field === 'key' ? ui.groupBy : field);
+    var filterKey = (isPivot && pivotLayoutKind() === 'pivotMetric' && field !== ui.groupBy && field !== 'key' && field !== 'settlement_status' && field !== 'settled_breakdown') ? ('pivot_' + field) : (field === 'key' ? ui.groupBy : field);
     var hasFilter = colFilterOn(filterKey);
 
     /* "Consolidate after Buyer" moves the single column whose header opened this
@@ -15821,5 +15998,6 @@ initHandPanEngine();
 initFrozenColumnSwipeEngine();
 init();
 </script>
+
 </body>
 </html>
