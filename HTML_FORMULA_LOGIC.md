@@ -69,7 +69,9 @@ r.total_receivables = has('total_receivables') ? N('total_receivables')
   : Math.round(r.mat_value + r.gst + r.tcs - r.tds194o - r.net_service_charge - r.gst_tds);
 r.sd_expected = has('sd_expected') ? N('sd_expected') : Math.round(r.mat_value * 0.25);
 r.fp_expected = has('fp_expected') ? N('fp_expected') : (r.total_receivables - r.sd_expected);
-r.total_received = has('total_received') ? N('total_received') : (r.sd_received + r.fp_received);
+r.late_fee_received = N('late_fee_received');
+r.late_fee_received_date = D('late_fee_received_date');
+r.total_received = has('total_received') ? N('total_received') : (r.sd_received + r.fp_received + r.late_fee_received);
 r.outstanding = ... Math.round(r.total_receivables + r.late_fee - r.total_received);
 ```
 
@@ -138,8 +140,8 @@ r.fp_expected = (standardRates && !r._manual.sd_expected)
 // Late Fees (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
 r.late_fee = calcLateFee(r);
 
-// Total Received & Outstanding
-r.total_received = n('sd_received') + n('fp_received');
+// Total Received & Outstanding (Total Received includes Late Fees Received)
+r.total_received = n('sd_received') + n('fp_received') + n('late_fee_received');
 r.outstanding = Math.round(n('total_receivables') + n('late_fee') - r.total_received);
 r.settlement_status = settlementStatus(r);
 ```
@@ -172,7 +174,9 @@ formulas it displays:
 | SD Expected | `ROUND(Material Value × 25%, 0)` |
 | FP Expected | `ROUND(Mat Value × 92.65% − GST TDS, 0)` |
 | Late Fees | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−22.08.2026)/7) × 1.18%, 0), 0)` |
-| Total Received | `SD Received + FP Received` |
+| Late Fees Received | manual receipt amount collected against accrued Late Fees (editable ₹) |
+| Received Date | date the Late Fees receipt was received (editable date) |
+| Total Received | `SD Received + FP Received + Late Fees Received` |
 | Outstanding | `ROUND(Total Receivables + Late Fees − Total Received, 0)` |
 | Settlement | `IF(Outstanding ≤ 5, "Settled", "Unsettled")` |
 | Footer total | `SUM(col2:colN)` |
@@ -227,7 +231,9 @@ GST TDS             f:ROUND(H*Q,0)
 Total Receivables   f:ROUND(H*117.65%-R,0)
 SD Expected         f:ROUND(H*25%,0)
 FP Expected         f:ROUND(H*92.65%-R,0)
-Total Received      f:ROUND(U+X,0)
+Late Fees Received  n        (col AG — raw editable value)
+Late Fees Rec Date  s        (col AH — raw editable date)
+Total Received      f:ROUND(U+X+AG,0)   (SD + FP + Late Fees Received)
 Outstanding         f:ROUND(S+Z-AA,0)   (uses late-fee col Z)
 Settlement          f:IF(AB<=5,"Settled","Unsettled")
 ```

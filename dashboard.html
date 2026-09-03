@@ -1019,6 +1019,12 @@ table th[data-field="late_fee"],table th[data-field="late_fee"] .th-wrap,table t
 table td[data-field="late_fee"],table td[data-field="late_fee"] input{
   min-width:74px;text-align:right!important;white-space:nowrap!important;
 }
+table th[data-field="late_fee_received"],table th[data-field="late_fee_received"] .th-wrap,table th[data-field="late_fee_received"] .th-label{
+  min-width:76px;max-width:94px;white-space:normal!important;word-break:break-word;overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto;text-align:center!important;justify-content:center!important;line-height:1.15;
+}
+table td[data-field="late_fee_received"],table td[data-field="late_fee_received"] input{
+  min-width:82px;text-align:right!important;white-space:nowrap!important;
+}
 /* Popup Calendar for Date Selection */
 #datePickerPopup {
   position: fixed;
@@ -1244,9 +1250,11 @@ tbody tr.drill-target{outline:2px solid rgba(124,58,237,.55);outline-offset:-2px
 table td[data-field="sd_date"] input,
 table td[data-field="fp_date"] input,
 table td[data-field="doc_invoice_date"] input,
+table td[data-field="late_fee_received_date"] input,
 table td[data-field="sd_date"] .dt-edit,
 table td[data-field="fp_date"] .dt-edit,
-table td[data-field="doc_invoice_date"] .dt-edit{
+table td[data-field="doc_invoice_date"] .dt-edit,
+table td[data-field="late_fee_received_date"] .dt-edit{
   min-width:80px;
   width:100%;
   text-align:center;
@@ -4307,17 +4315,17 @@ function maskDotted(str) {
    total_receivables = mat_value + gst + tcs - net_service_charge - tds194o - gst_tds
    sd_expected (auto)  = round(mat_value * 25%)          (security deposit)
    fp_expected (auto)  = total_receivables - sd_expected
-   total_received      = sd_received + fp_received
-   outstanding         = total_receivables - total_received
+   total_received      = sd_received + fp_received + late_fee_received
+   outstanding         = total_receivables + late_fee - total_received
    gst_tds (auto when >0) = round(gst / 9)               (TDS on GST)                                        */
-var NUM_FIELDS = ['qty','late_fee','rate','mat_value','mat_value_plus_gst','gst','tcs','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','tds194o','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding'];
+var NUM_FIELDS = ['qty','late_fee','late_fee_received','rate','mat_value','mat_value_plus_gst','gst','tcs','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','tds194o','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding'];
 /* Rounding rule: every money field (₹ amount) is shown and exported rounded to the
    nearest whole rupee. qty, rate and gst_tds_rate are NOT in this set — qty and
    rate can be fractional (8.2 MT, 27.094 €/kg) and gst_tds_rate is a percentage
    that needs 2 decimal places. */
-var MONEY_FIELDS = new Set(['late_fee','mat_value','mat_value_plus_gst','gst','tcs','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','tds194o','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding']);
-var DATE_FIELDS = ['sd_date','fp_date','sap_document_date','doc_invoice_date'];
-var EDITABLE_FIELDS = ['late_fee','gst_tds_rate','gst_tds','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date'];
+var MONEY_FIELDS = new Set(['late_fee','late_fee_received','mat_value','mat_value_plus_gst','gst','tcs','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','tds194o','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding']);
+var DATE_FIELDS = ['sd_date','fp_date','late_fee_received_date','sap_document_date','doc_invoice_date'];
+var EDITABLE_FIELDS = ['late_fee','late_fee_received','late_fee_received_date','gst_tds_rate','gst_tds','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date'];
 /* Display helper: force 0 decimals for money fields, 2 for percentages, 2 for
    pure numbers that aren't whole-rupee (kept for any legacy callers). Used
    in place of `inr(x, Number.isInteger(x) ? 0 : 2)` everywhere a money cell
@@ -4388,7 +4396,9 @@ function normalizeLot(raw) {
   r.sd_date = D('sd_date');
   r.fp_date = D('fp_date');
   r.late_fee = has('late_fee') ? N('late_fee') : calcLateFee(r);
-  r.total_received = has('total_received') ? N('total_received') : (r.sd_received + r.fp_received);
+  r.late_fee_received = N('late_fee_received');
+  r.late_fee_received_date = D('late_fee_received_date');
+  r.total_received = has('total_received') ? N('total_received') : (r.sd_received + r.fp_received + r.late_fee_received);
   r.outstanding = (r._manual && r._manual.outstanding && has('outstanding')) ? N('outstanding') : Math.round(r.total_receivables + r.late_fee - r.total_received);
   r.settlement_status = settlementStatus(r);
   r.sap_document_date = D('sap_document_date');
@@ -4551,8 +4561,8 @@ function recalcRow(r, changed) {
     r.late_fee = calcLateFee(r);
   }
 
-  // Total Received & Outstanding
-  r.total_received = n('sd_received') + n('fp_received');
+  // Total Received & Outstanding (Total Received now includes Late Fees Received)
+  r.total_received = n('sd_received') + n('fp_received') + n('late_fee_received');
   r.outstanding = Math.round(n('total_receivables') + n('late_fee') - r.total_received);
   r.settlement_status = settlementStatus(r);
 }
@@ -4819,12 +4829,14 @@ var XLSX_COLS = [
   ['fp_received', 'FP Received', 'n'],
   ['fp_date', 'FP Date', 's'],
   ['late_fee', 'Late Fees', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,22))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,22))/7,0)*0.0118, 0), 0))'],
-  ['total_received', 'Total Received', 'f:ROUND(U{r}+X{r},0)'],
+  ['total_received', 'Total Received', 'f:ROUND(U{r}+X{r}+AG{r},0)'],
   ['outstanding', 'Outstanding', 'f:ROUND(S{r}+Z{r}-AA{r},0)'],
   ['settlement_status', 'Settled / Unsettled', 'f:IF(AB{r}<=5,"Settled","Unsettled")'],
   ['invoice_no', 'Invoice No.', 's'],
   ['sap_document_date', 'SAP Document No.', 's'],
-  ['doc_invoice_date', 'Doc./Invoice Date', 's']
+  ['doc_invoice_date', 'Doc./Invoice Date', 's'],
+  ['late_fee_received', 'Late Fees Received', 'n'],
+  ['late_fee_received_date', 'Late Fees Received Date', 's']
 ];
 function colLetter(i) { var s = ''; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = (i - m - 1) / 26; } return s; }
 function escXml(s) {
@@ -4881,7 +4893,7 @@ function xlsxStyleFor(field, kind, isTotal) {
   if (field === 'sd_date' || field === 'fp_date' || field === 'doc_invoice_date') return 9;
   if (field === 'buyer' || field === 'lot_name' || field === 'unit' || field === 'invoice_no' || field === 'invoice_link' || field === 'sap_document_date' || (kind === 's')) return 9;
   if (field === 'lot_no' || field === 'auction' || field === 'qty' || field === 'rate') return 10;
-  if (field === 'sd_received' || field === 'fp_received') return 11;
+  if (field === 'sd_received' || field === 'fp_received' || field === 'late_fee_received') return 11;
   if (field === 'total_receivables' || field === 'total_received' || field === 'outstanding') return 13;
   return 12;
 }
@@ -4935,7 +4947,7 @@ function buildDataSheetXml(lots, customCols) {
     }).join('');
     rows.push('<row r="' + rowN + '">' + cells + '</row>');
   });
-  var sumCols = ['qty','mat_value','mat_value_plus_gst','gst','tcs','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','tds194o','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding'];
+  var sumCols = ['qty','mat_value','mat_value_plus_gst','gst','tcs','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','tds194o','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding'];
   var tCells = COLS.map(function (c, i) {
     var ref = colLetter(i) + tRow;
     if (c[0] === 'buyer') return cellInline(ref, 'TOTAL', 16);
@@ -4966,6 +4978,9 @@ function buildDataSheetXml(lots, customCols) {
     '<col min="20" max="27" width="12"/>' +
     '<col min="28" max="28" width="16"/>' +
     '<col min="29" max="31" width="14"/>' +
+    '<col min="32" max="32" width="12"/>' +
+    '<col min="33" max="33" width="14"/>' +
+    '<col min="34" max="34" width="12"/>' +
     '</cols>';
   var filterEnd = lots.length ? lastData : 3;
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -5138,6 +5153,8 @@ var PIVOT_VALUE_COLS = [
   ['sd_received', 'SD Received', 'sum'],
   ['fp_expected', 'FP Expected', 'sum'],
   ['fp_received', 'FP Received', 'sum'],
+  ['late_fee', 'Late Fees', 'sum'],
+  ['late_fee_received', 'Late Fees Received', 'sum'],
   ['total_received', 'Total Received', 'sum'],
   ['outstanding', 'Outstanding', 'sum']
 ];
@@ -5151,6 +5168,8 @@ var PIVOT_TABLE_COL = {
   sd_received: 'SD Received',
   fp_expected: 'FP Expected',
   fp_received: 'FP Received',
+  late_fee: 'Late Fees',
+  late_fee_received: 'Late Fees Received',
   total_received: 'Total Received',
   outstanding: 'Outstanding'
 };
@@ -5681,6 +5700,9 @@ var HEADER_ALIASES = {
   'fp expected': 'fp_expected', 'final payment expected': 'fp_expected', 'final payment (expected)': 'fp_expected', 'balance expected': 'fp_expected',
   'fp received': 'fp_received', 'final payment received': 'fp_received', 'final payment (received)': 'fp_received', 'balance received': 'fp_received',
   'fp date': 'fp_date', 'final payment date': 'fp_date', 'balance date': 'fp_date',
+  'late fee': 'late_fee', 'late fees': 'late_fee', 'late fees amount': 'late_fee', 'delayed payment charges': 'late_fee',
+  'late fee received': 'late_fee_received', 'late fees received': 'late_fee_received',
+  'late fee received date': 'late_fee_received_date', 'late fees received date': 'late_fee_received_date', 'late fee date': 'late_fee_received_date', 'late fees date': 'late_fee_received_date', 'received date': 'late_fee_received_date', 'late fees receipt date': 'late_fee_received_date',
   /* Backward compatibility: imports using the deleted duplicate heading map to Outstanding. */
   'short/(excess) payment': 'outstanding', 'short excess payment': 'outstanding',
   'settled / unsettled': 'settlement_status', 'settled/unsettled': 'settlement_status', 'settlement status': 'settlement_status',
@@ -5769,6 +5791,7 @@ var EXPORT_COLS = [
   ['gst_tds_rate', 'GST TDS Rate'], ['gst_tds', 'GST TDS'], ['total_receivables', 'TRIC'],
   ['sd_expected', 'SD Expected'], ['sd_received', 'SD Received'], ['sd_date', 'SD Date'],
   ['fp_expected', 'FP Expected'], ['fp_received', 'FP Received'], ['fp_date', 'FP Date'],
+  ['late_fee', 'Late Fees'], ['late_fee_received', 'Late Fees Received'], ['late_fee_received_date', 'Late Fees Received Date'],
   ['total_received', 'Total Received'], ['outstanding', 'Outstanding'],
   ['settlement_status', 'Settled / Unsettled'], ['invoice_no', 'Invoice No.'], ['sap_document_date', 'SAP Document No.'], ['doc_invoice_date', 'Doc./Invoice Date']
 ];
@@ -5788,7 +5811,7 @@ function csvExport(lots, customCols) {
     row = row.concat(customCols.map(function (n) { return csvEsc(strOr(r._extra && r._extra[n])); }));
     lines.push(row.join(','));
   });
-  var sumSet = new Set(['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding']);
+  var sumSet = new Set(['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding']);
   var tot = EXPORT_COLS.map(function (c) {
     if (sumSet.has(c[0])) return csvEsc(String(sumField(lots, c[0])));
     if (c[0] === 'buyer') return 'TOTAL';
@@ -5990,7 +6013,7 @@ function htmlExport(lots, customCols) {
       var f = c[0], v = r[f];
       var cls = "num";
       if (f === "buyer" || f === "lot_name" || f === "unit" || f === "invoice_no" || f === "sap_document_date") cls = "txt";
-      if (f === "sd_date" || f === "fp_date" || f === "doc_invoice_date") cls = "dt";
+      if (f === "sd_date" || f === "fp_date" || f === "doc_invoice_date" || f === "late_fee_received_date") cls = "dt";
       if (f === "settlement_status") cls = "cen";
       if (f === "total_receivables") cls += " strong-rec";
       if (f === "total_received" || f === "sd_received" || f === "fp_received") {
@@ -5998,7 +6021,7 @@ function htmlExport(lots, customCols) {
       }
       if (f === "outstanding") cls += " " + (numOr(v) > 1 ? "pos" : (numOr(v) < -1 ? "neg" : "zero"));
       var disp;
-      if (f === "sd_date" || f === "fp_date" || f === "doc_invoice_date") disp = v ? escHtml(v) : "—";
+      if (f === "sd_date" || f === "fp_date" || f === "doc_invoice_date" || f === "late_fee_received_date") disp = v ? escHtml(v) : "—";
       else if (f === "lot_no" || f === "auction" || f === "sap_document_date") disp = escHtml(v);
       else if (f === "settlement_status") {
         if (String(v).indexOf("Settled") !== -1) disp = "<span class=\"pill-settled\">SETTLED</span>";
@@ -6015,7 +6038,7 @@ function htmlExport(lots, customCols) {
   var totRow = "<tr class=\"totals\"><td colspan=\"5\" class=\"txt\">TOTAL (" + lots.length + " lots)</td>" +
     EXPORT_COLS.slice(5).map(function (c) {
       var f = c[0];
-      if (f === "sd_date" || f === "fp_date" || f === "doc_invoice_date" || f === "settlement_status") return "<td class=\"dt\"></td>";
+      if (f === "sd_date" || f === "fp_date" || f === "doc_invoice_date" || f === "late_fee_received_date" || f === "settlement_status") return "<td class=\"dt\"></td>";
       var meta = FIELD_META[f];
       if (!meta || !meta.sum) return "<td></td>";
       var s = sumField(lots, f);
@@ -6028,7 +6051,7 @@ function htmlExport(lots, customCols) {
     customCols.map(function () { return "<td></td>"; }).join("") + "</tr>";
 
   var headCells = EXPORT_COLS.map(function (c) {
-    var cls = (c[0] === "buyer" || c[0] === "lot_name" || c[0] === "unit") ? "txt" : (c[0] === "sd_date" || c[0] === "fp_date" || c[0] === "doc_invoice_date" || c[0] === "settlement_status" ? "cen" : "num");
+    var cls = (c[0] === "buyer" || c[0] === "lot_name" || c[0] === "unit") ? "txt" : (c[0] === "sd_date" || c[0] === "fp_date" || c[0] === "doc_invoice_date" || c[0] === "late_fee_received_date" || c[0] === "settlement_status" ? "cen" : "num");
     return "<th class=\"" + cls + "\">" + escHtml(c[1]) + "</th>";
   }).join("") + customCols.map(function (n) { return "<th class=\"txt\">" + escHtml(n) + "</th>"; }).join("");
 
@@ -6515,7 +6538,7 @@ var gdriveClientId = '';
 var gdriveToken = null;
 var pendingImportCustom = [];
 /* Canonical 31-column order shared by Lot Detail and data exports. */
-var DEFAULT_DETAIL_KEYS = ['qty','rate','lot_name','auction','unit','lot_no','buyer','mat_value','gst','mat_value_plus_gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','total_received','outstanding','settlement_status','invoice_no','sap_document_date','doc_invoice_date'];
+var DEFAULT_DETAIL_KEYS = ['qty','rate','lot_name','auction','unit','lot_no','buyer','mat_value','gst','mat_value_plus_gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','late_fee_received','late_fee_received_date','total_received','outstanding','settlement_status','invoice_no','sap_document_date','doc_invoice_date'];
 /* Columns 12–15 are the bifurcation children of column 16. Column 16 stays
    visible and its header is the group's expand/collapse control. */
 /* Two-level collapse under Lot No.:
@@ -6532,8 +6555,8 @@ var BID_GROUP_PARENT = 'auction';
 var CHARGE_GROUP_FIELDS = ['tds194o','service_charge_mstc','tds194h','net_service_charge'];
 var CHARGE_GROUP_PARENT = 'service_charge_to_mstc';
 /* Invoice No. is intentionally available only in Lot Details, not Pivot Analytics. */
-var DEFAULT_PIVOT_LOT_KEYS = ['lot_no','buyer','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','total_received','outstanding','settlement_status'];
-var DEFAULT_PIVOT_METRIC_KEYS = ['lots','mat_value','gst','tcs','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','total_received','outstanding','settled_breakdown'];
+var DEFAULT_PIVOT_LOT_KEYS = ['lot_no','buyer','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','late_fee_received','late_fee_received_date','total_received','outstanding','settlement_status'];
+var DEFAULT_PIVOT_METRIC_KEYS = ['lots','mat_value','gst','tcs','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding','settled_breakdown'];
 var colLayout = {
   detail: DEFAULT_DETAIL_KEYS.slice(),
   pivotLot: DEFAULT_PIVOT_LOT_KEYS.slice(),
@@ -6554,6 +6577,25 @@ function ensureGstTdsRateColumn() {
     }));
     colLayout.pivotMetric = DEFAULT_PIVOT_METRIC_KEYS.slice();
     detailLayoutVersion = 3;
+  }
+  /* v4: Late Fees Received (₹) and its Receipt Date — inserted right after Late Fees. */
+  if (detailLayoutVersion < 4) {
+    var dArr4 = Array.isArray(colLayout.detail) ? colLayout.detail : null;
+    if (dArr4 && dArr4.indexOf('late_fee_received') === -1) {
+      var dPos4 = dArr4.indexOf('late_fee');
+      dArr4.splice(dPos4 !== -1 ? dPos4 + 1 : dArr4.length, 0, 'late_fee_received', 'late_fee_received_date');
+    }
+    var plArr4 = Array.isArray(colLayout.pivotLot) ? colLayout.pivotLot : null;
+    if (plArr4 && plArr4.indexOf('late_fee_received') === -1) {
+      var pPos4 = plArr4.indexOf('late_fee');
+      plArr4.splice(pPos4 !== -1 ? pPos4 + 1 : plArr4.length, 0, 'late_fee_received', 'late_fee_received_date');
+    }
+    var pmArr4 = Array.isArray(colLayout.pivotMetric) ? colLayout.pivotMetric : null;
+    if (pmArr4 && pmArr4.indexOf('late_fee_received') === -1) {
+      var mPos4 = pmArr4.indexOf('late_fee');
+      pmArr4.splice(mPos4 !== -1 ? mPos4 + 1 : pmArr4.length, 0, 'late_fee_received');
+    }
+    detailLayoutVersion = 4;
   }
   /* Invoice No. remains available in Lot Details, but not Pivot Analytics. */
   if (colLayout.pivotLot) {
@@ -7625,6 +7667,8 @@ var FIELD_META = {
   fp_received: { label: 'FP Re\u00ADceived', kind: 'edit', sum: true, edit: true },
   fp_date: { label: 'FP Date', kind: 'date-edit', sum: false, edit: true },
   late_fee: { label: 'Late Fees', kind: 'edit', sum: true, edit: true },
+  late_fee_received: { label: 'Late Fees Re\u00ADceived', kind: 'edit', sum: true, edit: true },
+  late_fee_received_date: { label: 'Re\u00ADceived Date', kind: 'date-edit', sum: false, edit: true },
   settlement_status: { label: 'Set\u00ADtled / Un\u00ADset\u00ADtled', kind: 'status', sum: false },
   invoice_no: { label: 'In\u00ADvoice No.', kind: 'edit-text', sum: false },
   sap_document_date: { label: 'SAP Doc\u00ADu\u00ADment No.', kind: 'edit-text', sum: false },
@@ -7654,7 +7698,7 @@ function fieldKind(key) {
 }
 function isCustomField(key) { return key && String(key).indexOf('c_') === 0; }
 function isReceiptDateField(key) {
-  return key === 'sd_date' || key === 'fp_date';
+  return key === 'sd_date' || key === 'fp_date' || key === 'late_fee_received_date';
 }
 function isEmptyReceiptDate(value) {
   return value === null || value === undefined || value === '';
@@ -7765,7 +7809,7 @@ function thPickerHtml(field, table, place, layoutKind) {
   var isSorted = sortState.table === table && sortState.key === field;
   var arrow = isSorted ? (sortState.dir === 1 ? ' ▲' : ' ▼') : '';
   var kind = fieldKind(field);
-  var isCenter = (kind === 'center' || kind === 'date' || kind === 'date-edit' || kind === 'status' || field === 'lot_no' || field === 'unit' || field === 'invoice_no' || field === 'sap_document_date' || field === 'sd_date' || field === 'fp_date' || field === 'doc_invoice_date' || field === 'auction' || field === 'settlement_status');
+  var isCenter = (kind === 'center' || kind === 'date' || kind === 'date-edit' || kind === 'status' || field === 'lot_no' || field === 'unit' || field === 'invoice_no' || field === 'sap_document_date' || field === 'sd_date' || field === 'fp_date' || field === 'doc_invoice_date' || field === 'late_fee_received_date' || field === 'auction' || field === 'settlement_status');
   var cls = isCenter ? 'center' : ((kind === 'left') ? 'left' : '');
   var dragAttr = (layoutKind === 'detail' || layoutKind === 'pivotLot' || layoutKind === 'pivotMetric') ? ' draggable="true"' : '';
   var filterKey = (table === 'pivot' && ui.groupBy !== 'default' && field !== ui.groupBy && field !== 'key' && field !== 'settlement_status' && field !== 'settled_breakdown')
@@ -7806,7 +7850,7 @@ function formatCellValue(r, key) {
   return escHtml(v === null || v === undefined ? '' : v);
 }
 function cellClassFor(key, v) {
-  if (key === 'lot_no' || key === 'unit' || key === 'invoice_no' || key === 'sap_document_date' || key === 'auction' || key === 'sd_date' || key === 'fp_date' || key === 'doc_invoice_date' || key === 'settlement_status') {
+  if (key === 'lot_no' || key === 'unit' || key === 'invoice_no' || key === 'sap_document_date' || key === 'auction' || key === 'sd_date' || key === 'fp_date' || key === 'doc_invoice_date' || key === 'late_fee_received_date' || key === 'settlement_status') {
     return 'center';
   }
   var kind = fieldKind(key);
@@ -7868,7 +7912,7 @@ function renderPivot() {
       var meta = FIELD_META[f];
       if (meta && meta.sum) {
         var s = sumField(dRows, f);
-        var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received');
+        var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received');
         var isOut = (f === 'outstanding');
         var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
         if (f === 'tds194h') return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (s ? '- ' + moneyFmt(Math.abs(s)) : '—') + '</td>';
@@ -8071,7 +8115,7 @@ function renderPivot() {
       '</span></td>';
     }
     var s = sumField(pivotRows, f);
-    var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received');
+    var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received');
     var isOut = (f === 'outstanding');
     var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
     if (f === 'tds194h') return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (s ? '- ' + moneyFmt(Math.abs(s)) : '—') + '</td>';
@@ -8181,7 +8225,9 @@ function isEditableField(key) {
          key === 'sap_document_date' || 
          key === 'sd_date' || 
          key === 'fp_date' || 
-         key === 'doc_invoice_date' || key === 'late_fee';
+         key === 'doc_invoice_date' || key === 'late_fee' ||
+         key === 'late_fee_received' ||
+         key === 'late_fee_received_date';
 }
 function renderDetailInto(tableId, countId) {
   var table = document.getElementById(tableId);
@@ -8252,14 +8298,14 @@ function renderDetailInto(tableId, countId) {
       return '<td class="' + cellClassFor(f, v) + '" data-field="' + escHtml(f) + '">' + formatCellValue(r, f) + '</td>';
     }).join('') + '<td class="row-actions"><span class="row-actions-group"><button type="button" class="rowadvice" data-lot="' + li + '" title="Generate Buyer Payment Advice">📋</button><button type="button" class="rowedit" data-lot="' + li + '" title="Edit entire row">✎</button><button type="button" class="rowdel" data-lot="' + li + '" title="Delete lot">✕</button></span></td></tr>';
   }).join('');
-  var numericFields = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding'];
+  var numericFields = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding'];
   var tfoot = table.querySelector('tfoot');
   tfoot.innerHTML = '<tr>' + cols.map(function (f, i) {
     if (i === 0) return '<td class="left">Total (' + rows.length + ')</td>';
     var custom = customColById(f);
     if (numericFields.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
       var s = rows.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
-      var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received');
+      var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received');
       var isOut = (f === 'outstanding');
       var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
       if (f === 'tds194h') return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (s ? '- ' + moneyFmt(Math.abs(s)) : '—') + '</td>';
@@ -8823,7 +8869,7 @@ function gridHandlePointer(e, isMove) {
 function renderDetailFooter() {
   var rows = detailRows;
   var cols = detailColKeys();
-  var numericFields = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','total_received','outstanding'];
+  var numericFields = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding'];
   function fill(tableId) {
     var table = document.getElementById(tableId);
     if (!table) return;
@@ -8833,7 +8879,7 @@ function renderDetailFooter() {
       var custom = customColById(f);
       if (numericFields.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
         var s = rows.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
-        var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received'); var isOut = (f === 'outstanding'); var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
+        var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received'); var isOut = (f === 'outstanding'); var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
         return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>';
       }
       return '<td></td>';
@@ -8919,7 +8965,7 @@ function onEditInput(input) {
     else setLotField(r, f, v);
     return;
   }
-  if (f === 'sd_date' || f === 'fp_date' || f === 'doc_invoice_date') {
+  if (f === 'sd_date' || f === 'fp_date' || f === 'doc_invoice_date' || f === 'late_fee_received_date') {
     var mv = maskDotted(v);
     if (mv !== input.value) input.value = mv;
     r[f] = mv ? mv : null;
@@ -8963,7 +9009,7 @@ function endEdit(input, skipNormalize) {
         setLotField(r, f, (cv === '' || isNaN(Number(cv))) ? '' : Number(cv));
       } else if (cc && cc.type === 'date') setLotField(r, f, input.value ? (fromISODate(input.value) || input.value) : '');
       else setLotField(r, f, input.value);
-    } else if (f === 'sd_date' || f === 'fp_date' || f === 'doc_invoice_date') {
+    } else if (f === 'sd_date' || f === 'fp_date' || f === 'doc_invoice_date' || f === 'late_fee_received_date') {
       if (input.value) r[f] = dottedDate(maskDotted(input.value));
       else r[f] = null;
     } else if (f === 'invoice_no') {
@@ -9234,11 +9280,27 @@ function getCellFormulaInfo(table, td) {
       return { name: cellName, html: html, plain: plain };
     }
 
+    if (field === 'late_fee_received') {
+      var html = '<span class="fx-field">Late Fees Received</span> <span class="fx-op">(manual receipt)</span>' +
+                 '<span class="fx-arrow">➔</span> <span class="fx-res">₹ ' + inr(r.late_fee_received || 0) + '</span>' +
+                 '<span class="fx-expl">Received against accrued Late Fees · counts toward Total Received</span>';
+      var plain = 'Late_Fees_Received = ' + (r.late_fee_received || 0);
+      return { name: cellName, html: html, plain: plain };
+    }
+
+    if (field === 'late_fee_received_date') {
+      var d = dottedDate(r.late_fee_received_date);
+      var html = '<span class="fx-field">Late Fees Received Date</span> <span class="fx-arrow">➔</span> <span class="fx-res">' + escHtml(d || '—') + '</span>' +
+                 '<span class="fx-expl">Date the Late Fees receipt was received</span>';
+      var plain = 'Late_Fees_Received_Date = ' + (d || '—');
+      return { name: cellName, html: html, plain: plain };
+    }
+
     if (field === 'total_received') {
-      var html = '<span class="fx-field">SD Received</span> <span class="fx-op">+</span> <span class="fx-field">FP Received</span>' +
-                 '<span class="fx-arrow">➔</span> <span class="fx-eval">₹ ' + inr(r.sd_received) + ' + ₹ ' + inr(r.fp_received) + ' =</span> <span class="fx-res">₹ ' + inr(r.total_received) + '</span>' +
+      var html = '<span class="fx-field">SD Received</span> <span class="fx-op">+</span> <span class="fx-field">FP Received</span> <span class="fx-op">+</span> <span class="fx-field">Late Fees Received</span>' +
+                 '<span class="fx-arrow">➔</span> <span class="fx-eval">₹ ' + inr(r.sd_received) + ' + ₹ ' + inr(r.fp_received) + ' + ₹ ' + inr(r.late_fee_received || 0) + ' =</span> <span class="fx-res">₹ ' + inr(r.total_received) + '</span>' +
                  '<span class="fx-expl">' + pctOfMat(r.total_received) + ' · Total Collections</span>';
-      var plain = '=SD_Received + FP_Received = ' + r.total_received + ' [' + pctOfMat(r.total_received) + ']';
+      var plain = '=SD_Received + FP_Received + Late_Fees_Received = ' + r.total_received + ' [' + pctOfMat(r.total_received) + ']';
       return { name: cellName, html: html, plain: plain };
     }
 
@@ -9248,7 +9310,7 @@ function getCellFormulaInfo(table, td) {
       var outColor = isPos ? '#f43f5e' : (isNeg ? '#10b981' : '#94a3b8');
       var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">TRIC</span> <span class="fx-op">+</span> <span class="fx-field">Late Fees</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> <span class="fx-eval">₹ ' + inr(r.total_receivables) + ' + ₹ ' + inr(r.late_fee || 0) + ' - ₹ ' + inr(r.total_received) + ' =</span> <span class="fx-res" style="color:' + outColor + '">₹ ' + inr(r.outstanding) + '</span>' +
-                 '<span class="fx-expl">' + pctOfMat(r.outstanding) + ' · Net Pending Due</span>';
+                 '<span class="fx-expl">' + pctOfMat(r.outstanding) + ' · Net Pending Due (Total Received incl. Late Fees Received)</span>';
       var plain = '=Total_Receivables + Late_Fee - Total_Received = ' + r.outstanding + ' [' + pctOfMat(r.outstanding) + ']';
       return { name: cellName, html: html, plain: plain };
     }
@@ -9477,6 +9539,7 @@ function renderPbiKpis(rows) {
   var totRcv = rows.reduce(function (a, r) { return a + (r.total_received || 0); }, 0);
   var totOut = rows.reduce(function (a, r) { return a + (r.outstanding || 0); }, 0);
   var totLate = rows.reduce(function (a, r) { return a + (r.late_fee || 0); }, 0);
+  var totLateRec = rows.reduce(function (a, r) { return a + (r.late_fee_received || 0); }, 0);
   var totQty = rows.reduce(function (a, r) { return a + (r.qty || 0); }, 0);
 
   var settledCount = rows.filter(function (r) { return (r.outstanding || 0) <= SETTLEMENT_TOLERANCE; }).length;
@@ -9519,6 +9582,13 @@ function renderPbiKpis(rows) {
       sub: 'Accrued @ 1.18%/wk on Mat Value',
       barVal: Math.min(100, totMat > 0 ? Math.round((totLate / totMat) * 100 * 5) : 0),
       color: '#d97706'
+    },
+    {
+      label: 'Late Fees Received',
+      val: '₹ ' + inr(totLateRec),
+      sub: totLate > 0 ? Math.round((totLateRec / totLate) * 100) + '% of accrued Late Fees collected' : 'No accrued Late Fees',
+      barVal: Math.min(100, totLate > 0 ? Math.round((totLateRec / totLate) * 100) : 0),
+      color: '#10b981'
     },
     {
       label: 'Settlement Realization',
@@ -11663,15 +11733,18 @@ function computeLotForm(src) {
   var fp = tric - sdP.amt;
   var sdR = numOr(document.getElementById('al_sd_rec') && document.getElementById('al_sd_rec').value);
   var fpR = numOr(document.getElementById('al_fp_rec') && document.getElementById('al_fp_rec').value);
-  var recd = sdR + fpR;
+  var lfR = numOr(document.getElementById('al_lf_rec') && document.getElementById('al_lf_rec').value);
+  var fpDateVal = (document.getElementById('al_fp_date') && document.getElementById('al_fp_date').value) ? fromISODate(document.getElementById('al_fp_date').value) : null;
+  var lfAccrued = calcLateFee({ mat_value: mat, fp_date: fpDateVal, fp_received: fpR, total_receivables: tric, sd_received: sdR });
+  var recd = sdR + fpR + lfR;
   return {
     qty: qty, rate: rate, mat_value: mat,
     gst: gstP.amt, tcs: tcsP.amt,
     service_charge_mstc: scP.amt, tds194h: hP.amt, net_service_charge: nsc,
     tds194o: oP.amt, gst_tds: gstdP.amt, gst_tds_rate: gstdP.pct,
     sd_expected: sdP.amt, fp_expected: fp, total_receivables: tric,
-    sd_received: sdR, fp_received: fpR, total_received: recd,
-    outstanding: Math.round(tric + (typeof lateFee !== 'undefined' ? lateFee : 0) - recd), sd_pct: sdP.pct
+    sd_received: sdR, fp_received: fpR, late_fee: lfAccrued, late_fee_received: lfR, total_received: recd,
+    outstanding: Math.round(tric + lfAccrued - recd), sd_pct: sdP.pct
   };
 }
 function paintLotForm(c, skipId) {
@@ -11692,6 +11765,8 @@ function paintLotForm(c, skipId) {
   set('al_gstd_amt', c.gst_tds);
   set('al_sd_amt', c.sd_expected);
   set('al_fp_amt', c.fp_expected);
+  set('al_lf_amt', c.late_fee);
+  set('al_lf_rec', c.late_fee_received);
   set('al_recd_amt', c.total_received);
   set('al_out_amt', c.outstanding);
   var prev = document.getElementById('al_preview');
@@ -11699,6 +11774,8 @@ function paintLotForm(c, skipId) {
     prev.innerHTML = '<b>TRIC:</b> ₹ ' + inr(c.total_receivables) +
       ' &nbsp;·&nbsp; <b>SD Expected:</b> ₹ ' + inr(c.sd_expected) +
       ' &nbsp;·&nbsp; <b>FP Expected:</b> ₹ ' + inr(c.fp_expected) +
+      ' &nbsp;·&nbsp; <b>Late Fees:</b> ₹ ' + inr(c.late_fee || 0) +
+      ' &nbsp;·&nbsp; <b>Late Fees Received:</b> ₹ ' + inr(c.late_fee_received || 0) +
       ' &nbsp;·&nbsp; <b>Total Received:</b> ₹ ' + inr(c.total_received) +
       ' &nbsp;·&nbsp; <b>Outstanding:</b> ₹ ' + inr(c.outstanding);
   }
@@ -11762,6 +11839,8 @@ function computeAdviceBreakdown(lotsList) {
   var totFpRec = lotsList.reduce(function (a, r) { return a + (Number(r.fp_received) || 0); }, 0);
   var totFpDue = Math.max(0, totFpExp - totFpRec);
   var totLateFee = lotsList.reduce(function (a, r) { return a + (Number(r.late_fee) || 0); }, 0);
+  var totLateFeeRec = lotsList.reduce(function (a, r) { return a + (Number(r.late_fee_received) || 0); }, 0);
+  var totLateFeeDue = Math.max(0, totLateFee - totLateFeeRec);
   var totReceived = lotsList.reduce(function (a, r) { return a + (Number(r.total_received) || 0); }, 0);
   var totOut = lotsList.reduce(function (a, r) { return a + (Number(r.outstanding) || 0); }, 0);
   if (totOut === 0 && (totRec + totLateFee - totReceived) > 0) {
@@ -11776,6 +11855,10 @@ function computeAdviceBreakdown(lotsList) {
   var rawFpDates = lotsList.map(function (r) { return dottedDate(r.fp_date); }).filter(function (d) { return d && d !== '—'; });
   var uniqueFpDates = Array.from(new Set(rawFpDates));
   var fpDatesStr = uniqueFpDates.join(', ');
+
+  var rawLfRecDates = lotsList.map(function (r) { return dottedDate(r.late_fee_received_date); }).filter(function (d) { return d && d !== '—'; });
+  var uniqueLfRecDates = Array.from(new Set(rawLfRecDates));
+  var lfRecDatesStr = uniqueLfRecDates.join(', ');
 
   return {
     totQty: totQty,
@@ -11801,10 +11884,13 @@ function computeAdviceBreakdown(lotsList) {
     totFpRec: totFpRec,
     totFpDue: totFpDue,
     totLateFee: totLateFee,
+    totLateFeeRec: totLateFeeRec,
+    totLateFeeDue: totLateFeeDue,
     totReceived: totReceived,
     totOut: totOut,
     sdDatesStr: sdDatesStr,
-    fpDatesStr: fpDatesStr
+    fpDatesStr: fpDatesStr,
+    lfRecDatesStr: lfRecDatesStr
   };
 }
 
@@ -11828,7 +11914,9 @@ function generateWhatsAppAdviceText(lotsList, buyerTitle) {
   var fpRecLine = '   • FP Received: ₹ ' + inr(b.totFpRec) + (b.totFpRec > 0 && b.fpDatesStr ? (' _(Rec Date: ' + b.fpDatesStr + ')') : '') + '\n';
   var lateFeeLine = '3️⃣ *Late Fees (from 22.08.2026):*\n' +
     '   • Delay Basis: 1.18% per week or part thereof — delay from 22.08.2026\n' +
-    '   • *Late Fees Payable:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n';
+    '   • *Late Fees Payable:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n' +
+    '   • Late Fees Received: ₹ ' + inr(b.totLateFeeRec) + (b.totLateFeeRec > 0 && b.lfRecDatesStr ? (' _(Rec Date: ' + b.lfRecDatesStr + ')') : '') + '\n' +
+    '   • *Late Fees Balance Due:* ₹ ' + inr(b.totLateFeeDue) + (b.totLateFeeDue <= 1 ? '  ✅ [RECEIVED]' : '  ⏳ [DUE]') + '\n';
 
   var msg = 
     '🏛️ *MSETCL LIMITED — PAYMENT DEMAND ADVICE*\n' +
@@ -11926,7 +12014,9 @@ function generateEmailAdviceText(lotsList, buyerTitle) {
     '   - Balance Due : Rs. ' + inr(b.totFpDue) + (b.totFpDue <= 1 ? ' (SETTLED)' : ' (DUE)') + '\n\n' +
     '3. Late Fees (from 22.08.2026):\n' +
     '   - Delay Basis      : 1.18% per week or part thereof — delay from 22.08.2026\n' +
-    '   - Accrued Late Fees  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n\n' +
+    '   - Accrued Late Fees  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n' +
+    '   - Received     : Rs. ' + inr(b.totLateFeeRec) + (b.totLateFeeRec > 0 && b.lfRecDatesStr ? (' (Date: ' + b.lfRecDatesStr + ')') : '') + '\n' +
+    '   - Balance Due : Rs. ' + inr(b.totLateFeeDue) + (b.totLateFeeDue <= 1 ? ' (RECEIVED)' : ' (DUE)') + '\n\n' +
     '------------------------------------------------------\n' +
     'Total Amount Received to Date      : Rs. ' + inr(b.totReceived) + '\n' +
     'NET OUTSTANDING AMOUNT PAYABLE     : Rs. ' + inr(b.totOut) + '\n' +
@@ -11978,6 +12068,9 @@ function printPaymentAdvice(lotsList, buyerTitle) {
       "<td class=\"cen\" style=\"font-size:10px\"><span class=\"pill-date\">" + escHtml(dottedDate(lot.sd_date) || "—") + "</span></td>" +
       "<td class=\"num\">" + (lFpDue > 1 ? ("<span style=\"color:#be123c;font-weight:bold\">₹ " + inr(lFpDue) + "</span>") : "<span style=\"color:#15803d;font-weight:bold\">Paid</span>") + "</td>" +
       "<td class=\"cen\" style=\"font-size:10px\"><span class=\"pill-date\">" + escHtml(dottedDate(lot.fp_date) || "—") + "</span></td>" +
+      "<td class=\"num\" style=\"color:#d97706\">₹ " + inr(lot.late_fee || 0) + "</td>" +
+      "<td class=\"num\" style=\"color:#059669\">₹ " + inr(lot.late_fee_received || 0) + "</td>" +
+      "<td class=\"cen\" style=\"font-size:10px\"><span class=\"pill-date\">" + escHtml(dottedDate(lot.late_fee_received_date) || "—") + "</span></td>" +
       "<td class=\"num\" style=\"font-weight:bold\">" + (lOut > 1 ? ("<span style=\"color:#be123c\">₹ " + inr(lOut) + "</span>") : "<span style=\"color:#15803d\">Settled</span>") + "</td>" +
     "</tr>";
   }).join("");
@@ -12142,13 +12235,13 @@ function printPaymentAdvice(lotsList, buyerTitle) {
             "<td class=\"num\" style=\"font-weight:bold\">" + (b.totFpDue > 1 ? ("<span style=\"color:#be123c\">₹ " + inr(b.totFpDue) + "</span>") : "<span style=\"color:#15803d\">₹ 0</span>") + "</td>" +
             "<td class=\"cen\">" + (b.totFpDue <= 1 ? "<span class=\"pill-settled\">PAID / SETTLED</span>" : "<span class=\"pill-due\">PENDING PAYMENT</span>") + "</td>" +
           "</tr>" +
-          (b.totLateFee > 0 ? ("<tr style=\"background:#fff1f2\">" +
+          ((b.totLateFee > 0 || b.totLateFeeRec > 0) ? ("<tr style=\"background:#fff1f2\">" +
             "<td><b>3. Late Fees (1.18%/wk from 22.08.2026)</b></td>" +
             "<td class=\"num\">₹ " + inr(b.totLateFee) + "</td>" +
-            "<td class=\"num\">—</td>" +
-            "<td class=\"cen\">—</td>" +
-            "<td class=\"num\" style=\"font-weight:bold;color:#be123c\">₹ " + inr(b.totLateFee) + "</td>" +
-            "<td class=\"cen\"><span class=\"pill-due\" style=\"background:#ffe4e6;color:#be123c;border-color:#fecdd3\">ACCRUED / DUE</span></td>" +
+            "<td class=\"num\" style=\"font-weight:bold;color:#059669\">₹ " + inr(b.totLateFeeRec) + "</td>" +
+            "<td class=\"cen\"><span class=\"pill-date\">" + escHtml(b.lfRecDatesStr || "—") + "</span></td>" +
+            "<td class=\"num\" style=\"font-weight:bold;color:" + (b.totLateFeeDue > 1 ? "#be123c" : "#15803d") + "\">₹ " + inr(b.totLateFeeDue) + "</td>" +
+            "<td class=\"cen\">" + (b.totLateFeeDue <= 1 ? "<span class=\"pill-settled\">RECEIVED</span>" : "<span class=\"pill-due\" style=\"background:#ffe4e6;color:#be123c;border-color:#fecdd3\">ACCRUED / DUE</span>") + "</td>" +
           "</tr>") : "") +
           "<tr class=\"row-total\">" +
             "<td>TOTALS</td>" +
@@ -12165,7 +12258,7 @@ function printPaymentAdvice(lotsList, buyerTitle) {
         "<div class=\"sec-title\"><span class=\"sec-indicator\" style=\"background:#7c3aed\"></span> 3. Itemized Lot Breakdown (" + lotsList.length + " Lots)</div>" +
         "<div style=\"overflow-x:auto;margin-bottom:16px;border:1px solid #cbd5e1;border-radius:6px\">" +
           "<table class=\"adv-tbl\" style=\"margin-bottom:0;border:none;min-width:920px\">" +
-            "<thead><tr><th class=\"cen\">#</th><th>Lot No.</th><th>Auction</th><th>Material</th><th class=\"num\">Qty</th><th class=\"num\">Rate</th><th class=\"num\">Mat. Value</th><th class=\"num\">GST</th><th class=\"num\">TCS (2%)</th><th class=\"num\">MSTC SC</th><th class=\"num\">Before GST TDS</th><th class=\"num\">GST TDS</th><th class=\"num\">Total Cash</th><th class=\"num\">SD Due</th><th class=\"cen\">SD Date</th><th class=\"num\">FP Due</th><th class=\"cen\">FP Date</th><th class=\"num\">Net Due</th></tr></thead>" +
+            "<thead><tr><th class=\"cen\">#</th><th>Lot No.</th><th>Auction</th><th>Material</th><th class=\"num\">Qty</th><th class=\"num\">Rate</th><th class=\"num\">Mat. Value</th><th class=\"num\">GST</th><th class=\"num\">TCS (2%)</th><th class=\"num\">MSTC SC</th><th class=\"num\">Before GST TDS</th><th class=\"num\">GST TDS</th><th class=\"num\">Total Cash</th><th class=\"num\">SD Due</th><th class=\"cen\">SD Date</th><th class=\"num\">FP Due</th><th class=\"cen\">FP Date</th><th class=\"num\">Late Fees</th><th class=\"num\">LF Rec.</th><th class=\"cen\">LF Rec Date</th><th class=\"num\">Net Due</th></tr></thead>" +
             "<tbody>" + lotRowsHtml + "</tbody>" +
           "</table>" +
         "</div>"
@@ -12882,6 +12975,8 @@ function openLotDetails(idx) {
             '<div class="lic-row"><span class="lic-k">FP Received</span><span class="lic-v">₹ ' + moneyFmt(r.fp_received || 0) + pTag(r.fp_received) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">FP Date</span><span class="lic-v">' + escHtml(dottedDate(r.fp_date) || '—') + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Late Fees</span><span class="lic-v strong" style="color:#f9a8d4">₹ ' + moneyFmt(r.late_fee || 0) + (r.late_fee ? pTag(r.late_fee) : '') + '</span></div>' +
+            '<div class="lic-row"><span class="lic-k">Late Fees Received</span><span class="lic-v success strong">₹ ' + moneyFmt(r.late_fee_received || 0) + (r.late_fee_received ? pTag(r.late_fee_received) : '') + '</span></div>' +
+            '<div class="lic-row"><span class="lic-k">Received Date</span><span class="lic-v">' + escHtml(dottedDate(r.late_fee_received_date) || '—') + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Total Received</span><span class="lic-v success strong">₹ ' + moneyFmt(r.total_received || 0) + pTag(r.total_received) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Outstanding</span><span class="lic-v ' + outClass + ' strong">₹ ' + moneyFmt(r.outstanding || 0) + (r.outstanding ? pTag(r.outstanding) : '') + '</span></div>' +
           '</div>' +
@@ -13017,6 +13112,9 @@ function openLotForm(idx) {
         '<label>SD date<input id="al_sd_date" type="date" value="' + escHtml(r ? toISODate(r.sd_date) : '') + '"/></label>' +
         '<label>FP received ₹<input id="al_fp_rec" type="number" step="any" value="' + escHtml(r ? numOr(r.fp_received) : 0) + '" style="text-align:right"/></label>' +
         '<label>FP date<input id="al_fp_date" type="date" value="' + escHtml(r ? toISODate(r.fp_date) : '') + '"/></label>' +
+        '<label>Late Fees received ₹<input id="al_lf_rec" type="number" step="any" value="' + escHtml(r ? numOr(r.late_fee_received) : 0) + '" style="text-align:right"/></label>' +
+        '<label>Late Fees received date<input id="al_lf_date" type="date" value="' + escHtml(r ? toISODate(r.late_fee_received_date) : '') + '"/></label>' +
+        '<label>Late Fees (auto)<input id="al_lf_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
         '<label>Total received (auto)<input id="al_recd_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
         '<label>Outstanding (auto)<input id="al_out_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
       '</div>' +
@@ -13031,7 +13129,7 @@ function openLotForm(idx) {
     var src = (e && e.target && e.target.id) ? e.target.id : '';
     paintLotForm(computeLotForm(src), src);
   };
-  document.querySelectorAll('#al_qty,#al_rate,#al_mat,#al_gst_pct,#al_gst_amt,#al_tcs_pct,#al_tcs_amt,#al_sc_pct,#al_sc_amt,#al_194h_pct,#al_194h_amt,#al_194o_pct,#al_194o_amt,#al_gstd_pct,#al_gstd_amt,#al_sd_pct,#al_sd_amt,#al_sd_rec,#al_fp_rec').forEach(function (el) {
+  document.querySelectorAll('#al_qty,#al_rate,#al_mat,#al_gst_pct,#al_gst_amt,#al_tcs_pct,#al_tcs_amt,#al_sc_pct,#al_sc_amt,#al_194h_pct,#al_194h_amt,#al_194o_pct,#al_194o_amt,#al_gstd_pct,#al_gstd_amt,#al_sd_pct,#al_sd_amt,#al_sd_rec,#al_fp_rec,#al_lf_rec,#al_fp_date').forEach(function (el) {
     el.addEventListener('input', live);
   });
   live();
@@ -13113,6 +13211,8 @@ function saveLotForm() {
     fp_received: c.fp_received,
     sd_date: fromISODate(document.getElementById('al_sd_date').value),
     fp_date: fromISODate(document.getElementById('al_fp_date').value),
+    late_fee_received: c.late_fee_received,
+    late_fee_received_date: fromISODate(document.getElementById('al_lf_date').value),
     total_receivables: c.total_receivables,
     total_received: c.total_received,
     outstanding: c.outstanding
@@ -13122,6 +13222,11 @@ function saveLotForm() {
   next._manual = next._manual || {};
   if (Math.abs(c.sd_pct - 25) > 0.001) next._manual.sd_expected = true;
   next._manual.fp_expected = false;
+  var prevRow = (editingLotIdx >= 0 && lots[editingLotIdx]) ? lots[editingLotIdx] : null;
+  if (prevRow && prevRow._manual && prevRow._manual.late_fee) {
+    next._manual.late_fee = true;
+    next.late_fee = prevRow.late_fee;
+  }
   if (editingLotIdx >= 0 && lots[editingLotIdx] && lots[editingLotIdx]._extra) {
     next._extra = lots[editingLotIdx]._extra;
   }
@@ -14278,7 +14383,7 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   function formatFilterValueLabel(field, v) {
   if (v === COLFILTER_BLANK || v === '' || v === null || v === undefined) return '(blank)';
   if (field === 'settlement_status' || field === 'settled_breakdown') return String(v);
-  if (field === 'sd_date' || field === 'fp_date' || field === 'doc_invoice_date' || field === 'sap_document_date') {
+  if (field === 'sd_date' || field === 'fp_date' || field === 'doc_invoice_date' || field === 'late_fee_received_date' || field === 'sap_document_date') {
     return dottedDate(v) || String(v);
   }
   var isMoney = MONEY_FIELDS.has(field) ||
