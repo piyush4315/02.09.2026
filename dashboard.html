@@ -901,6 +901,15 @@ thead th.left .th-wrap{justify-content:flex-start}
   padding:0 2px;border-radius:4px;line-height:1
 }
 .th-pick:hover{background:rgba(0,245,255,.1);color:var(--cyan)}
+.th-hide-btn{
+  display:inline-block;margin-top:3px;border:1px solid transparent;background:transparent;
+  color:var(--deep);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.02em;
+  padding:1px 5px;border-radius:4px;line-height:1.15;font-family:'Inter',sans-serif;touch-action:manipulation
+}
+.th-hide-btn:hover{color:#f72585;background:rgba(247,37,133,.14);border-color:rgba(247,37,133,.4)}
+[data-theme="light"] .th-hide-btn{color:#94a3b8}
+[data-theme="light"] .th-hide-btn:hover{color:#be123c;background:#fff1f2;border-color:#fda4af}
+@media (max-width:768px),(pointer:coarse){.th-hide-btn{padding:2px 6px}}
 .col-menu{
   position:fixed;z-index:90;background:rgba(13,13,36,.96);border:1px solid rgba(255,255,255,.1);
   border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.5);min-width:260px;
@@ -7767,7 +7776,9 @@ function thPickerHtml(field, table, place, layoutKind) {
     '<span class="th-wrap">' +
       '<span class="th-label">' + escHtml(fieldLabel(field)) + '</span>' +
       (arrow ? '<span class="arrow">' + arrow + '</span>' : '') +
-    '</span></th>';
+    '</span>' +
+    '<button type="button" class="th-hide-btn" title="Hide column" aria-label="Hide ' + escHtml(fieldLabel(field)) + ' column">Hide</button>' +
+    '</th>';
 }
 function formatCellValue(r, key) {
   var v = getLotField(r, key);
@@ -11147,6 +11158,29 @@ function toggleColumnVisibility(key, show) {
   showToast((show ? 'Shown' : 'Hidden') + ': ' + fieldLabel(key), 'ok');
 }
 
+/* Hide the column whose header's "Hide" button was clicked. Reuses the
+   detail hide (with its keep-at-least-one guard) and mirrors the pivot
+   context-menu hide for the analytics table. */
+function hideColumnByHeader(th) {
+  if (!th) return;
+  var field = th.dataset.field;
+  var table = th.dataset.table;
+  if (table === 'detail') {
+    toggleColumnVisibility(field, false);
+    return;
+  }
+  var layoutKind = th.dataset.layout || (ui.groupBy === 'default' ? 'pivotLot' : 'pivotMetric');
+  var arr = colLayout[layoutKind];
+  if (!arr) return;
+  if (arr.length <= 1) { showToast('Keep at least one column visible.', 'error'); return; }
+  var ix = arr.indexOf(field);
+  if (ix === -1) return;
+  pushHistory();
+  arr.splice(ix, 1);
+  saveState(); renderAll();
+  showToast(fieldLabel(field) + ' hidden', 'ok');
+}
+
 function resetDetailColumnOrder() {
   pushHistory();
   var visibleCustom = colLayout.detail.filter(isCustomField);
@@ -13801,7 +13835,7 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     var table = th.dataset.table;
     if (table !== 'detail' && table !== 'pivot') return;
     if (table === 'pivot' && th.dataset.group) return; // do not drag fixed grouping column
-    if (e.target.closest && (e.target.closest('.th-pick') || e.target.closest('.th-freeze'))) {
+    if (e.target.closest && (e.target.closest('.th-pick') || e.target.closest('.th-freeze') || e.target.closest('.th-hide-btn'))) {
       e.preventDefault(); return;
     }
     draggingHeader = th.dataset.field;
@@ -14012,6 +14046,14 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     /* ---- Excel-like multi-column selection on detail table headers ---- */
     var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
     var isCtrl = e.ctrlKey || e.metaKey;
+    /* "Hide" control under each column header hides that column directly. */
+    var hideBtn = (e.target && e.target.closest) ? e.target.closest('.th-hide-btn') : null;
+    if (hideBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideColumnByHeader(hideBtn.closest('th[data-field]'));
+      return;
+    }
     /* Column 4 is the parent control for columns 1–3 (Qty, Rate, Lot Name) and
        Column 16 for its bifurcation columns 12–15. Lot No. and Bid Sheet now
        SORT on single click and expand/collapse on DOUBLE-click (see the
@@ -14124,7 +14166,7 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   document.addEventListener('dblclick', function (e) {
     var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
     if (!th || th.dataset.table !== 'detail') return;
-    if (e.target.closest('.th-pick') || e.target.closest('.th-freeze') || e.target.closest('.th-filt-on')) return;
+    if (e.target.closest('.th-pick') || e.target.closest('.th-freeze') || e.target.closest('.th-filt-on') || e.target.closest('.th-hide-btn')) return;
     clearTimeout(pendingHeaderSort);
     if (th.dataset.field === LOT_GROUP_PARENT) {
       e.preventDefault();
