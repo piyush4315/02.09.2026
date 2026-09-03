@@ -177,6 +177,7 @@ html{scrollbar-width:auto;scrollbar-color:var(--violet) #0d0d1a}
 .btn.primary:active{
   box-shadow:0 1px 4px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(0,0,0,0.2);
 }
+.btn.fx-on{color:var(--cyan);border-color:rgba(0,245,255,.4);background:rgba(0,245,255,.1);font-weight:700}
 .btn.danger{background:rgba(247,37,133,.12);border:1px solid rgba(247,37,133,.3);color:#f9a8d4}
 .btn.danger:hover{background:rgba(247,37,133,.22);border-color:rgba(247,37,133,.5);color:#fff}
 .btn:disabled{opacity:.35;cursor:default;transform:none!important;pointer-events:none}
@@ -3928,13 +3929,14 @@ th.left .th-wrap, th.center .th-wrap {
 
               <button class="btn primary" id="addLotBtnDash" type="button">+ Add row</button>
               <button class="btn" id="clearFilterDash" type="button">Clear selection</button>
+              <button class="btn" id="detailFormulaToggleBtn" type="button" title="Show the Excel formula bar for Lot detail">ƒx Formula bar</button>
               <button class="btn" id="reorderColsBtnDash" type="button" title="Rearrange Lot detail column order — moves apply instantly">↕ Reorder columns</button>
               <button class="btn" id="hideSelColsBtn" type="button" style="display:none;color:#ff6b6b;font-weight:700;border-color:rgba(255,107,107,.3)">⊗ Hide 0 columns</button>
             </div>
           </div>
           <div id="detailActiveFiltersBar" class="active-filters-bar" style="display:none"></div>
           <div class="col-toggles" id="dashColToggles"></div>
-          <div class="excel-formula-bar" id="detailFormulaBar">
+          <div class="excel-formula-bar" id="detailFormulaBar" style="display:none">
             <div class="fx-name-box" id="detailNameBox" title="Active Cell Address">A1</div>
             <div class="fx-divider"></div>
             <div class="fx-badge" title="Excel Formula & Function"><i>fx</i></div>
@@ -6468,7 +6470,7 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, colFilters: {} };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, showDetailFormulaBar: false, colFilters: {} };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
 var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
@@ -7140,7 +7142,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, colFilters: ui.colFilters }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7185,6 +7187,7 @@ function loadState() {
       ui.collapseLotCols = data.ui.collapseLotCols !== undefined ? data.ui.collapseLotCols === true : true;
       ui.collapseBidCols = data.ui.collapseBidCols !== undefined ? data.ui.collapseBidCols === true : true;
       ui.collapseChargeCols = data.ui.collapseChargeCols !== undefined ? data.ui.collapseChargeCols === true : true;
+      ui.showDetailFormulaBar = data.ui.showDetailFormulaBar !== undefined ? data.ui.showDetailFormulaBar === true : false;
       ui.colFilters = (data.ui.colFilters && typeof data.ui.colFilters === 'object' && !Array.isArray(data.ui.colFilters)) ? data.ui.colFilters : {};
     }
     if (Array.isArray(data.customCols)) customCols = data.customCols;
@@ -13479,6 +13482,26 @@ function init() {
       saveState();
     });
   }
+
+  /* Formula bar in Lot detail appears only on demand (default hidden). */
+  window.setDetailFormulaBar = function (show) {
+    ui.showDetailFormulaBar = !!show;
+    var bar = document.getElementById('detailFormulaBar');
+    if (bar) bar.style.display = ui.showDetailFormulaBar ? '' : 'none';
+    var btn = document.getElementById('detailFormulaToggleBtn');
+    if (btn) {
+      if (ui.showDetailFormulaBar) { btn.classList.add('fx-on'); btn.title = 'Hide the Excel formula bar'; }
+      else { btn.classList.remove('fx-on'); btn.title = 'Show the Excel formula bar for Lot detail'; }
+    }
+  };
+  var fxBtn = document.getElementById('detailFormulaToggleBtn');
+  if (fxBtn) {
+    fxBtn.addEventListener('click', function () {
+      setDetailFormulaBar(!ui.showDetailFormulaBar);
+      saveState();
+    });
+  }
+  setDetailFormulaBar(ui.showDetailFormulaBar);
 
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.addEventListener('click', function () { setView(b.dataset.view); });
