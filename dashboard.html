@@ -947,17 +947,16 @@ thead th.left .th-wrap{justify-content:flex-start}
 .reorder-panel .ro-list.ro-drag-active .ro-row{cursor:grabbing}
 [data-theme="light"] .reorder-panel .ro-grip{color:#94a3b8!important}
 [data-theme="light"] .reorder-panel .ro-row.ro-dragging{background:#eff6ff!important;outline:1px dashed #2563eb!important}
-/* Neon hide/unhide eye toggle in the reorder panel */
-.reorder-panel .ro-eye{width:30px;height:30px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--dim);border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .18s ease;font-family:'Inter',sans-serif;padding:0}
-.reorder-panel .ro-eye:hover{border-color:rgba(0,245,255,.5);color:var(--cyan)}
-.reorder-panel .ro-eye.on{color:var(--cyan);border-color:rgba(0,245,255,.65);background:rgba(0,245,255,.12);box-shadow:0 0 6px rgba(0,245,255,.6),0 0 16px rgba(0,245,255,.35),inset 0 0 6px rgba(0,245,255,.3);text-shadow:0 0 8px rgba(0,245,255,.9)}
-.reorder-panel .ro-eye.off{color:var(--dim);border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.05)}
-.reorder-panel .ro-eye.off:hover{color:var(--cyan);border-color:rgba(0,245,255,.5);box-shadow:0 0 6px rgba(0,245,255,.5),0 0 14px rgba(0,245,255,.3)}
+/* Neon hide/unhide indicator: the column NAME itself lights up when the
+   column is shown. Clicking a name toggles hide/show (no eye icon). */
+.reorder-panel .ro-label{cursor:pointer}
+.reorder-panel .ro-label.ro-neon{color:var(--cyan);text-shadow:0 0 6px rgba(0,245,255,.7),0 0 14px rgba(0,245,255,.4)}
+.reorder-panel .ro-label.ro-neon:hover{text-shadow:0 0 10px rgba(0,245,255,.9),0 0 22px rgba(0,245,255,.6)}
 /* Hidden-columns section inside the reorder panel */
 .reorder-panel .ro-hidden-title{padding:9px 8px 4px;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);border-top:1px solid rgba(255,255,255,.08)}
 .reorder-panel .ro-hidden-row .ro-label{color:var(--dim);font-style:italic}
-[data-theme="light"] .reorder-panel .ro-eye.on{color:#0284c7;border-color:#0284c7;background:rgba(2,132,199,.12);box-shadow:0 0 6px rgba(2,132,199,.4),0 0 16px rgba(2,132,199,.22),inset 0 0 6px rgba(2,132,199,.25);text-shadow:0 0 8px rgba(2,132,199,.8)}
-[data-theme="light"] .reorder-panel .ro-eye.off:hover{color:#0284c7;border-color:#0284c7;box-shadow:0 0 6px rgba(2,132,199,.4),0 0 14px rgba(2,132,199,.25)}
+[data-theme="light"] .reorder-panel .ro-label.ro-neon{color:#0284c7!important;text-shadow:0 0 6px rgba(2,132,199,.45),0 0 14px rgba(2,132,199,.28)}
+[data-theme="light"] .reorder-panel .ro-label.ro-neon:hover{text-shadow:0 0 10px rgba(2,132,199,.6),0 0 22px rgba(2,132,199,.4)}
 [data-theme="light"] .reorder-panel .ro-hidden-title{color:#94a3b8!important;border-top:1px solid #e2e8f0!important}
 [data-theme="light"] .reorder-panel .ro-hidden-row .ro-label{color:#94a3b8!important}
 /* Excel-style right-click header menu */
@@ -10912,36 +10911,35 @@ function renderColumnOrderList() {
   var collapsed = collapsedDetailSet();
   var html = '';
 
-  /* Visible columns (current rank) — each with a neon hide toggle. */
+  /* Visible columns (current rank) — the name lights up neon when the column
+     is actually shown in the table; tap the name to hide it. */
   if (arr.length) {
     html += arr.map(function (key, i) {
       var label = fieldLabel(key);
       var isCollapsed = !!collapsed[key];
-      var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '');
+      var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '') + ' — tap to hide';
       return '<div class="ro-row" data-key="' + escHtml(key) + '">' +
         '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>' +
         '<span class="ro-rank">' + (i + 1) + '</span>' +
-        '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : '') + '" title="' + title + '">' + escHtml(label) +
+        '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : ' ro-neon') + '" title="' + title + '" data-act="hide" data-key="' + escHtml(key) + '">' + escHtml(label) +
           (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
-        '<button type="button" class="ro-eye on" data-act="hide" data-key="' + escHtml(key) + '" title="Hide ' + escHtml(label) + '" aria-label="Hide ' + escHtml(label) + '">👁</button>' +
       '</div>';
     }).join('');
   } else {
     html += '<div class="muted" style="padding:12px;font-size:11.5px">No visible columns.</div>';
   }
 
-  /* Hidden columns (not in the layout) — with a neon unhide toggle. */
+  /* Hidden columns (not in the layout) — tap the name to show it again. */
   var used = {};
   arr.forEach(function (k) { used[k] = true; });
   var hiddenCols = allAssignableFields('detail').filter(function (c) { return !used[c.key]; });
   if (hiddenCols.length) {
-    html += '<div class="ro-hidden-title">Hidden columns — tap 👁 to show</div>';
+    html += '<div class="ro-hidden-title">Hidden columns — tap the name to show</div>';
     html += hiddenCols.map(function (c) {
       return '<div class="ro-row ro-hidden-row" data-key="' + escHtml(c.key) + '">' +
         '<span class="ro-grip" aria-hidden="true" style="visibility:hidden">≡</span>' +
         '<span class="ro-rank" style="visibility:hidden">-</span>' +
-        '<span class="ro-label" title="' + escHtml(c.label) + '">' + escHtml(c.label) + '</span>' +
-        '<button type="button" class="ro-eye off" data-act="unhide" data-key="' + escHtml(c.key) + '" title="Show ' + escHtml(c.label) + '" aria-label="Show ' + escHtml(c.label) + '">👁</button>' +
+        '<span class="ro-label" title="Tap to show ' + escHtml(c.label) + '" data-act="unhide" data-key="' + escHtml(c.key) + '">' + escHtml(c.label) + '</span>' +
       '</div>';
     }).join('');
   }
@@ -11098,7 +11096,7 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — the table updates instantly. Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — tap a column name to hide or show it. Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
