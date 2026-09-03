@@ -14577,6 +14577,15 @@ function showHeaderContextMenu(x, y, th) {
       var field = td.getAttribute('data-field');
       var table = td.closest('table');
       if (table && (table.id === 'detailTableDash' || table.id === 'pivotTable')) {
+        var cmViewMode = document.documentElement.getAttribute('data-view-mode') || 'desktop';
+        var cmIsMobile = (cmViewMode === 'mobile' || (window.innerWidth <= 640 && cmViewMode !== 'desktop'));
+        /* On mobile, long-pressing a data cell must NOT open the column filter form.
+           That menu is reserved for long-pressing a column header. */
+        if (cmIsMobile) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         var isPivot = (table.id === 'pivotTable');
         var tableKind = isPivot ? 'pivot' : 'detail';
         var matchedTh = table.querySelector('thead th[data-field="' + field + '"]') ||
