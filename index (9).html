@@ -13730,6 +13730,20 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   if (resetDetailBtn) {
     resetDetailBtn.addEventListener('click', resetDetailFilters);
   }
+  var undoBtn = document.getElementById('undoBtn');
+  if (undoBtn) {
+    undoBtn.addEventListener('click', function (e) {
+      if (pendingEdit) endEdit(pendingEdit.input);
+      undo();
+    });
+  }
+  var redoBtn = document.getElementById('redoBtn');
+  if (redoBtn) {
+    redoBtn.addEventListener('click', function (e) {
+      if (pendingEdit) endEdit(pendingEdit.input);
+      redo();
+    });
+  }
   document.getElementById('hideSelColsBtn').addEventListener('click', function () {
     hideSelectedCols();
   });
