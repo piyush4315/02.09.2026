@@ -6192,7 +6192,7 @@ function escPdf(s) {
 }
 function f2(n) { return (Math.round(n * 100) / 100).toString(); }
 
-function buildPDF(lots, visibleCols, labels) {
+function buildPDF(lots, visibleCols, labels, datasetLabel) {
   var PAGE_W = 842, PAGE_H = 595, M = 24;
   var usable = PAGE_W - 2 * M;
   visibleCols = visibleCols && visibleCols.length ? visibleCols : ["lot_no","buyer","total_receivables","sd_expected","sd_received","sd_date","fp_expected","fp_received","fp_date","total_received","outstanding"];
@@ -6240,10 +6240,10 @@ function buildPDF(lots, visibleCols, labels) {
   var pad2 = function (n) { return String(n).padStart(2, "0"); };
   var genStr = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + "." + now.getFullYear() + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
   var titleMain = capturedGrid
-    ? "MSETCL LIMITED — Buyer Ledger Analytics Report"
+    ? "MSETCL LIMITED — " + (datasetLabel || "Buyer Ledger Analytics Report")
     : "MSETCL LIMITED — Cash Receivables & Lot Details Report";
   var subtitleMain = capturedGrid
-    ? "Buyer Ledger Analytics · Total Rows: " + lots.length + " · Scope: Selected Matrix · " + genStr
+    ? (datasetLabel || "Buyer Ledger Analytics") + " · Total Rows: " + lots.length + " · Scope: Selected Matrix · " + genStr
     : "Lots: " + stats.lots + " | Buyers: " + stats.buyers + " | Auctions: " + (aucs.length ? aucs[0] + " - " + aucs[aucs.length - 1] : "—") + " | Collection: " + stats.collection + "% · " + genStr;
 
   function pageHeader(a, isFirstPage) {
@@ -6302,7 +6302,7 @@ function buildPDF(lots, visibleCols, labels) {
       });
       var gap = 6, cardW = (usable - 3 * gap) / 4;
       var kpis = [
-        { label: "Scope", val: lots.length + " Buyer Groups", bg: "0.93 0.96 1.00 rg", bd: "0.70 0.82 0.96 RG", tx: "0.10 0.30 0.65 rg" },
+        { label: "Scope", val: lots.length + " Groups", bg: "0.93 0.96 1.00 rg", bd: "0.70 0.82 0.96 RG", tx: "0.10 0.30 0.65 rg" },
         { label: "Receivables", val: pivotRec > 0 ? ("Rs " + inr(pivotRec)) : "—", bg: "0.92 0.94 1.00 rg", bd: "0.72 0.76 0.95 RG", tx: "0.15 0.20 0.58 rg" },
         { label: "Total Received", val: pivotReceived > 0 ? ("Rs " + inr(pivotReceived)) : "—", bg: "0.92 0.98 0.94 rg", bd: "0.65 0.90 0.72 RG", tx: "0.06 0.50 0.20 rg" },
         { label: "Outstanding", val: pivotOut !== 0 ? ("Rs " + inr(pivotOut)) : "—", bg: "0.99 0.92 0.93 rg", bd: "0.96 0.68 0.72 RG", tx: "0.75 0.10 0.16 rg" }
@@ -8359,7 +8359,7 @@ function detailGroupHeaderHtml(group, groupKey, layout, colspan, collapsed) {
     '<td colspan="' + colspan + '">' + caret +
     '<span class="g-label">' + escHtml(label) + ':</span> ' +
     '<span class="g-value">' + escHtml(group.key) + '</span>' +
-    '<span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span>' +
+    ' <span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span>' +
     '</td></tr>';
 }
 function detailSumTdHtml(f, s) {
@@ -8388,7 +8388,7 @@ function detailFooterHtml(rows, cols, opts) {
   return '<tr>' + cells + '</tr>';
 }
 function detailSummaryRowHtml(group, groupKey, cols) {
-  var cells = '<td class="left g-value-cell">' + escHtml(group.key) + '<span class="gcount">' + group.lots.length + '</span></td>';
+  var cells = '<td class="left g-value-cell">' + escHtml(group.key) + ' <span class="gcount">' + group.lots.length + '</span></td>';
   cells += cols.map(function (f) {
     var custom = customColById(f);
     if (DETAIL_NUMERIC_FIELDS.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
@@ -8416,7 +8416,7 @@ function renderDetailInto(tableId, countId) {
   }
   var thead = table.querySelector('thead');
   var groupThHtml = (groupKey && layout === 'summary')
-    ? '<th class="left nosort" title="Grouped by ' + escHtml(detailGroupLabel(groupKey)) + '"><span class="th-wrap"><span class="th-label">' + escHtml(detailGroupLabel(groupKey)) + '</span></span></th>'
+    ? '<th class="left nosort" data-field="__group" title="Grouped by ' + escHtml(detailGroupLabel(groupKey)) + '"><span class="th-wrap"><span class="th-label">' + escHtml(detailGroupLabel(groupKey)) + '</span></span></th>'
     : '';
   thead.innerHTML = '<tr>' + groupThHtml + cols.map(function (f, i) {
     var title = f === LOT_GROUP_PARENT
@@ -10266,6 +10266,16 @@ function prepareExportChoice(area, mode) {
     var detailFiltLabels = {};
     expCols.forEach(function (f) { detailFiltLabels[f] = fieldLabel(f); });
     exportColumnLabels = Object.assign(exportColumnLabels || {}, detailFiltLabels);
+    if (activeDetailGroupKey()) {
+      /* Grouped Lot details: export exactly what is on screen (section header
+         rows, collapsed groups, and the Summary layout's group column) using
+         the same captured-grid path as the Buyer Ledger Analytics export. */
+      var groupedCap = captureVisibleTable('detailTableDash');
+      groupedCap.label = 'Lot Details — Filtered (Grouped by ' + detailGroupLabel(activeDetailGroupKey()) + ')';
+      groupedCap.key = 'detail-filtered';
+      groupedCap.count = detailRows.length;
+      return groupedCap;
+    }
     return { rows: exportScopeLots(), cols: expCols, count: detailRows.length, label: "Lot Details — Filtered", key: "detail-filtered", labels: detailFiltLabels };
   }
   if (mode === "filtered") {
@@ -10430,14 +10440,14 @@ function buildScreenXlsx(rows, cols) {
   ];
   return zipStore(files);
 }
-function buildExportBytes(id, lotsToExport, colsToExport, labels) {
+function buildExportBytes(id, lotsToExport, colsToExport, labels, datasetLabel) {
   colsToExport = colsToExport || exportScopeColumns();
   if (labels) exportColumnLabels = Object.assign(exportColumnLabels || {}, labels);
   if (id === "xlsx") return { bytes: buildScreenXlsx(lotsToExport, colsToExport), ext: ".xlsx", mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
   if (id === "csv") return { bytes: screenCsvExport(lotsToExport, colsToExport, ","), ext: ".csv", mime: "text/csv" };
   if (id === "json") return { bytes: screenJsonExport(lotsToExport, colsToExport), ext: ".json", mime: "application/json" };
   if (id === "html") return { bytes: screenHtmlExport(lotsToExport, colsToExport), ext: ".html", mime: "text/html" };
-  if (id === "pdf") return { bytes: buildPDF(lotsToExport, colsToExport, labels), ext: ".pdf", mime: "application/pdf" };
+  if (id === "pdf") return { bytes: buildPDF(lotsToExport, colsToExport, labels, datasetLabel), ext: ".pdf", mime: "application/pdf" };
   if (id === "txt") return { bytes: screenCsvExport(lotsToExport, colsToExport, "\t"), ext: ".txt", mime: "text/plain" };
   throw new Error("Unknown format");
 }
@@ -10559,7 +10569,7 @@ function buildMultiDatasetPDF(datasets) {
     a.push("BT /F2 11 Tf " + f2(M + 8) + " " + f2(H - 26) + " Td (" + escPdf(title) + ") Tj ET");
     a.push("0.85 0.92 1.0 rg");
     var sub = isCapturedGrid
-      ? "Buyer Ledger Analytics · Total: " + d.count + " rows · Generated: " + genStr
+      ? (d.label || "Buyer Ledger Analytics") + " · Total: " + d.count + " rows · Generated: " + genStr
       : "Lots: " + stats.lots + " | Buyers: " + stats.buyers + " | Collection: " + stats.collection + "% · " + genStr;
     a.push("BT /F1 7.5 Tf " + f2(M + 8) + " " + f2(H - 35) + " Td (" + escPdf(sub) + ") Tj ET");
 
@@ -10810,7 +10820,7 @@ function doExport(id) {
   var spec = EXPORT_SPECS.find(function (s) { return s.id === id; });
   try {
     exportColumnLabels = Object.assign(exportColumnLabels || {}, prepared.labels || {});
-    var built = buildExportBytes(id, lotsToExport, colsToExport, prepared.labels);
+    var built = buildExportBytes(id, lotsToExport, colsToExport, prepared.labels, prepared.label);
     downloadBlob(built.bytes, name + built.ext, built.mime);
     showToast(prepared.label + ": exported " + prepared.count + " rows × " + colsToExport.length + " columns → " + spec.label, "ok");
   } catch (e) {
