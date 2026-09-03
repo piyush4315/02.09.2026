@@ -980,6 +980,9 @@ thead th.left .th-wrap{justify-content:flex-start}
 /* Neon hide/unhide indicator: the column NAME itself lights up when the
    column is shown. Clicking a name toggles hide/show (no eye icon). */
 .reorder-panel .ro-label{cursor:pointer}
+.reorder-panel .ro-row:not(.ro-hidden-row) .ro-label{cursor:grab;touch-action:none}
+.reorder-panel .ro-row:not(.ro-hidden-row) .ro-label:active{cursor:grabbing}
+.reorder-panel .ro-list.ro-drag-active .ro-label{cursor:grabbing}
 .reorder-panel .ro-label.ro-neon{color:var(--cyan);text-shadow:0 0 6px rgba(0,245,255,.7),0 0 14px rgba(0,245,255,.4)}
 .reorder-panel .ro-label.ro-neon:hover{text-shadow:0 0 10px rgba(0,245,255,.9),0 0 22px rgba(0,245,255,.6)}
 /* Hidden columns stay in place in the same list — just dimmed (no separate group) */
@@ -11371,8 +11374,8 @@ function renderColumnOrderList() {
       grip = '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>';
       visRank++;
       rank = '<span class="ro-rank">' + visRank + '</span>';
-      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — tap to show this column)'; }
-      else { cls += ' ro-neon'; titleExtra = ' — shown, tap to hide'; }
+      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — drag to reorder, tap to show this column)'; }
+      else { cls += ' ro-neon'; titleExtra = ' — drag to reorder, tap to hide'; }
       checkTitle = (visibleCount <= 1) ? 'At least one column must stay visible' : 'Untick to hide from Lot details';
     } else {
       cls += ' ro-hidden-label';
@@ -11402,7 +11405,8 @@ var roDrag = { active: false, key: null, el: null, startY: 0, moved: false, poin
 
 function roGripPointerDown(e) {
   if (e.button !== undefined && e.button !== 0) return; /* mouse: primary button only */
-  var grip = e.target && e.target.closest ? e.target.closest('.ro-grip') : null;
+  /* Reordering starts from the ≡ handle OR the column name itself. */
+  var grip = e.target && e.target.closest ? e.target.closest('.ro-grip, .ro-label') : null;
   if (!grip) return;
   var row = grip.closest('.ro-row');
   if (!row) return;
@@ -11585,13 +11589,15 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Tick a checkbox to show that column in Lot details, untick to hide it — drag a row by its ≡ handle to reorder. A collapsed name shows just that column. Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Tick a checkbox to show that column in Lot details, untick to hide it — drag a row by its ≡ handle or by the column name to reorder. A collapsed name shows just that column. Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
   panel.addEventListener('click', function (e) {
     var btn = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
     if (!btn || btn.disabled) return;
+    /* Dragging the column name must not also fire the tap-to-hide toggle. */
+    if (btn.classList.contains('ro-label') && roDrag.moved) { roDrag.moved = false; return; }
     var act = btn.getAttribute('data-act');
     if (act === 'close') { closeColumnOrderPanel(); return; }
     if (act === 'reset') { resetDetailColumnOrder(); return; }
