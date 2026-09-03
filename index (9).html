@@ -11032,10 +11032,16 @@ function resetDetailColumnOrder() {
   var visibleCustom = colLayout.detail.filter(isCustomField);
   colLayout.detail = DEFAULT_DETAIL_KEYS.concat(visibleCustom.filter(function (k, i, a) { return a.indexOf(k) === i; }));
   ui.freezeDetailField = null;
+  /* Restore the default view state: all column groups collapsed and the rows
+     sorted ascending by Lot No. */
+  ui.collapseLotCols = true;
+  ui.collapseBidCols = true;
+  ui.collapseChargeCols = true;
+  sortState = { table: 'detail', key: 'lot_no', dir: 1 };
   saveState();
   renderAll();
   renderColumnOrderList();
-  showToast('Column order reset', 'ok');
+  showToast('Column order, collapse state and sort reset — sorted ascending by Lot No.', 'ok');
 }
 
 function closeColumnOrderPanel() {
