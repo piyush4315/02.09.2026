@@ -952,13 +952,13 @@ thead th.left .th-wrap{justify-content:flex-start}
 .reorder-panel .ro-label{cursor:pointer}
 .reorder-panel .ro-label.ro-neon{color:var(--cyan);text-shadow:0 0 6px rgba(0,245,255,.7),0 0 14px rgba(0,245,255,.4)}
 .reorder-panel .ro-label.ro-neon:hover{text-shadow:0 0 10px rgba(0,245,255,.9),0 0 22px rgba(0,245,255,.6)}
-/* Hidden-columns section inside the reorder panel */
-.reorder-panel .ro-hidden-title{padding:9px 8px 4px;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);border-top:1px solid rgba(255,255,255,.08)}
-.reorder-panel .ro-hidden-row .ro-label{color:var(--dim);font-style:italic}
+/* Hidden columns stay in place in the same list — just dimmed (no separate group) */
+.reorder-panel .ro-hidden-row .ro-label{color:var(--dim);font-style:italic;cursor:pointer}
+.reorder-panel .ro-hidden-row .ro-label:hover{color:var(--muted)}
 [data-theme="light"] .reorder-panel .ro-label.ro-neon{color:#0284c7!important;text-shadow:0 0 6px rgba(2,132,199,.45),0 0 14px rgba(2,132,199,.28)}
 [data-theme="light"] .reorder-panel .ro-label.ro-neon:hover{text-shadow:0 0 10px rgba(2,132,199,.6),0 0 22px rgba(2,132,199,.4)}
-[data-theme="light"] .reorder-panel .ro-hidden-title{color:#94a3b8!important;border-top:1px solid #e2e8f0!important}
 [data-theme="light"] .reorder-panel .ro-hidden-row .ro-label{color:#94a3b8!important}
+[data-theme="light"] .reorder-panel .ro-hidden-row .ro-label:hover{color:#64748b!important}
 /* Excel-style right-click header menu */
 #thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
 .excel-menu .xl-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -6519,6 +6519,10 @@ var colLayout = {
   pivotLot: DEFAULT_PIVOT_LOT_KEYS.slice(),
   pivotMetric: DEFAULT_PIVOT_METRIC_KEYS.slice()
 };
+/* Full ordered list of ALL Lot-detail columns (visible + hidden), used by the
+   "↕ Reorder columns" panel so a hidden column stays exactly where it was
+   instead of jumping into a separate "hidden" group. Rebuilt lazily when null. */
+var detailColSlots = null;
 function ensureGstTdsRateColumn() {
   /* Apply the requested canonical order once for older workspaces. After this
      migration, preserve all user-driven column movement across reloads. */
@@ -7145,6 +7149,7 @@ function saveState() {
     lots: lots,
     customCols: customCols,
     colLayout: colLayout,
+    detailColSlots: detailColSlots,
     detailLayoutVersion: detailLayoutVersion,
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
@@ -7203,6 +7208,7 @@ function loadState() {
       if (Array.isArray(data.colLayout.pivotLot)) colLayout.pivotLot = data.colLayout.pivotLot;
       if (Array.isArray(data.colLayout.pivotMetric)) colLayout.pivotMetric = data.colLayout.pivotMetric;
     }
+    if (Array.isArray(data.detailColSlots)) detailColSlots = data.detailColSlots;
     detailLayoutVersion = Number(data.detailLayoutVersion) || 0;
     buyerViewVersion = Number(data.buyerViewVersion) || 0;
     dataSyncVersion = Number(data.dataSyncVersion) || 0;
@@ -8831,7 +8837,7 @@ function refreshDerivedDOM(lotIdx) {
         td.classList.add('flash');
       }
     });
-    ['gst', 'mat_value_plus_gst', 'tcs', 'tds194o', 'service_charge_mstc', 'tds194h', 'net_service_charge', 'service_charge_to_mstc', 'gst_tds', 'total_receivables', 'sd_expected', 'fp_expected', 'total_received', 'outstanding', 'settlement_status'].forEach(function (f) {
+    ['qty', 'rate', 'gst', 'mat_value_plus_gst', 'tcs', 'tds194o', 'service_charge_mstc', 'tds194h', 'net_service_charge', 'service_charge_to_mstc', 'gst_tds', 'total_receivables', 'sd_expected', 'fp_expected', 'total_received', 'outstanding', 'settlement_status'].forEach(function (f) {
       var td = tr.querySelector('td[data-field="' + f + '"]');
       if (!td || td.querySelector('input')) return;
       var v = r[f];
@@ -10902,49 +10908,67 @@ function collapsedDetailSet() {
   return set;
 }
 
+function syncDetailColSlots() {
+  var catalog = allAssignableFields('detail').map(function (c) { return c.key; });
+  if (!Array.isArray(detailColSlots)) detailColSlots = [];
+  detailColSlots = detailColSlots.filter(function (k) { return catalog.indexOf(k) !== -1; });
+  var present = {};
+  detailColSlots.forEach(function (k) { present[k] = true; });
+  var visible = (colLayout.detail || []).slice();
+  var visSet = {};
+  visible.forEach(function (k) { visSet[k] = true; });
+  /* add missing visible keys (in layout order), then any remaining catalog keys */
+  visible.forEach(function (k) { if (!present[k]) { detailColSlots.push(k); present[k] = true; } });
+  catalog.forEach(function (k) { if (!present[k]) { detailColSlots.push(k); present[k] = true; } });
+  /* reorder the visible subset of slots to match colLayout.detail order */
+  var visCursor = 0, result = [];
+  detailColSlots.forEach(function (k) {
+    if (visSet[k]) result.push(visible[visCursor++]);
+    else result.push(k);
+  });
+  detailColSlots = result;
+}
+
 function renderColumnOrderList() {
   var panel = document.getElementById('columnOrderPanel');
   if (!panel) return;
   var list = panel.querySelector('.ro-list');
   if (!list) return;
-  var arr = colLayout.detail || [];
+  syncDetailColSlots();
+  var slots = detailColSlots || [];
   var collapsed = collapsedDetailSet();
-  var html = '';
+  var visSet = {};
+  (colLayout.detail || []).forEach(function (k) { visSet[k] = true; });
+  var visRank = 0;
 
-  /* Visible columns (current rank) — the name lights up neon when the column
-     is actually shown in the table; tap the name to hide it. */
-  if (arr.length) {
-    html += arr.map(function (key, i) {
-      var label = fieldLabel(key);
-      var isCollapsed = !!collapsed[key];
-      var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '') + ' — tap to hide';
-      return '<div class="ro-row" data-key="' + escHtml(key) + '">' +
-        '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>' +
-        '<span class="ro-rank">' + (i + 1) + '</span>' +
-        '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : ' ro-neon') + '" title="' + title + '" data-act="hide" data-key="' + escHtml(key) + '">' + escHtml(label) +
-          (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
-      '</div>';
-    }).join('');
-  } else {
-    html += '<div class="muted" style="padding:12px;font-size:11.5px">No visible columns.</div>';
-  }
+  var html = slots.map(function (key) {
+    var label = fieldLabel(key);
+    var isVisible = !!visSet[key];
+    var isCollapsed = isVisible && !!collapsed[key];
+    var cls = 'ro-label';
+    var tag = '';
+    var act = 'unhide';
+    var grip = '<span class="ro-grip" aria-hidden="true" style="visibility:hidden">≡</span>';
+    var rank = '<span class="ro-rank" style="color:transparent">—</span>';
+    var titleExtra;
+    if (isVisible) {
+      act = 'hide';
+      grip = '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>';
+      visRank++;
+      rank = '<span class="ro-rank">' + visRank + '</span>';
+      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — expand its group to show it)'; }
+      else { cls += ' ro-neon'; titleExtra = ' — shown, tap to hide'; }
+    } else {
+      cls += ' ro-hidden-label';
+      titleExtra = ' — hidden, tap to show';
+    }
+    return '<div class="ro-row' + (isVisible ? '' : ' ro-hidden-row') + '" data-key="' + escHtml(key) + '">' +
+      grip + rank +
+      '<span class="' + cls + '" title="' + escHtml(label) + titleExtra + '" data-act="' + act + '" data-key="' + escHtml(key) + '">' + escHtml(label) + tag + '</span>' +
+    '</div>';
+  }).join('');
 
-  /* Hidden columns (not in the layout) — tap the name to show it again. */
-  var used = {};
-  arr.forEach(function (k) { used[k] = true; });
-  var hiddenCols = allAssignableFields('detail').filter(function (c) { return !used[c.key]; });
-  if (hiddenCols.length) {
-    html += '<div class="ro-hidden-title">Hidden columns — tap the name to show</div>';
-    html += hiddenCols.map(function (c) {
-      return '<div class="ro-row ro-hidden-row" data-key="' + escHtml(c.key) + '">' +
-        '<span class="ro-grip" aria-hidden="true" style="visibility:hidden">≡</span>' +
-        '<span class="ro-rank" style="visibility:hidden">-</span>' +
-        '<span class="ro-label" title="Tap to show ' + escHtml(c.label) + '" data-act="unhide" data-key="' + escHtml(c.key) + '">' + escHtml(c.label) + '</span>' +
-      '</div>';
-    }).join('');
-  }
-
-  list.innerHTML = html;
+  list.innerHTML = html || '<div class="muted" style="padding:12px;font-size:11.5px">No columns.</div>';
   /* Attach drag-to-reorder handlers to the visible rows only. */
   Array.prototype.forEach.call(list.querySelectorAll('.ro-row:not(.ro-hidden-row)'), function (el) {
     el.addEventListener('pointerdown', roGripPointerDown);
@@ -11023,9 +11047,9 @@ function roGripPointerEnd() {
   if (!colLayout.detail || JSON.stringify(order) === JSON.stringify(colLayout.detail)) return;
   pushHistory();
   colLayout.detail = order;
-  saveState();
   renderAll();
   renderColumnOrderList();
+  saveState();
   showToast(fieldLabel(key) + ' moved', 'ok');
 }
 
@@ -11043,7 +11067,18 @@ function toggleColumnVisibility(key, show) {
   if (show) {
     if (arr.indexOf(key) !== -1) return;
     pushHistory();
-    unhideFieldAt('detail', key);
+    syncDetailColSlots();
+    var slotIdx = detailColSlots.indexOf(key);
+    if (slotIdx === -1) {
+      arr.push(key);
+    } else {
+      /* insert at the position its slot occupies among the visible columns */
+      var insertAt = 0;
+      for (var i = 0; i < slotIdx; i++) {
+        if (arr.indexOf(detailColSlots[i]) !== -1) insertAt++;
+      }
+      arr.splice(insertAt, 0, key);
+    }
   } else {
     var ix = arr.indexOf(key);
     if (ix === -1) return;
@@ -11069,6 +11104,7 @@ function resetDetailColumnOrder() {
   ui.collapseBidCols = true;
   ui.collapseChargeCols = true;
   sortState = { table: 'detail', key: 'lot_no', dir: 1 };
+  detailColSlots = null;
   saveState();
   renderAll();
   renderColumnOrderList();
