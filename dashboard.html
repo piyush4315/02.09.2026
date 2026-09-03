@@ -6477,7 +6477,7 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, showDetailFormulaBar: false, colFilters: {} };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {} };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
 var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
@@ -7154,7 +7154,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7199,6 +7199,7 @@ function loadState() {
       ui.collapseLotCols = data.ui.collapseLotCols !== undefined ? data.ui.collapseLotCols === true : true;
       ui.collapseBidCols = data.ui.collapseBidCols !== undefined ? data.ui.collapseBidCols === true : true;
       ui.collapseChargeCols = data.ui.collapseChargeCols !== undefined ? data.ui.collapseChargeCols === true : true;
+      ui.expandedCols = (data.ui.expandedCols && typeof data.ui.expandedCols === 'object' && !Array.isArray(data.ui.expandedCols)) ? data.ui.expandedCols : {};
       ui.showDetailFormulaBar = data.ui.showDetailFormulaBar !== undefined ? data.ui.showDetailFormulaBar === true : false;
       ui.colFilters = (data.ui.colFilters && typeof data.ui.colFilters === 'object' && !Array.isArray(data.ui.colFilters)) ? data.ui.colFilters : {};
     }
@@ -8103,18 +8104,25 @@ function detailColKeys() {
      remain in colLayout, filters, saved data and exports. The parent headers stay
      visible. */
   if (ui.collapseLotCols) keys = keys.filter(function (key) {
-    return LOT_GROUP_FIELDS.indexOf(key) === -1;
+    return LOT_GROUP_FIELDS.indexOf(key) === -1 || !!ui.expandedCols[key];
   });
   if (ui.collapseBidCols) keys = keys.filter(function (key) {
-    return BID_GROUP_FIELDS.indexOf(key) === -1;
+    return BID_GROUP_FIELDS.indexOf(key) === -1 || !!ui.expandedCols[key];
   });
   if (ui.collapseChargeCols) keys = keys.filter(function (key) {
-    return CHARGE_GROUP_FIELDS.indexOf(key) === -1;
+    return CHARGE_GROUP_FIELDS.indexOf(key) === -1 || !!ui.expandedCols[key];
   });
   return keys;
 }
+/* When a group is collapsed via its header, forget any individually-revealed
+   columns inside it (the header's "collapse" hides all its children). */
+function clearExpandedGroup(fields) {
+  if (!ui.expandedCols) return;
+  fields.forEach(function (k) { delete ui.expandedCols[k]; });
+}
 function toggleLotGroup() {
   ui.collapseLotCols = !ui.collapseLotCols;
+  if (ui.collapseLotCols) clearExpandedGroup(LOT_GROUP_FIELDS);
   if (ui.collapseLotCols && LOT_GROUP_FIELDS.indexOf(ui.freezeDetailField) !== -1) ui.freezeDetailField = null;
   renderAll();
   saveState();
@@ -8124,6 +8132,7 @@ function toggleLotGroup() {
 }
 function toggleBidGroup() {
   ui.collapseBidCols = !ui.collapseBidCols;
+  if (ui.collapseBidCols) clearExpandedGroup(BID_GROUP_FIELDS);
   if (ui.collapseBidCols && BID_GROUP_FIELDS.indexOf(ui.freezeDetailField) !== -1) ui.freezeDetailField = null;
   renderAll();
   saveState();
@@ -8133,6 +8142,7 @@ function toggleBidGroup() {
 }
 function toggleChargeGroup() {
   ui.collapseChargeCols = !ui.collapseChargeCols;
+  if (ui.collapseChargeCols) clearExpandedGroup(CHARGE_GROUP_FIELDS);
   if (ui.collapseChargeCols && CHARGE_GROUP_FIELDS.indexOf(ui.freezeDetailField) !== -1) ui.freezeDetailField = null;
   renderAll();
   saveState();
@@ -10902,32 +10912,26 @@ function columnOrderEscHandler(e) { if (e.key === 'Escape') closeColumnOrderPane
 
 function collapsedDetailSet() {
   var set = {};
-  if (ui.collapseLotCols) LOT_GROUP_FIELDS.forEach(function (k) { set[k] = true; });
-  if (ui.collapseBidCols) BID_GROUP_FIELDS.forEach(function (k) { set[k] = true; });
-  if (ui.collapseChargeCols) CHARGE_GROUP_FIELDS.forEach(function (k) { set[k] = true; });
+  if (ui.collapseLotCols) LOT_GROUP_FIELDS.forEach(function (k) { if (!ui.expandedCols[k]) set[k] = true; });
+  if (ui.collapseBidCols) BID_GROUP_FIELDS.forEach(function (k) { if (!ui.expandedCols[k]) set[k] = true; });
+  if (ui.collapseChargeCols) CHARGE_GROUP_FIELDS.forEach(function (k) { if (!ui.expandedCols[k]) set[k] = true; });
   return set;
 }
 
-/* Clicking a "collapsed" name in the Reorder columns panel expands that
-   column's group so the column becomes shown again (collapse is group-based,
-   there is no per-column collapse). */
+/* Clicking a "collapsed" name in the Reorder columns panel reveals ONLY that
+   column (its group stays collapsed). The reveal is recorded per-column in
+   ui.expandedCols so siblings remain collapsed. */
 function expandCollapsedColumn(key) {
-  if (LOT_GROUP_FIELDS.indexOf(key) !== -1) {
-    if (!ui.collapseLotCols) return;
-    ui.collapseLotCols = false;
-  } else if (BID_GROUP_FIELDS.indexOf(key) !== -1) {
-    if (!ui.collapseBidCols) return;
-    ui.collapseBidCols = false;
-  } else if (CHARGE_GROUP_FIELDS.indexOf(key) !== -1) {
-    if (!ui.collapseChargeCols) return;
-    ui.collapseChargeCols = false;
-  } else {
-    return;
-  }
+  var inGroup = LOT_GROUP_FIELDS.indexOf(key) !== -1
+    || BID_GROUP_FIELDS.indexOf(key) !== -1
+    || CHARGE_GROUP_FIELDS.indexOf(key) !== -1;
+  if (!inGroup) return;
+  ui.expandedCols = ui.expandedCols || {};
+  ui.expandedCols[key] = true;
   saveState();
   renderAll();
   renderColumnOrderList();
-  showToast(fieldLabel(key) + ' shown — its group is now expanded', 'ok');
+  showToast(fieldLabel(key) + ' shown', 'ok');
 }
 
 function syncDetailColSlots() {
@@ -10978,7 +10982,7 @@ function renderColumnOrderList() {
       grip = '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>';
       visRank++;
       rank = '<span class="ro-rank">' + visRank + '</span>';
-      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — tap to expand its group and show it)'; }
+      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — tap to show this column)'; }
       else { cls += ' ro-neon'; titleExtra = ' — shown, tap to hide'; }
     } else {
       cls += ' ro-hidden-label';
@@ -11101,12 +11105,21 @@ function toggleColumnVisibility(key, show) {
       }
       arr.splice(insertAt, 0, key);
     }
+    /* If the column belongs to a collapsed group, reveal it individually so it
+       actually appears in the table (its siblings stay collapsed). */
+    if ((LOT_GROUP_FIELDS.indexOf(key) !== -1 && ui.collapseLotCols) ||
+        (BID_GROUP_FIELDS.indexOf(key) !== -1 && ui.collapseBidCols) ||
+        (CHARGE_GROUP_FIELDS.indexOf(key) !== -1 && ui.collapseChargeCols)) {
+      ui.expandedCols = ui.expandedCols || {};
+      ui.expandedCols[key] = true;
+    }
   } else {
     var ix = arr.indexOf(key);
     if (ix === -1) return;
     if (arr.length <= 1) { showToast('Keep at least one column visible.', 'error'); return; }
     pushHistory();
     arr.splice(ix, 1);
+    if (ui.expandedCols) delete ui.expandedCols[key];
     if (ui.freezeDetailField === key) ui.freezeDetailField = null;
   }
   saveState();
@@ -11125,6 +11138,7 @@ function resetDetailColumnOrder() {
   ui.collapseLotCols = true;
   ui.collapseBidCols = true;
   ui.collapseChargeCols = true;
+  ui.expandedCols = {};
   sortState = { table: 'detail', key: 'lot_no', dir: 1 };
   detailColSlots = null;
   saveState();
@@ -11154,7 +11168,7 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — tap a column name to hide or show it (a collapsed name expands its group). Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — tap a column name to hide or show it (a collapsed name shows just that column). Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
@@ -13498,6 +13512,7 @@ window.restoreSampleData = function () {
   ui.collapseLotCols = true;
   ui.collapseBidCols = true;
   ui.collapseChargeCols = true;
+  ui.expandedCols = {};
   ui.colFilters = {};
   selectedGroup = null;
   clearGridSelection();
