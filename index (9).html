@@ -13470,6 +13470,26 @@ function init() {
   document.getElementById('detailSearch').value = ui.detailSearch || '';
   if (resetBuyerView) saveState();
 
+  /* Live search: typing in either search box filters the matching view
+     immediately (no Enter needed). The dashboard search narrows the whole
+     workspace; the Lot-detail search narrows just that table. */
+  var dashSearchEl = document.getElementById('search');
+  if (dashSearchEl) {
+    dashSearchEl.addEventListener('input', function () {
+      ui.dashSearch = dashSearchEl.value;
+      renderAll();
+      saveState();
+    });
+  }
+  var detailSearchEl = document.getElementById('detailSearch');
+  if (detailSearchEl) {
+    detailSearchEl.addEventListener('input', function () {
+      ui.detailSearch = detailSearchEl.value;
+      renderDetail();
+      saveState();
+    });
+  }
+
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.addEventListener('click', function () { setView(b.dataset.view); });
   });
