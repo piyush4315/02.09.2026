@@ -962,6 +962,10 @@ thead th.left .th-wrap{justify-content:flex-start}
 [data-theme="light"] .reorder-panel .ro-label.ro-neon:hover{color:#1d4ed8!important}
 [data-theme="light"] .reorder-panel .ro-hidden-row .ro-label{color:#94a3b8!important}
 [data-theme="light"] .reorder-panel .ro-hidden-row .ro-label:hover{color:#64748b!important}
+/* Explicit select-to-show checkboxes */
+.reorder-panel .ro-check{flex:0 0 auto;width:15px;height:15px;margin:0;accent-color:var(--cyan);cursor:pointer}
+.reorder-panel .ro-check:disabled{opacity:.4;cursor:not-allowed}
+[data-theme="light"] .reorder-panel .ro-check{accent-color:#2563eb!important}
 /* Excel-style right-click header menu */
 #thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
 .excel-menu .xl-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -10974,6 +10978,7 @@ function renderColumnOrderList() {
   var visSet = {};
   (colLayout.detail || []).forEach(function (k) { visSet[k] = true; });
   var visRank = 0;
+  var visibleCount = (colLayout.detail || []).length;
 
   var html = slots.map(function (key) {
     var label = fieldLabel(key);
@@ -10985,6 +10990,7 @@ function renderColumnOrderList() {
     var grip = '<span class="ro-grip" aria-hidden="true" style="visibility:hidden">≡</span>';
     var rank = '<span class="ro-rank" style="color:transparent">—</span>';
     var titleExtra;
+    var checkTitle;
     if (isVisible) {
       act = isCollapsed ? 'expand' : 'hide';
       grip = '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>';
@@ -10992,12 +10998,17 @@ function renderColumnOrderList() {
       rank = '<span class="ro-rank">' + visRank + '</span>';
       if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — tap to show this column)'; }
       else { cls += ' ro-neon'; titleExtra = ' — shown, tap to hide'; }
+      checkTitle = (visibleCount <= 1) ? 'At least one column must stay visible' : 'Untick to hide from Lot details';
     } else {
       cls += ' ro-hidden-label';
       titleExtra = ' — hidden, tap to show';
+      checkTitle = 'Tick to show in Lot details';
     }
+    var check = '<input type="checkbox" class="ro-check" data-key="' + escHtml(key) + '"' +
+      (isVisible ? ' checked' : '') + (isVisible && visibleCount <= 1 ? ' disabled' : '') +
+      ' title="' + checkTitle + '" aria-label="Show ' + escHtml(label) + ' in Lot details" />';
     return '<div class="ro-row' + (isVisible ? '' : ' ro-hidden-row') + '" data-key="' + escHtml(key) + '">' +
-      grip + rank +
+      check + grip + rank +
       '<span class="' + cls + '" title="' + escHtml(label) + titleExtra + '" data-act="' + act + '" data-key="' + escHtml(key) + '">' + escHtml(label) + tag + '</span>' +
     '</div>';
   }).join('');
@@ -11176,7 +11187,7 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — tap a column name to hide or show it (a collapsed name shows just that column). Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Tick a checkbox to show that column in Lot details, untick to hide it — drag a row by its ≡ handle to reorder. A collapsed name shows just that column. Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
@@ -11189,6 +11200,13 @@ function openColumnOrderPanel(anchor) {
     if (act === 'hide') { toggleColumnVisibility(btn.getAttribute('data-key'), false); return; }
     if (act === 'unhide') { toggleColumnVisibility(btn.getAttribute('data-key'), true); return; }
     if (act === 'expand') { expandCollapsedColumn(btn.getAttribute('data-key')); return; }
+  });
+
+  /* Checkbox toggles select which columns appear in Lot details. */
+  panel.addEventListener('change', function (e) {
+    var cb = e.target && e.target.closest ? e.target.closest('.ro-check') : null;
+    if (!cb || cb.disabled) return;
+    toggleColumnVisibility(cb.getAttribute('data-key'), cb.checked);
   });
 
   renderColumnOrderList();
