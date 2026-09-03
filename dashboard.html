@@ -284,9 +284,10 @@ thead th.left{text-align:left}
 thead th.nosort{cursor:default}
 thead th:hover{background:linear-gradient(rgba(0,245,255,.05),rgba(0,245,255,.05)) #0a0a19;color:var(--muted)}
 thead th.th-selected{outline:2px solid var(--cyan);outline-offset:-2px}
-/* Drag-and-drop column reordering */
-thead th[draggable="true"]{cursor:grab}
-thead th[draggable="true"]:active{cursor:grabbing}
+/* Drag-and-drop column reordering (headers keep the normal pointer cursor;
+   drag-and-drop still works — the hand/grab icon is not shown) */
+thead th[draggable="true"]{cursor:pointer}
+thead th[draggable="true"]:active{cursor:pointer}
 thead th.th-dragging{opacity:.35}
 thead th.th-drop-left::before,thead th.th-drop-right::after{content:'';position:absolute;top:0;bottom:0;width:3px;background:var(--cyan);pointer-events:none;z-index:12}
 thead th.th-drop-left::before{left:-1.5px}
