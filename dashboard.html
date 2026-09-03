@@ -6440,9 +6440,10 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseChargeCols: true, colFilters: {} };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, colFilters: {} };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
+var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
 var view = 'dashboard';
 var lastSaved = null;
 var detailRows = [];
@@ -6460,10 +6461,14 @@ var pendingImportCustom = [];
 var DEFAULT_DETAIL_KEYS = ['qty','rate','lot_name','auction','unit','lot_no','buyer','mat_value','gst','mat_value_plus_gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','total_received','outstanding','settlement_status','invoice_no','sap_document_date','doc_invoice_date'];
 /* Columns 12–15 are the bifurcation children of column 16. Column 16 stays
    visible and its header is the group's expand/collapse control. */
-/* Child detail columns (Qty, Rate, Lot Name, Bid Sheet, Unit) collapse under Lot No.
-   Lot No. stays visible and its header is the group's expand/collapse control. */
-var LOT_GROUP_FIELDS = ['qty','rate','lot_name','auction','unit'];
+/* Two-level collapse under Lot No.:
+   Level 1 — the Lot No. header expands/collapses Unit + Bid Sheet ("up to Bid Sheet").
+   Level 2 — the Bid Sheet header expands/collapses Qty + Rate + Lot Name ("up to Quantity").
+   Both parents stay visible and act as their group's expand/collapse control. */
+var LOT_GROUP_FIELDS = ['unit','auction'];
 var LOT_GROUP_PARENT = 'lot_no';
+var BID_GROUP_FIELDS = ['qty','rate','lot_name'];
+var BID_GROUP_PARENT = 'auction';
 
 /* Columns 12–15 are the bifurcation children of column 16. Column 16 stays
    visible and its header is the group's expand/collapse control. */
@@ -7107,7 +7112,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseChargeCols: ui.collapseChargeCols, colFilters: ui.colFilters }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, colFilters: ui.colFilters }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7150,6 +7155,7 @@ function loadState() {
       ui.freezeDetailField = data.ui.freezeDetailField || null;
       ui.freezePivotField = data.ui.freezePivotField || null;
       ui.collapseLotCols = data.ui.collapseLotCols !== undefined ? data.ui.collapseLotCols === true : true;
+      ui.collapseBidCols = data.ui.collapseBidCols !== undefined ? data.ui.collapseBidCols === true : true;
       ui.collapseChargeCols = data.ui.collapseChargeCols !== undefined ? data.ui.collapseChargeCols === true : true;
       ui.colFilters = (data.ui.colFilters && typeof data.ui.colFilters === 'object' && !Array.isArray(data.ui.colFilters)) ? data.ui.colFilters : {};
     }
@@ -8048,10 +8054,15 @@ var DETAIL_COLS = [
 var TRIC_TITLE = 'Material Value + GST + TCS − Net Service Charge − TDS 194O − GST TDS (auto)';
 function detailColKeys() {
   var keys = (colLayout.detail && colLayout.detail.length) ? colLayout.detail.slice() : DEFAULT_DETAIL_KEYS.slice();
-  /* Collapsing is non-destructive: child columns 1–3 and 12–15 remain in colLayout,
-     filters, saved data and exports. Parent columns 4 and 16 remain visible. */
+  /* Collapsing is non-destructive: hidden child columns (Unit + Bid Sheet under
+     Lot No.; Qty, Rate, Lot Name under Bid Sheet; columns 12–15 under column 16)
+     remain in colLayout, filters, saved data and exports. The parent headers stay
+     visible. */
   if (ui.collapseLotCols) keys = keys.filter(function (key) {
     return LOT_GROUP_FIELDS.indexOf(key) === -1;
+  });
+  if (ui.collapseBidCols) keys = keys.filter(function (key) {
+    return BID_GROUP_FIELDS.indexOf(key) === -1;
   });
   if (ui.collapseChargeCols) keys = keys.filter(function (key) {
     return CHARGE_GROUP_FIELDS.indexOf(key) === -1;
@@ -8064,8 +8075,17 @@ function toggleLotGroup() {
   renderAll();
   saveState();
   showToast(ui.collapseLotCols
-    ? 'Detail columns collapsed under Lot No.'
-    : 'Detail columns expanded beside Lot No.', 'ok');
+    ? 'Unit and Bid Sheet collapsed under Lot No.'
+    : 'Unit and Bid Sheet expanded from Lot No.', 'ok');
+}
+function toggleBidGroup() {
+  ui.collapseBidCols = !ui.collapseBidCols;
+  if (ui.collapseBidCols && BID_GROUP_FIELDS.indexOf(ui.freezeDetailField) !== -1) ui.freezeDetailField = null;
+  renderAll();
+  saveState();
+  showToast(ui.collapseBidCols
+    ? 'Quantity, Rate and Lot Name collapsed under Bid Sheet'
+    : 'Quantity, Rate and Lot Name expanded from Bid Sheet', 'ok');
 }
 function toggleChargeGroup() {
   ui.collapseChargeCols = !ui.collapseChargeCols;
@@ -8101,10 +8121,12 @@ function renderDetailInto(tableId, countId) {
   var thead = table.querySelector('thead');
   thead.innerHTML = '<tr>' + cols.map(function (f, i) {
     var title = f === LOT_GROUP_PARENT
-      ? ' title="Double-click this parent header to ' + (ui.collapseLotCols ? 'expand' : 'collapse') + ' detail columns (Qty, Rate, Lot Name, Bid Sheet, Unit)"'
-      : (f === CHARGE_GROUP_PARENT
-        ? ' title="Double-click this parent header to ' + (ui.collapseChargeCols ? 'expand' : 'collapse') + ' its bifurcation columns 12–15"'
-        : (f === 'total_receivables' ? ' title="' + TRIC_TITLE + '"' : (f === 'gst_tds_rate' ? ' title="GST TDS Rate % of Material Value — edits GST TDS live"' : (f === 'gst_tds' ? ' title="GST TDS amount — edits the rate live"' : (isEditableField(f) ? ' title="Editable — recalculates live"' : '')))));
+      ? ' title="Double-click to ' + (ui.collapseLotCols ? 'expand' : 'collapse') + ' up to Bid Sheet (Unit + Bid Sheet). Single-click sorts."'
+      : (f === BID_GROUP_PARENT
+        ? ' title="Double-click to ' + (ui.collapseBidCols ? 'expand' : 'collapse') + ' up to Quantity (Qty, Rate, Lot Name). Single-click sorts."'
+        : (f === CHARGE_GROUP_PARENT
+          ? ' title="Double-click this parent header to ' + (ui.collapseChargeCols ? 'expand' : 'collapse') + ' its bifurcation columns 12–15"'
+          : (f === 'total_receivables' ? ' title="' + TRIC_TITLE + '"' : (f === 'gst_tds_rate' ? ' title="GST TDS Rate % of Material Value — edits GST TDS live"' : (f === 'gst_tds' ? ' title="GST TDS amount — edits the rate live"' : (isEditableField(f) ? ' title="Editable — recalculates live"' : ''))))));
     return thPickerHtml(f, 'detail', i, 'detail').replace('<th ', '<th' + title + ' ');
   }).join('') + '<th class="nosort" style="width:68px"></th></tr>';
   var tbody = table.querySelector('tbody');
@@ -13121,6 +13143,7 @@ window.restoreSampleData = function () {
   ui.dashSearch = '';
   ui.detailSearch = '';
   ui.collapseLotCols = true;
+  ui.collapseBidCols = true;
   ui.collapseChargeCols = true;
   ui.colFilters = {};
   selectedGroup = null;
@@ -13549,12 +13572,13 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
     var isCtrl = e.ctrlKey || e.metaKey;
     /* Column 4 is the parent control for columns 1–3 (Qty, Rate, Lot Name) and
-       Column 16 for its bifurcation columns 12–15. The expand/collapse toggle
-       now runs on DOUBLE-click (see the dblclick handler below); a single click
-       here is swallowed so it neither toggles nor sorts. Ctrl/Shift still
-       support the existing multi-column selection workflow. */
+       Column 16 for its bifurcation columns 12–15. Lot No. and Bid Sheet now
+       SORT on single click and expand/collapse on DOUBLE-click (see the
+       dblclick handler below); only the Service-charge parent still swallows a
+       single click so it neither toggles nor sorts. Ctrl/Shift still support
+       the existing multi-column selection workflow. */
     if (th && th.dataset.table === 'detail' &&
-        (th.dataset.field === LOT_GROUP_PARENT || th.dataset.field === CHARGE_GROUP_PARENT) &&
+        th.dataset.field === CHARGE_GROUP_PARENT &&
         !isCtrl && !e.shiftKey && !e.target.closest('.th-pick') &&
         !e.target.closest('.th-freeze') && !e.target.closest('.th-filt-on')) {
       e.preventDefault();
@@ -13633,21 +13657,44 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
     if (!th || th.classList.contains('nosort')) return;
     var field = th.dataset.field, table = th.dataset.table;
+    var isGroupParent = (table === 'detail') && (field === LOT_GROUP_PARENT || field === BID_GROUP_PARENT);
+    if (isGroupParent) {
+      /* These headers sort on single click and expand/collapse on double click.
+         Defer the sort a beat so a quick second click (double-click) can cancel
+         it and toggle the group instead — avoids a double sort and keeps the
+         header element stable so the browser fires dblclick reliably. */
+      clearTimeout(pendingHeaderSort);
+      pendingHeaderSort = setTimeout(function () {
+        if (sortState.table === table && sortState.key === field) sortState.dir *= -1;
+        else sortState = { table: table, key: field, dir: -1 };
+        renderDetail();
+      }, 250);
+      return;
+    }
     if (sortState.table === table && sortState.key === field) sortState.dir *= -1;
     else sortState = { table: table, key: field, dir: -1 };
     if (table === 'pivot') renderPivot(); else renderDetail();
   });
 
-  /* Double-click on the Lot No. (or Service charge to MSTC) parent header toggles
-     expand/collapse of its grouped columns. Single click does nothing here. */
+  /* Double-click on the Lot No. parent header expands/collapses up to Bid Sheet;
+     double-click on the Bid Sheet parent header expands/collapses up to Quantity;
+     double-click on the Service charge to MSTC parent toggles its bifurcation
+     columns. Single clicks on these headers still sort. */
   document.addEventListener('dblclick', function (e) {
     var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
     if (!th || th.dataset.table !== 'detail') return;
     if (e.target.closest('.th-pick') || e.target.closest('.th-freeze') || e.target.closest('.th-filt-on')) return;
+    clearTimeout(pendingHeaderSort);
     if (th.dataset.field === LOT_GROUP_PARENT) {
       e.preventDefault();
       e.stopPropagation();
       toggleLotGroup();
+      return;
+    }
+    if (th.dataset.field === BID_GROUP_PARENT) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleBidGroup();
       return;
     }
     if (th.dataset.field === CHARGE_GROUP_PARENT) {
@@ -13792,7 +13839,8 @@ function showHeaderContextMenu(x, y, th) {
       '<div class="xl-actions">' +
         '<button type="button" class="cm-item" data-act="freeze"><span class="cm-check">❄</span><span class="cm-label">' + freezeBtnLabel + '</span></button>' +
         (isDetail ?
-          '<button type="button" class="cm-item" data-act="togglelotgroup"><span class="cm-check">' + (ui.collapseLotCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseLotCols ? 'Expand detail columns (Qty, Rate, Lot Name, Bid Sheet, Unit)' : 'Collapse detail columns under Lot No.') + '</span></button>' +
+          '<button type="button" class="cm-item" data-act="togglelotgroup"><span class="cm-check">' + (ui.collapseLotCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseLotCols ? 'Expand up to Bid Sheet (Unit + Bid Sheet)' : 'Collapse up to Bid Sheet under Lot No.') + '</span></button>' +
+          '<button type="button" class="cm-item" data-act="togglebidgroup"><span class="cm-check">' + (ui.collapseBidCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseBidCols ? 'Expand up to Quantity (Qty, Rate, Lot Name)' : 'Collapse up to Quantity under Bid Sheet') + '</span></button>' +
           '<button type="button" class="cm-item" data-act="togglegroup"><span class="cm-check">' + (ui.collapseChargeCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseChargeCols ? 'Expand bifurcation columns 12–15' : 'Collapse bifurcation columns 12–15') + '</span></button>' +
           '<button type="button" class="cm-item' + (!selectedForBuyer.length ? ' disabled' : '') + '" data-act="consolidatebuyer" title="Move the Ctrl/Shift-selected columns together after Buyer"><span class="cm-check">⇥</span><span class="cm-label">Consolidate ' + selectedForBuyer.length + ' selected column' + (selectedForBuyer.length === 1 ? '' : 's') + ' after Buyer</span></button>' : '') +
         '<button type="button" class="cm-item' + (isSingle ? ' disabled' : '') + '" data-act="hide"><span class="cm-check">✕</span><span class="cm-label">Hide column</span></button>' +
@@ -13943,6 +13991,8 @@ function showHeaderContextMenu(x, y, th) {
         }
       } else if (act === 'togglelotgroup') {
         closeHeaderContextMenu(); toggleLotGroup();
+      } else if (act === 'togglebidgroup') {
+        closeHeaderContextMenu(); toggleBidGroup();
       } else if (act === 'togglegroup') {
         closeHeaderContextMenu(); toggleChargeGroup();
       } else if (act === 'consolidatebuyer') {
