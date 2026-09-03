@@ -895,7 +895,7 @@ tbody tr.settled .inv-link.inv-hyperlinked{color:var(--cyan)!important}
 .th-wrap{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;line-height:1.15}
 thead th.left .th-wrap{justify-content:flex-start}
 .th-wrap .th-label{flex:0 1 auto;min-width:0;word-break:break-word;overflow-wrap:break-word}
-.th-wrap .th-freeze,.th-wrap .th-pick,.th-wrap .arrow{flex:0 0 auto}
+.th-wrap .th-freeze,.th-wrap .th-pick,.th-wrap .arrow,.th-wrap .th-hide-btn{flex:0 0 auto}
 .th-pick{
   border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:10px;
   padding:0 2px;border-radius:4px;line-height:1
@@ -903,7 +903,7 @@ thead th.left .th-wrap{justify-content:flex-start}
 .th-pick:hover{background:rgba(0,245,255,.1);color:var(--cyan)}
 .th-hide-btn{
   display:inline-flex;align-items:center;justify-content:center;
-  margin-top:3px;border:0;background:transparent;
+  border:0;background:transparent;
   color:var(--deep);cursor:pointer;padding:2px;border-radius:4px;
   opacity:.55;touch-action:manipulation
 }
@@ -7777,9 +7777,8 @@ function thPickerHtml(field, table, place, layoutKind) {
     '<span class="th-wrap">' +
       '<span class="th-label">' + escHtml(fieldLabel(field)) + '</span>' +
       (arrow ? '<span class="arrow">' + arrow + '</span>' : '') +
-    '</span>' +
-    '<button type="button" class="th-hide-btn" title="Hide column" aria-label="Hide ' + escHtml(fieldLabel(field)) + ' column"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
-    '</th>';
+      '<button type="button" class="th-hide-btn" title="Hide column" aria-label="Hide ' + escHtml(fieldLabel(field)) + ' column"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+    '</span></th>';
 }
 function formatCellValue(r, key) {
   var v = getLotField(r, key);
