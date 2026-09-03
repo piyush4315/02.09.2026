@@ -212,6 +212,24 @@ main{padding:20px 32px 48px;position:relative;z-index:1}
 .panel h2{font-size:13.5px;margin:0 0 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text);font-weight:700}
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .controls label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-right:5px}
+.seg-control{display:inline-flex;border:1px solid rgba(255,255,255,.12);border-radius:7px;overflow:hidden;background:rgba(0,0,0,.4)}
+.seg-control .seg-btn{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:700;padding:6px 11px;cursor:pointer;background:transparent;color:var(--dim);border:none;border-right:1px solid rgba(255,255,255,.1)}
+.seg-control .seg-btn:last-child{border-right:none}
+.seg-control .seg-btn:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.seg-control .seg-btn.active{background:#2563eb;color:#fff}
+.seg-control .seg-btn.active:hover{background:#1d4ed8;color:#fff}
+/* Grouped Lot detail rows: section header rows and roll-up summary rows */
+tr.detail-group-hdr td{background:rgba(124,58,237,.10);color:var(--text);font-weight:700;text-align:left;padding:5px 10px;border-bottom:1px solid rgba(124,58,237,.22);border-top:1px solid rgba(124,58,237,.16);font-size:11.5px;letter-spacing:.2px}
+tr.detail-group-hdr{cursor:default}
+tr.detail-group-hdr.is-collapsible{cursor:pointer}
+tr.detail-group-hdr.is-collapsible:hover td{background:rgba(124,58,237,.16)}
+tr.detail-group-hdr .g-caret{display:inline-block;width:14px;color:var(--cyan);font-size:10px;margin-right:2px}
+tr.detail-group-hdr .g-label{color:var(--dim);font-weight:600}
+tr.detail-group-hdr .g-value{color:var(--text)}
+tr.detail-group-hdr .gcount{margin-left:8px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:1px 8px}
+tr.detail-summary-row td{background:rgba(124,58,237,.06);font-weight:600}
+tr.detail-summary-row td.g-value-cell{color:var(--text);text-align:left;font-weight:700}
+tr.detail-summary-row .gcount{margin-left:6px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:1px 7px}
 select,input[type=text],input[type=search],input[type=number],input[type=date]{
   font-family:'Inter',sans-serif;font-size:11px;padding:7px 11px;
   border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(0,0,0,.4);color:var(--text);
@@ -1504,6 +1522,16 @@ table td[data-field="sap_document_date"] input{
 [data-theme="light"] .controls label {
   color: #64748b;
 }
+[data-theme="light"] .seg-control{border-color:#e2e8f0;background:#fff}
+[data-theme="light"] .seg-control .seg-btn{color:#64748b;border-right-color:#e2e8f0}
+[data-theme="light"] .seg-control .seg-btn:hover{background:#f1f5f9;color:#0f172a}
+[data-theme="light"] .seg-control .seg-btn.active{background:#2563eb;color:#fff}
+[data-theme="light"] .seg-control .seg-btn.active:hover{background:#1d4ed8;color:#fff}
+[data-theme="light"] tr.detail-group-hdr td{background:#ede9fe;color:#1e1b4b;border-bottom-color:#ddd6fe;border-top-color:#ddd6fe}
+[data-theme="light"] tr.detail-group-hdr .g-label{color:#64748b}
+[data-theme="light"] tr.detail-group-hdr .gcount{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
+[data-theme="light"] tr.detail-summary-row td{background:#f5f3ff}
+[data-theme="light"] tr.detail-summary-row td.g-value-cell{color:#1e1b4b}
 [data-theme="light"] select,
 [data-theme="light"] input[type=text],
 [data-theme="light"] input[type=search],
@@ -3964,6 +3992,33 @@ th.left .th-wrap, th.center .th-wrap {
               <button class="btn" id="detailFormulaToggleBtn" type="button" title="Show the Excel formula bar for Lot detail">ƒx Formula bar</button>
               <button class="btn" id="reorderColsBtnDash" type="button" title="Rearrange Lot detail column order — moves apply instantly">↕ Reorder columns</button>
               <button class="btn" id="hideSelColsBtn" type="button" style="display:none;color:#ff6b6b;font-weight:700;border-color:rgba(255,107,107,.3)">⊗ Hide 0 columns</button>
+            </div>
+          </div>
+          <div class="controls detail-group-controls" style="margin-bottom:8px">
+            <div>
+              <label>Group by</label>
+              <select id="detailGroupBy">
+                <option value="default">No grouping</option>
+                <option value="buyer">Buyer</option>
+                <option value="auction">Bid Sheet</option>
+                <option value="lot_name">Material type</option>
+                <option value="unit">Unit</option>
+              </select>
+            </div>
+            <div>
+              <label>Layout</label>
+              <div class="seg-control" id="detailGroupLayout" role="group" aria-label="Grouping layout">
+                <button type="button" class="seg-btn" data-layout="sections" title="A section header row above each group; every lot row stays visible and editable">Sections</button>
+                <button type="button" class="seg-btn" data-layout="collapse" title="Section headers that collapse / expand each group of lot rows">Collapsible</button>
+                <button type="button" class="seg-btn" data-layout="summary" title="One roll-up summary row per group with summed totals (read-only)">Summary</button>
+              </div>
+            </div>
+            <div>
+              <label>Default view</label>
+              <div class="seg-control" id="detailDefaultView" role="group" aria-label="Default startup view">
+                <button type="button" class="seg-btn" data-default="flat" title="Start Lot details as a flat list (no grouping)">Flat</button>
+                <button type="button" class="seg-btn" data-default="buyer" title="Start Lot details grouped by Buyer">Group by Buyer</button>
+              </div>
             </div>
           </div>
           <div id="detailActiveFiltersBar" class="active-filters-bar" style="display:none"></div>
@@ -6520,13 +6575,14 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {} };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat' };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
 var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
 var view = 'dashboard';
 var lastSaved = null;
 var detailRows = [];
+var detailCollapsedGroups = {}; /* 'groupKey|groupValue' -> true while collapsed (Collapsible layout) */
 /* One-time canonical-order migration. Once applied, user rearrangements such
    as “Consolidate after Buyer” are preserved across reloads. */
 var detailLayoutVersion = 0;
@@ -7216,7 +7272,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7264,6 +7320,9 @@ function loadState() {
       ui.expandedCols = (data.ui.expandedCols && typeof data.ui.expandedCols === 'object' && !Array.isArray(data.ui.expandedCols)) ? data.ui.expandedCols : {};
       ui.showDetailFormulaBar = data.ui.showDetailFormulaBar !== undefined ? data.ui.showDetailFormulaBar === true : false;
       ui.colFilters = (data.ui.colFilters && typeof data.ui.colFilters === 'object' && !Array.isArray(data.ui.colFilters)) ? data.ui.colFilters : {};
+      ui.detailGroupBy = data.ui.detailGroupBy || 'default';
+      ui.detailGroupLayout = data.ui.detailGroupLayout || 'sections';
+      ui.detailDefaultView = data.ui.detailDefaultView || 'flat';
     }
     if (Array.isArray(data.customCols)) customCols = data.customCols;
     if (data.colLayout && typeof data.colLayout === 'object') {
@@ -8229,18 +8288,137 @@ function isEditableField(key) {
          key === 'late_fee_received' ||
          key === 'late_fee_received_date';
 }
+var DETAIL_NUMERIC_FIELDS = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding'];
+function activeDetailGroupKey() {
+  return (ui.detailGroupBy && ui.detailGroupBy !== 'default') ? ui.detailGroupBy : null;
+}
+function detailGroupLabel(groupKey) {
+  return { buyer: 'Buyer', auction: 'Bid Sheet', lot_name: 'Ma\u00ADte\u00ADri\u00ADal Type', unit: 'Unit' }[groupKey] || groupKey;
+}
+/* Build ordered groups from already-filtered/sorted detail rows, preserving the
+   current on-screen order (groups appear in first-seen order). */
+function detailGroupsFor(rows, groupKey) {
+  var groups = {};
+  var order = [];
+  rows.forEach(function (r) {
+    var raw = r[groupKey];
+    var key = (raw === null || raw === undefined || raw === '') ? '(blank)' : String(raw);
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(r);
+  });
+  return order.map(function (k) { return { key: k, lots: groups[k] }; });
+}
+function detailCellHtml(r, li, cols) {
+  return cols.map(function (f) {
+    var v = getLotField(r, f);
+    var kind = fieldKind(f);
+    // Only render as editable if isEditableField returns true
+    if (!isEditableField(f) && !f.startsWith('c_')) {
+      // Non-editable field: render as plain text
+      if (f === 'settlement_status') return '<td tabindex="0" class="status" data-field="settlement_status">' + settlementLabelHtml(r) + '</td>';
+      var lotClickTitle = (f === 'lot_no' || f === 'buyer') ? ' title="Click to view lot details"' : '';
+      return '<td tabindex="0" class="' + cellClassFor(f, v) + '" data-field="' + escHtml(f) + '"' + lotClickTitle + '>' + formatCellValue(r, f) + '</td>';
+    }
+    if (kind === 'edit' || (isCustomField(f) && customColById(f) && customColById(f).type === 'number')) {
+      var isMoney = MONEY_FIELDS.has(f) || (isCustomField(f) && customColById(f) && customColById(f).type === 'number');
+      var val = (v === null || v === undefined || v === '') ? '' : (isMoney ? moneyFmt(v) : ((f === 'gst_tds_rate') ? (Math.round(Number(v)) === Number(v) ? Math.round(Number(v)) : v) : v));
+      return '<td class="edit" data-field="' + escHtml(f) + '"><input type="text" inputmode="decimal" value="' + escHtml(val) + '" data-lot="' + li + '" data-field="' + escHtml(f) + '" readonly tabindex="-1"/></td>';
+    }
+    if (kind === 'date-edit') {
+      var dateEmptyNow = isEmptyReceiptDate(v);
+      return '<td class="edit dt-cell" data-field="' + escHtml(f) + '"><div class="date-empty-editor' + (dateEmptyNow ? ' is-empty' : ' has-date') + '">' +
+        '<input type="text" class="dt-edit" inputmode="numeric" placeholder="dd.mm.yyyy" value="' + escHtml(dottedDate(v)) + '" data-lot="' + li + '" data-field="' + escHtml(f) + '" readonly tabindex="-1"/>' +
+        (dateEmptyNow ? '<span class="empty-mark" aria-hidden="true">—</span>' : '') +
+        '</div></td>';
+    }
+    if (f === 'invoice_no') {
+      return '<td class="left invno" data-field="invoice_no">' + invoiceCellHtml(r) + '</td>';
+    }
+    if (kind === 'edit-text' || (isCustomField(f) && (!customColById(f) || customColById(f).type === 'text'))) {
+      return '<td class="edit" data-field="' + escHtml(f) + '"><input type="text" value="' + escHtml(v === null || v === undefined ? '' : v) + '" data-lot="' + li + '" data-field="' + escHtml(f) + '" readonly tabindex="-1"/></td>';
+    }
+    if (f === 'settlement_status') return '<td tabindex="0" class="status" data-field="settlement_status">' + settlementLabelHtml(r) + '</td>';
+    return '<td class="' + cellClassFor(f, v) + '" data-field="' + escHtml(f) + '">' + formatCellValue(r, f) + '</td>';
+  }).join('');
+}
+function detailRowActionsHtml(li) {
+  return '<td class="row-actions"><span class="row-actions-group"><button type="button" class="rowadvice" data-lot="' + li + '" title="Generate Buyer Payment Advice">📋</button><button type="button" class="rowedit" data-lot="' + li + '" title="Edit entire row">✎</button><button type="button" class="rowdel" data-lot="' + li + '" title="Delete lot">✕</button></span></td>';
+}
+function detailLotRowHtml(r, li, cols, groupKey, groupVal) {
+  var settled = settlementStatus(r) === 'Settled' ? ' settled' : '';
+  var grpAttr = groupKey ? ' data-dgroup="' + escHtml(groupKey) + '" data-dgval="' + escHtml(groupVal) + '"' : '';
+  return '<tr data-lot="' + li + '"' + grpAttr + ' class="' + settled + '">' + detailCellHtml(r, li, cols) + detailRowActionsHtml(li) + '</tr>';
+}
+function detailGroupHeaderHtml(group, groupKey, layout, colspan, collapsed) {
+  var label = detailGroupLabel(groupKey);
+  var isCollapsible = (layout === 'collapse');
+  var caret = isCollapsible
+    ? '<span class="g-caret" aria-hidden="true">' + (collapsed ? '▸' : '▾') + '</span>'
+    : '';
+  return '<tr class="detail-group-hdr' + (isCollapsible ? ' is-collapsible' : '') + '" data-dgroup="' + escHtml(groupKey) + '" data-dgval="' + escHtml(group.key) + '">' +
+    '<td colspan="' + colspan + '">' + caret +
+    '<span class="g-label">' + escHtml(label) + ':</span> ' +
+    '<span class="g-value">' + escHtml(group.key) + '</span>' +
+    '<span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span>' +
+    '</td></tr>';
+}
+function detailSumTdHtml(f, s) {
+  var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received');
+  var isOut = (f === 'outstanding');
+  var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
+  if (f === 'tds194h') return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (s ? '- ' + moneyFmt(Math.abs(s)) : '—') + '</td>';
+  return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>';
+}
+function detailFooterHtml(rows, cols, opts) {
+  opts = opts || {};
+  var summary = !!opts.summary;
+  var groupCount = opts.groupCount || 0;
+  var cells = '';
+  if (summary) cells += '<td class="left">Total (' + groupCount + ' group' + (groupCount === 1 ? '' : 's') + ')</td>';
+  cells += cols.map(function (f, i) {
+    if (!summary && i === 0) return '<td class="left">Total (' + rows.length + ')</td>';
+    var custom = customColById(f);
+    if (DETAIL_NUMERIC_FIELDS.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
+      var s = rows.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
+      return detailSumTdHtml(f, s);
+    }
+    return '<td></td>';
+  }).join('');
+  cells += '<td></td>';
+  return '<tr>' + cells + '</tr>';
+}
+function detailSummaryRowHtml(group, groupKey, cols) {
+  var cells = '<td class="left g-value-cell">' + escHtml(group.key) + '<span class="gcount">' + group.lots.length + '</span></td>';
+  cells += cols.map(function (f) {
+    var custom = customColById(f);
+    if (DETAIL_NUMERIC_FIELDS.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
+      var s = group.lots.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
+      return detailSumTdHtml(f, s);
+    }
+    return '<td></td>';
+  }).join('');
+  cells += '<td class="row-actions"></td>';
+  return '<tr class="detail-summary-row" data-dgroup="' + escHtml(groupKey) + '" data-dgval="' + escHtml(group.key) + '">' + cells + '</tr>';
+}
 function renderDetailInto(tableId, countId) {
   var table = document.getElementById(tableId);
   var countEl = document.getElementById(countId);
   if (!table) return;
   var rows = detailRows;
   var cols = detailColKeys();
+  var groupKey = activeDetailGroupKey();
+  var layout = groupKey ? (ui.detailGroupLayout || 'sections') : null;
   if (countEl) {
+    var groupCount = groupKey ? detailGroupsFor(rows, groupKey).length : 0;
     countEl.textContent = '(' + rows.length + ' lots' +
+      (groupKey ? ' · ' + groupCount + ' group' + (groupCount === 1 ? '' : 's') : '') +
       (selectedGroup ? ' — filtered by ' + selectedGroup.value : '') + ')';
   }
   var thead = table.querySelector('thead');
-  thead.innerHTML = '<tr>' + cols.map(function (f, i) {
+  var groupThHtml = (groupKey && layout === 'summary')
+    ? '<th class="left nosort" title="Grouped by ' + escHtml(detailGroupLabel(groupKey)) + '"><span class="th-wrap"><span class="th-label">' + escHtml(detailGroupLabel(groupKey)) + '</span></span></th>'
+    : '';
+  thead.innerHTML = '<tr>' + groupThHtml + cols.map(function (f, i) {
     var title = f === LOT_GROUP_PARENT
       ? ' title="Double-click to ' + (ui.collapseLotCols ? 'expand' : 'collapse') + ' up to Bid Sheet (Unit + Bid Sheet). Single-click sorts."'
       : (f === BID_GROUP_PARENT
@@ -8252,7 +8430,7 @@ function renderDetailInto(tableId, countId) {
   }).join('') + '<th class="nosort" style="width:68px"></th></tr>';
   var tbody = table.querySelector('tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 1) + '" style="text-align:center;padding:32px 16px;color:var(--dim)">' +
+    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 1 + (groupKey && layout === 'summary' ? 1 : 0)) + '" style="text-align:center;padding:32px 16px;color:var(--dim)">' +
       (lots.length === 0
         ? 'No lots loaded in workspace. <button type="button" class="btn primary" onclick="restoreSampleData()" style="margin-left:8px;padding:5px 14px">📥 Load Sample Data (37 Lots)</button>'
         : 'No lots matching active filters. <button type="button" class="btn" onclick="resetDetailFilters()" style="margin-left:8px;padding:4px 10px">↺ Clear Filters</button>') +
@@ -8261,58 +8439,30 @@ function renderDetailInto(tableId, countId) {
     if (tfoot) tfoot.innerHTML = '';
     return;
   }
-  tbody.innerHTML = rows.map(function (r) {
-    var li = lots.indexOf(r);
-    /* No selected/drill-target highlight on drilled rows — the grid already
-       shows only the clicked buyer's lots, so the violet block outline was
-       redundant noise. */
-    return '<tr data-lot="' + li + '" class="' + (settlementStatus(r) === 'Settled' ? ' settled' : '') + '">' + cols.map(function (f) {
-      var v = getLotField(r, f);
-      var kind = fieldKind(f);
-      // Only render as editable if isEditableField returns true
-      if (!isEditableField(f) && !f.startsWith('c_')) {
-        // Non-editable field: render as plain text
-        if (f === 'settlement_status') return '<td tabindex="0" class="status" data-field="settlement_status">' + settlementLabelHtml(r) + '</td>';
-        var lotClickTitle = (f === 'lot_no' || f === 'buyer') ? ' title="Click to view lot details"' : '';
-        return '<td tabindex="0" class="' + cellClassFor(f, v) + '" data-field="' + escHtml(f) + '"' + lotClickTitle + '>' + formatCellValue(r, f) + '</td>';
+  if (groupKey && layout === 'summary') {
+    tbody.innerHTML = detailGroupsFor(rows, groupKey).map(function (g) {
+      return detailSummaryRowHtml(g, groupKey, cols);
+    }).join('');
+  } else if (groupKey) {
+    var isCollapsible = (layout === 'collapse');
+    var html = '';
+    detailGroupsFor(rows, groupKey).forEach(function (g) {
+      var collapsed = isCollapsible && !!detailCollapsedGroups[groupKey + '|' + g.key];
+      html += detailGroupHeaderHtml(g, groupKey, layout, cols.length + 1, collapsed);
+      if (!collapsed) {
+        g.lots.forEach(function (r) {
+          html += detailLotRowHtml(r, lots.indexOf(r), cols, groupKey, g.key);
+        });
       }
-      if (kind === 'edit' || (isCustomField(f) && customColById(f) && customColById(f).type === 'number')) {
-        var isMoney = MONEY_FIELDS.has(f) || (isCustomField(f) && customColById(f) && customColById(f).type === 'number');
-        var val = (v === null || v === undefined || v === '') ? '' : (isMoney ? moneyFmt(v) : ((f === 'gst_tds_rate') ? (Math.round(Number(v)) === Number(v) ? Math.round(Number(v)) : v) : v));
-        return '<td class="edit" data-field="' + escHtml(f) + '"><input type="text" inputmode="decimal" value="' + escHtml(val) + '" data-lot="' + li + '" data-field="' + escHtml(f) + '" readonly tabindex="-1"/></td>';
-      }
-      if (kind === 'date-edit') {
-        var dateEmptyNow = isEmptyReceiptDate(v);
-        return '<td class="edit dt-cell" data-field="' + escHtml(f) + '"><div class="date-empty-editor' + (dateEmptyNow ? ' is-empty' : ' has-date') + '">' +
-          '<input type="text" class="dt-edit" inputmode="numeric" placeholder="dd.mm.yyyy" value="' + escHtml(dottedDate(v)) + '" data-lot="' + li + '" data-field="' + escHtml(f) + '" readonly tabindex="-1"/>' +
-          (dateEmptyNow ? '<span class="empty-mark" aria-hidden="true">—</span>' : '') +
-          '</div></td>';
-      }
-      if (f === 'invoice_no') {
-        return '<td class="left invno" data-field="invoice_no">' + invoiceCellHtml(r) + '</td>';
-      }
-      if (kind === 'edit-text' || (isCustomField(f) && (!customColById(f) || customColById(f).type === 'text'))) {
-        return '<td class="edit" data-field="' + escHtml(f) + '"><input type="text" value="' + escHtml(v === null || v === undefined ? '' : v) + '" data-lot="' + li + '" data-field="' + escHtml(f) + '" readonly tabindex="-1"/></td>';
-      }
-      if (f === 'settlement_status') return '<td tabindex="0" class="status" data-field="settlement_status">' + settlementLabelHtml(r) + '</td>';
-      return '<td class="' + cellClassFor(f, v) + '" data-field="' + escHtml(f) + '">' + formatCellValue(r, f) + '</td>';
-    }).join('') + '<td class="row-actions"><span class="row-actions-group"><button type="button" class="rowadvice" data-lot="' + li + '" title="Generate Buyer Payment Advice">📋</button><button type="button" class="rowedit" data-lot="' + li + '" title="Edit entire row">✎</button><button type="button" class="rowdel" data-lot="' + li + '" title="Delete lot">✕</button></span></td></tr>';
-  }).join('');
-  var numericFields = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding'];
+    });
+    tbody.innerHTML = html;
+  } else {
+    tbody.innerHTML = rows.map(function (r) {
+      return detailLotRowHtml(r, lots.indexOf(r), cols);
+    }).join('');
+  }
   var tfoot = table.querySelector('tfoot');
-  tfoot.innerHTML = '<tr>' + cols.map(function (f, i) {
-    if (i === 0) return '<td class="left">Total (' + rows.length + ')</td>';
-    var custom = customColById(f);
-    if (numericFields.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
-      var s = rows.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
-      var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received');
-      var isOut = (f === 'outstanding');
-      var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
-      if (f === 'tds194h') return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (s ? '- ' + moneyFmt(Math.abs(s)) : '—') + '</td>';
-      return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>';
-    }
-    return '<td></td>';
-  }).join('') + '<td></td></tr>';
+  tfoot.innerHTML = detailFooterHtml(rows, cols, { summary: !!(groupKey && layout === 'summary'), groupCount: groupKey ? detailGroupsFor(rows, groupKey).length : 0 });
   tbody.querySelectorAll('.rowadvice').forEach(function (b) {
     b.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -8336,6 +8486,19 @@ function renderDetailInto(tableId, countId) {
       openLotForm(+b.dataset.lot);
     });
   });
+  if (groupKey && layout === 'collapse') {
+    tbody.querySelectorAll('.detail-group-hdr').forEach(function (hdr) {
+      hdr.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var gk = hdr.getAttribute('data-dgroup');
+        var gv = hdr.getAttribute('data-dgval');
+        var key = gk + '|' + gv;
+        detailCollapsedGroups[key] = !detailCollapsedGroups[key];
+        renderDetail();
+      });
+    });
+  }
 }
 function renderDetail() {
   renderActiveFiltersBar();
@@ -8426,6 +8589,7 @@ function applyFreezePanes(table) {
       if (i === fi) th.classList.add('frozen-last');
       th.style.left = pos[i] + 'px';
       bodyRows.forEach(function (tr) {
+        if (tr.classList && tr.classList.contains('detail-group-hdr')) return;
         var td = tr.children[i];
         if (!td) return;
         td.classList.add('frozen');
@@ -8457,6 +8621,7 @@ function applyFreezePanes(table) {
       if (i === fi) th.classList.add('frozen-first');
       th.style.right = rpos[i] + 'px';
       bodyRows.forEach(function (tr) {
+        if (tr.classList && tr.classList.contains('detail-group-hdr')) return;
         var td = tr.children[i];
         if (!td) return;
         td.classList.add('frozen');
@@ -8826,6 +8991,7 @@ function gridHandlePointer(e, isMove) {
   }
   if (!td || td.closest('tfoot')) return;
   var tr = td.parentElement;
+  if (tr && tr.classList && tr.classList.contains('detail-group-hdr')) return;
   if (!tr || !tr.parentElement || tr.parentElement.tagName !== 'TBODY') return;
   var r = gridRowIndex(tr, table);
   var c2 = gridCellIndex(td);
@@ -8869,21 +9035,15 @@ function gridHandlePointer(e, isMove) {
 function renderDetailFooter() {
   var rows = detailRows;
   var cols = detailColKeys();
-  var numericFields = ['qty','mat_value','mat_value_plus_gst','gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds','total_receivables','sd_expected','sd_received','fp_expected','fp_received','late_fee','late_fee_received','total_received','outstanding'];
+  var groupKey = activeDetailGroupKey();
+  var layout = groupKey ? (ui.detailGroupLayout || 'sections') : null;
+  var groups = groupKey ? detailGroupsFor(rows, groupKey) : [];
   function fill(tableId) {
     var table = document.getElementById(tableId);
     if (!table) return;
     var tfoot = table.querySelector('tfoot');
-    tfoot.innerHTML = '<tr>' + cols.map(function (f, i) {
-      if (i === 0) return '<td class="left">Total (' + rows.length + ')</td>';
-      var custom = customColById(f);
-      if (numericFields.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
-        var s = rows.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
-        var isRec = (f === 'total_received' || f === 'sd_received' || f === 'fp_received' || f === 'late_fee_received'); var isOut = (f === 'outstanding'); var cls = isOut ? ((s > 1 ? 'pos' : (s < -1 ? 'neg' : 'zero'))) : (isRec ? 'received strong' : (fieldKind(f) === 'strong' ? 'strong' : ''));
-        return '<td class="' + cls + '" data-field="' + escHtml(f) + '">' + (MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>';
-      }
-      return '<td></td>';
-    }).join('') + '<td></td></tr>';
+    if (!tfoot) return;
+    tfoot.innerHTML = detailFooterHtml(rows, cols, { summary: !!(groupKey && layout === 'summary'), groupCount: groups.length });
   }
   fill('detailTableDash');
   applyFreezePanes(document.getElementById('detailTableDash'));
@@ -12691,7 +12851,7 @@ function excelStep(dx, dy, e) {
   if (!tbody) return false;
 
   var allRows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function (r) {
-    return r.style.display !== 'none' && r.offsetParent !== null;
+    return r.style.display !== 'none' && r.offsetParent !== null && !r.classList.contains('detail-group-hdr');
   });
   if (!allRows.length) return false;
 
@@ -12784,7 +12944,7 @@ function excelNavigate(direction) {
   if (!tbody) return false;
 
   var allRows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function (r) {
-    return r.style.display !== 'none' && r.offsetParent !== null;
+    return r.style.display !== 'none' && r.offsetParent !== null && !r.classList.contains('detail-group-hdr');
   });
   if (!allRows.length) return false;
 
@@ -13558,6 +13718,7 @@ function renderAll() {
   renderCards();
   renderPivot();
   renderDetail();
+  paintDetailGroupControls();
   var pivotLayoutKind = (ui.groupBy === 'default') ? 'pivotLot' : 'pivotMetric';
   renderColToggles('pivotColToggles', pivotLayoutKind);
   renderColToggles('dashColToggles', 'detail');
@@ -13735,6 +13896,10 @@ function init() {
   document.getElementById('auctionFilter').value = ui.auction || 'all';
   document.getElementById('search').value = ui.dashSearch || '';
   document.getElementById('detailSearch').value = ui.detailSearch || '';
+  /* Apply the saved "Default view" startup preference for Lot details. */
+  if (ui.detailDefaultView === 'buyer') ui.detailGroupBy = 'buyer';
+  else if (ui.detailDefaultView === 'flat') ui.detailGroupBy = 'default';
+  paintDetailGroupControls();
   if (resetBuyerView) saveState();
 
   /* Live search: typing in either search box filters the matching view
@@ -13785,6 +13950,37 @@ function init() {
     sortState = { table: 'pivot', key: null, dir: -1 };
     renderAll(); saveState();
   });
+  var detailGroupByEl = document.getElementById('detailGroupBy');
+  if (detailGroupByEl) {
+    detailGroupByEl.addEventListener('change', function (e) {
+      ui.detailGroupBy = e.target.value;
+      detailCollapsedGroups = {};
+      paintDetailGroupControls();
+      renderDetail(); saveState();
+    });
+  }
+  var detailLayoutEl = document.getElementById('detailGroupLayout');
+  if (detailLayoutEl) {
+    detailLayoutEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !detailLayoutEl.contains(b)) return;
+      ui.detailGroupLayout = b.dataset.layout;
+      paintDetailGroupControls();
+      renderDetail(); saveState();
+    });
+  }
+  var detailDefaultEl = document.getElementById('detailDefaultView');
+  if (detailDefaultEl) {
+    detailDefaultEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !detailDefaultEl.contains(b)) return;
+      ui.detailDefaultView = b.dataset.default;
+      ui.detailGroupBy = (b.dataset.default === 'buyer') ? 'buyer' : 'default';
+      detailCollapsedGroups = {};
+      paintDetailGroupControls();
+      renderDetail(); saveState();
+    });
+  }
   
   function resetPivotFilters() {
     ui.groupBy = 'buyer';
@@ -13810,6 +14006,10 @@ function init() {
     ui.detailSearch = '';
     selectedGroup = null;
     ui.colFilters = {};
+    ui.detailGroupBy = 'default';
+    ui.detailGroupLayout = 'sections';
+    ui.detailDefaultView = 'flat';
+    detailCollapsedGroups = {};
     clearGridSelection();
     colSel.selected.clear();
     colSel.lastAnchor = null;
@@ -13819,12 +14019,31 @@ function init() {
     if (detailSearchEl) detailSearchEl.value = '';
     var tableWrap = document.querySelector('#dashDetailPanel .table-wrap');
     if (tableWrap) { tableWrap.style.maxHeight = ''; tableWrap.style.overflowY = ''; }
+    paintDetailGroupControls();
     renderAll();
     saveState();
     showToast('Lot Details filters reset — showing all lots.', 'ok');
   }
   window.resetPivotFilters = resetPivotFilters;
   window.resetDetailFilters = resetDetailFilters;
+
+  function paintDetailGroupControls() {
+    var gEl = document.getElementById('detailGroupBy');
+    if (gEl) gEl.value = (ui.detailGroupBy && ui.detailGroupBy !== 'default') ? ui.detailGroupBy : 'default';
+    var lEl = document.getElementById('detailGroupLayout');
+    if (lEl) {
+      lEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.layout === (ui.detailGroupLayout || 'sections'));
+      });
+    }
+    var dEl = document.getElementById('detailDefaultView');
+    if (dEl) {
+      dEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.default === (ui.detailDefaultView || 'flat'));
+      });
+    }
+  }
+  window.paintDetailGroupControls = paintDetailGroupControls;
 
 var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   if (resetPivotBtn) {
