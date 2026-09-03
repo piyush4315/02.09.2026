@@ -931,9 +931,6 @@ thead th.left .th-wrap{justify-content:flex-start}
 .reorder-panel .ro-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text)}
 .reorder-panel .ro-label.ro-collapsed{color:var(--dim);font-style:italic}
 .reorder-panel .ro-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:1px 4px;margin-left:6px;font-style:normal}
-.reorder-panel .ro-btn{width:30px;height:30px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--muted);border-radius:7px;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif}
-.reorder-panel .ro-btn:hover:not(:disabled){border-color:rgba(0,245,255,.4);color:var(--cyan);background:rgba(0,245,255,.08)}
-.reorder-panel .ro-btn:disabled{opacity:.22;cursor:default}
 .reorder-panel .ro-hint{padding:8px 12px;border-top:1px solid rgba(255,255,255,.07);font-size:10.5px;color:var(--dim);line-height:1.5;flex:0 0 auto}
 .reorder-panel .ro-foot{padding:8px 10px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px;justify-content:flex-end;flex:0 0 auto}
 .reorder-panel.mobile-sheet{left:10px!important;right:10px!important;bottom:12px!important;top:auto!important;width:auto!important;max-width:460px!important;margin:0 auto!important;max-height:82vh!important;border-radius:16px!important;box-shadow:0 24px 64px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.15)!important}
@@ -942,8 +939,6 @@ thead th.left .th-wrap{justify-content:flex-start}
 [data-theme="light"] .reorder-panel .ro-row:hover{background:#f1f5f9!important}
 [data-theme="light"] .reorder-panel .ro-label{color:#0f172a!important}
 [data-theme="light"] .reorder-panel .ro-label.ro-collapsed{color:#64748b!important}
-[data-theme="light"] .reorder-panel .ro-btn{border-color:#cbd5e1!important;background:#f8fafc!important;color:#475569!important}
-[data-theme="light"] .reorder-panel .ro-btn:hover:not(:disabled){border-color:#2563eb!important;color:#2563eb!important;background:#eff6ff!important}
 /* Drag handle + dragging state for the reorder panel rows */
 .reorder-panel .ro-row{user-select:none;-webkit-user-select:none}
 .reorder-panel .ro-grip{width:22px;flex:0 0 auto;text-align:center;color:var(--dim);font-size:15px;line-height:1;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
@@ -10878,8 +10873,8 @@ function toggleColPicker(panelId, layoutKind, btn) {
 }
 
 /* ---- "↕ Reorder columns" panel for Lot detail ----
-   Lists the detail columns in their current rank; tapping ▲/▼ moves a column
-   left/right and the table re-renders immediately (live). Collapsed-group
+   Lists the detail columns in their current rank; drag a row by its ≡ handle
+   to move it and the table re-renders immediately (live). Collapsed-group
    columns stay in the list (they keep their rank) and are marked "collapsed". */
 function columnOrderOutsideHandler(e) {
   if (e.target && e.target.closest && (e.target.closest('#columnOrderPanel') || e.target.closest('#reorderColsBtnDash'))) return;
@@ -10915,8 +10910,6 @@ function renderColumnOrderList() {
       '<span class="ro-rank">' + (i + 1) + '</span>' +
       '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : '') + '" title="' + title + '">' + escHtml(label) +
         (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
-      '<button type="button" class="ro-btn" data-act="up" data-key="' + escHtml(key) + '" title="Move left" aria-label="Move ' + escHtml(label) + ' left"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
-      '<button type="button" class="ro-btn" data-act="down" data-key="' + escHtml(key) + '" title="Move right" aria-label="Move ' + escHtml(label) + ' right"' + (i === arr.length - 1 ? ' disabled' : '') + '>▼</button>' +
     '</div>';
   }).join('');
   /* Attach drag-to-reorder handlers to every row (pointer-based, so it works
@@ -11013,20 +11006,6 @@ function initColumnOrderDrag() {
   document.addEventListener('pointercancel', roGripPointerEnd);
 }
 
-function moveDetailColumn(key, dir) {
-  var arr = colLayout.detail;
-  if (!arr) return;
-  var i = arr.indexOf(key);
-  var j = i + dir;
-  if (i === -1 || j < 0 || j >= arr.length) return;
-  pushHistory();
-  var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-  saveState();
-  renderAll();
-  renderColumnOrderList();
-  showToast(fieldLabel(key) + ' moved ' + (dir < 0 ? 'left' : 'right'), 'ok');
-}
-
 function resetDetailColumnOrder() {
   pushHistory();
   var visibleCustom = colLayout.detail.filter(isCustomField);
@@ -11065,7 +11044,7 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Drag a row by its ≡ handle to reorder, or tap ▲ / ▼ — the table updates instantly. Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — the table updates instantly. Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
@@ -11075,10 +11054,6 @@ function openColumnOrderPanel(anchor) {
     var act = btn.getAttribute('data-act');
     if (act === 'close') { closeColumnOrderPanel(); return; }
     if (act === 'reset') { resetDetailColumnOrder(); return; }
-    if (act === 'up' || act === 'down') {
-      moveDetailColumn(btn.getAttribute('data-key'), act === 'up' ? -1 : 1);
-      return;
-    }
   });
 
   renderColumnOrderList();
