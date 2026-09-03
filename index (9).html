@@ -10908,6 +10908,28 @@ function collapsedDetailSet() {
   return set;
 }
 
+/* Clicking a "collapsed" name in the Reorder columns panel expands that
+   column's group so the column becomes shown again (collapse is group-based,
+   there is no per-column collapse). */
+function expandCollapsedColumn(key) {
+  if (LOT_GROUP_FIELDS.indexOf(key) !== -1) {
+    if (!ui.collapseLotCols) return;
+    ui.collapseLotCols = false;
+  } else if (BID_GROUP_FIELDS.indexOf(key) !== -1) {
+    if (!ui.collapseBidCols) return;
+    ui.collapseBidCols = false;
+  } else if (CHARGE_GROUP_FIELDS.indexOf(key) !== -1) {
+    if (!ui.collapseChargeCols) return;
+    ui.collapseChargeCols = false;
+  } else {
+    return;
+  }
+  saveState();
+  renderAll();
+  renderColumnOrderList();
+  showToast(fieldLabel(key) + ' shown — its group is now expanded', 'ok');
+}
+
 function syncDetailColSlots() {
   var catalog = allAssignableFields('detail').map(function (c) { return c.key; });
   if (!Array.isArray(detailColSlots)) detailColSlots = [];
@@ -10952,11 +10974,11 @@ function renderColumnOrderList() {
     var rank = '<span class="ro-rank" style="color:transparent">—</span>';
     var titleExtra;
     if (isVisible) {
-      act = 'hide';
+      act = isCollapsed ? 'expand' : 'hide';
       grip = '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>';
       visRank++;
       rank = '<span class="ro-rank">' + visRank + '</span>';
-      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — expand its group to show it)'; }
+      if (isCollapsed) { cls += ' ro-collapsed'; tag = '<span class="ro-tag">collapsed</span>'; titleExtra = ' (collapsed — tap to expand its group and show it)'; }
       else { cls += ' ro-neon'; titleExtra = ' — shown, tap to hide'; }
     } else {
       cls += ' ro-hidden-label';
@@ -11132,7 +11154,7 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — tap a column name to hide or show it. Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Drag a row by its ≡ handle to reorder — tap a column name to hide or show it (a collapsed name expands its group). Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
@@ -11144,6 +11166,7 @@ function openColumnOrderPanel(anchor) {
     if (act === 'reset') { resetDetailColumnOrder(); return; }
     if (act === 'hide') { toggleColumnVisibility(btn.getAttribute('data-key'), false); return; }
     if (act === 'unhide') { toggleColumnVisibility(btn.getAttribute('data-key'), true); return; }
+    if (act === 'expand') { expandCollapsedColumn(btn.getAttribute('data-key')); return; }
   });
 
   renderColumnOrderList();
