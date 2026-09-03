@@ -135,7 +135,7 @@ r.fp_expected = (standardRates && !r._manual.sd_expected)
     ? Math.round(mv * 0.9265 - n('gst_tds'))
     : (r.total_receivables - r.sd_expected);
 
-// Late Fee (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
+// Late Fees (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
 r.late_fee = calcLateFee(r);
 
 // Total Received & Outstanding
@@ -171,9 +171,9 @@ formulas it displays:
 | Total Receivables | `ROUND(Mat Value × 117.65% − GST TDS, 0)` |
 | SD Expected | `ROUND(Material Value × 25%, 0)` |
 | FP Expected | `ROUND(Mat Value × 92.65% − GST TDS, 0)` |
-| Late Fee | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−22.08.2026)/7) × 1.18%, 0), 0)` |
+| Late Fees | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−22.08.2026)/7) × 1.18%, 0), 0)` |
 | Total Received | `SD Received + FP Received` |
-| Outstanding | `ROUND(Total Receivables + Late Fee − Total Received, 0)` |
+| Outstanding | `ROUND(Total Receivables + Late Fees − Total Received, 0)` |
 | Settlement | `IF(Outstanding ≤ 5, "Settled", "Unsettled")` |
 | Footer total | `SUM(col2:colN)` |
 
@@ -182,7 +182,7 @@ rates as Excel (TCS 2%, SC 2.655%, 194H 2% on base, 194O 0.1%).
 
 ---
 
-## 5. Late fee & settlement logic
+## 5. Late fees & settlement logic
 
 ```js
 function calcLateFee(r) {

@@ -123,7 +123,7 @@ The dashboard re-derives everything live when you edit/import a row:
 - `Outstanding = Total Receivables − Total Received`
 - `GST TDS = ROUND(GST ÷ 9, 0)`  *(GST = H×18%, so GST÷9 = H×2% — same as Excel)*
 - Default **GST TDS Rate = 2%** when `Mat.Value > ₹2,50,000` **and** unit is KG/MT, else 0%
-- Late fee = `ROUND(Mat.Value × weeks × 0.0118, 0)` — delay counted from **22 Aug 2026**; waived if FP received on/before **24 Aug 2026**
+- Late fees = `ROUND(Mat.Value × weeks × 0.0118, 0)` — delay counted from **22 Aug 2026**; waived if FP received on/before **24 Aug 2026**
 - Collection % = `Total Received ÷ Total Receivables`
 
 ---
