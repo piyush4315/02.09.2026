@@ -8101,9 +8101,9 @@ function renderDetailInto(tableId, countId) {
   var thead = table.querySelector('thead');
   thead.innerHTML = '<tr>' + cols.map(function (f, i) {
     var title = f === LOT_GROUP_PARENT
-      ? ' title="Click this parent header to ' + (ui.collapseLotCols ? 'expand' : 'collapse') + ' detail columns (Qty, Rate, Lot Name, Bid Sheet, Unit)"'
+      ? ' title="Double-click this parent header to ' + (ui.collapseLotCols ? 'expand' : 'collapse') + ' detail columns (Qty, Rate, Lot Name, Bid Sheet, Unit)"'
       : (f === CHARGE_GROUP_PARENT
-        ? ' title="Click this parent header to ' + (ui.collapseChargeCols ? 'expand' : 'collapse') + ' its bifurcation columns 12–15"'
+        ? ' title="Double-click this parent header to ' + (ui.collapseChargeCols ? 'expand' : 'collapse') + ' its bifurcation columns 12–15"'
         : (f === 'total_receivables' ? ' title="' + TRIC_TITLE + '"' : (f === 'gst_tds_rate' ? ' title="GST TDS Rate % of Material Value — edits GST TDS live"' : (f === 'gst_tds' ? ' title="GST TDS amount — edits the rate live"' : (isEditableField(f) ? ' title="Editable — recalculates live"' : '')))));
     return thPickerHtml(f, 'detail', i, 'detail').replace('<th ', '<th' + title + ' ');
   }).join('') + '<th class="nosort" style="width:68px"></th></tr>';
@@ -13548,26 +13548,17 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     /* ---- Excel-like multi-column selection on detail table headers ---- */
     var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
     var isCtrl = e.ctrlKey || e.metaKey;
-    /* Column 4 is the parent control for columns 1–3 (Qty, Rate, Lot Name).
-       A plain click on the header toggles the group; Ctrl/Shift still support
-       the existing multi-column selection workflow. */
-    if (th && th.dataset.table === 'detail' && th.dataset.field === LOT_GROUP_PARENT &&
+    /* Column 4 is the parent control for columns 1–3 (Qty, Rate, Lot Name) and
+       Column 16 for its bifurcation columns 12–15. The expand/collapse toggle
+       now runs on DOUBLE-click (see the dblclick handler below); a single click
+       here is swallowed so it neither toggles nor sorts. Ctrl/Shift still
+       support the existing multi-column selection workflow. */
+    if (th && th.dataset.table === 'detail' &&
+        (th.dataset.field === LOT_GROUP_PARENT || th.dataset.field === CHARGE_GROUP_PARENT) &&
         !isCtrl && !e.shiftKey && !e.target.closest('.th-pick') &&
         !e.target.closest('.th-freeze') && !e.target.closest('.th-filt-on')) {
       e.preventDefault();
       e.stopPropagation();
-      toggleLotGroup();
-      return;
-    }
-    /* Column 16 is the parent control for its bifurcation columns 12–15.
-       A plain click on the header toggles the group; Ctrl/Shift still support
-       the existing multi-column selection workflow. */
-    if (th && th.dataset.table === 'detail' && th.dataset.field === CHARGE_GROUP_PARENT &&
-        !isCtrl && !e.shiftKey && !e.target.closest('.th-pick') &&
-        !e.target.closest('.th-freeze') && !e.target.closest('.th-filt-on')) {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleChargeGroup();
       return;
     }
     /* If the user just finished dragging, swallow the click entirely. */
@@ -13645,6 +13636,26 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     if (sortState.table === table && sortState.key === field) sortState.dir *= -1;
     else sortState = { table: table, key: field, dir: -1 };
     if (table === 'pivot') renderPivot(); else renderDetail();
+  });
+
+  /* Double-click on the Lot No. (or Service charge to MSTC) parent header toggles
+     expand/collapse of its grouped columns. Single click does nothing here. */
+  document.addEventListener('dblclick', function (e) {
+    var th = (e.target && e.target.closest) ? e.target.closest('th[data-field]') : null;
+    if (!th || th.dataset.table !== 'detail') return;
+    if (e.target.closest('.th-pick') || e.target.closest('.th-freeze') || e.target.closest('.th-filt-on')) return;
+    if (th.dataset.field === LOT_GROUP_PARENT) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleLotGroup();
+      return;
+    }
+    if (th.dataset.field === CHARGE_GROUP_PARENT) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleChargeGroup();
+      return;
+    }
   });
 
   /* Click on Lot No. or Buyer name opens the structured Lot Details modal */
