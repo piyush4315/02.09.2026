@@ -600,7 +600,7 @@ table td[data-field="gst_tds_rate"] input{
 }
 table th[data-field="gst_tds"],table td[data-field="gst_tds"]{min-width:60px}
 table th[data-field="total_receivables"],table td[data-field="total_receivables"]{min-width:88px}
-/* Buyer Ledger Analytics: keep the Total Receivables in Cash column at the same
+/* Buyer Ledger Analytics: keep the TRIC column at the same
    narrow width as the Lot details table so its header wraps the same way. */
 #pivotTable th[data-field="total_receivables"]{max-width:88px}
 table th[data-field="sd_expected"],table td[data-field="sd_expected"]{min-width:74px}
@@ -4508,7 +4508,7 @@ function recalcRow(r, changed) {
     r.gst_tds = Math.round(mv * r.gst_tds_rate / 100);
   }
 
-  // Total Receivables in Cash (Excel: ROUND(H*117.65% - R, 0); falls back to the
+  // TRIC (Excel: ROUND(H*117.65% - R, 0); falls back to the
   // additive form when a custom GST/TCS/SC rate is in use)
   var standardRates = (gstRate === 18 && tcsRate === 2 && Math.abs(scRate - 2.655) < 1e-9);
   if (standardRates) {
@@ -4522,7 +4522,7 @@ function recalcRow(r, changed) {
     r.sd_expected = Math.round(mv * 0.25);
   }
 
-  // Final Payment Expected (Excel: ROUND(H*92.65% - R, 0) = Total Receivables − SD Expected)
+  // Final Payment Expected (Excel: ROUND(H*92.65% - R, 0) = TRIC − SD Expected)
   if (!r._manual.fp_expected || changed.indexOf('mat_value') !== -1 || changed.indexOf('qty') !== -1 || changed.indexOf('rate') !== -1 || changed.indexOf('total_receivables') !== -1 || changed.indexOf('sd_expected') !== -1) {
     r.fp_expected = (standardRates && !r._manual.sd_expected) ? Math.round(mv * 0.9265 - n('gst_tds')) : (r.total_receivables - r.sd_expected);
   }
@@ -4794,7 +4794,7 @@ var XLSX_COLS = [
   ['service_charge_to_mstc', 'Service charge to MSTC', 'f:ROUND(O{r}+L{r},0)'],
   ['gst_tds_rate', 'GST TDS Rate', 'pct'],
   ['gst_tds', 'GST TDS', 'f:ROUND(H{r}*Q{r},0)'],
-  ['total_receivables', 'Total Receivables in Cash', 'f:ROUND(H{r}*117.65%-R{r},0)'],
+  ['total_receivables', 'TRIC', 'f:ROUND(H{r}*117.65%-R{r},0)'],
   ['sd_expected', 'SD Expected', 'f:ROUND(H{r}*25%,0)'],
   ['sd_received', 'SD Received', 'n'],
   ['sd_date', 'SD Date', 's'],
@@ -5024,7 +5024,7 @@ function buildWorkingSheetXml(lots) {
   var lastData = lots.length ? firstData + lots.length - 1 : 7;
   var tRow = lastData + 1;
   var title = bidSheetTitle(lots);
-  var heads = ['Lot No.', 'Buyer', 'Mat. Value', 'GST TDS', 'Total Receivables in Cash', 'Security Deposit (Expected)', 'Security Deposit (Received)', 'Date of Receipt', 'Final Payment (Expected)', 'Final Payment (Received)', 'Date of Receipt', 'Outstanding', 'Settled / Unsettled'];
+  var heads = ['Lot No.', 'Buyer', 'Mat. Value', 'GST TDS', 'TRIC', 'Security Deposit (Expected)', 'Security Deposit (Received)', 'Date of Receipt', 'Final Payment (Expected)', 'Final Payment (Received)', 'Date of Receipt', 'Outstanding', 'Settled / Unsettled'];
   var rows = [];
   rows.push('<row r="1">' + cellInline('A1', title, 6) + '</row>');
   rows.push('<row r="3" ht="36" customHeight="1">' + heads.map(function (h, i) {
@@ -5116,7 +5116,7 @@ var PIVOT_VALUE_COLS = [
   ['mat_value', 'Material Value', 'sum'],
   ['gst', 'GST', 'sum'],
   ['tcs', 'TCS', 'sum'],
-  ['total_receivables', 'Total Receivables in Cash', 'sum'],
+  ['total_receivables', 'TRIC', 'sum'],
   ['sd_expected', 'SD Expected', 'sum'],
   ['sd_received', 'SD Received', 'sum'],
   ['fp_expected', 'FP Expected', 'sum'],
@@ -5129,7 +5129,7 @@ var PIVOT_TABLE_COL = {
   mat_value: 'Material Value',
   gst: 'GST',
   tcs: 'TCS',
-  total_receivables: 'Total Receivables in Cash',
+  total_receivables: 'TRIC',
   sd_expected: 'SD Expected',
   sd_received: 'SD Received',
   fp_expected: 'FP Expected',
@@ -5149,12 +5149,12 @@ function buildPivotAnalyticsSheet(lots) {
   var rows = [];
   function pushRow(r, cells) { rows.push('<row r="' + r + '">' + cells.join('') + '</row>'); }
   pushRow(1, [cellInline('A1', 'ScrapSale Pro — Buyer Ledger Analytics (live formulas)', 6)]);
-  pushRow(2, [cellInline('A2', 'SUMIF / COUNTIF against table CashReceivables. Change a figure on Cash Receivables and this sheet updates. Collection % = Total Received ÷ Total Receivables.', 7)]);
+  pushRow(2, [cellInline('A2', 'SUMIF / COUNTIF against table CashReceivables. Change a figure on Cash Receivables and this sheet updates. Collection % = Total Received ÷ TRIC.', 7)]);
   var kpi = [
     ['Lots', 'COUNTA(CashReceivables[Lot No])', stats.lots, ''],
     ['Buyers', 'COUNTA(DimBuyer[Buyer])', stats.buyers, ''],
     ['Material Value', 'SUM(CashReceivables[Material Value])', stats.mat_value, 2],
-    ['Total Receivables in Cash', 'SUM(CashReceivables[Total Receivables in Cash])', stats.total_receivables, 2],
+    ['TRIC', 'SUM(CashReceivables[TRIC])', stats.total_receivables, 2],
     ['Total Received', 'SUM(CashReceivables[Total Received])', stats.total_received, 2],
     ['Outstanding', 'SUM(CashReceivables[Outstanding])', stats.outstanding, 2],
     ['Collection %', 'IF(D5=0,0,E5/D5)', stats.total_receivables ? stats.total_received / stats.total_receivables : 0, 8]
@@ -5245,10 +5245,10 @@ function buildPowerBiSheet(lots) {
     ['1. Home → Get data → Excel workbook → choose this file.'],
     ['2. In Navigator tick the table CashReceivables (prefer the table, not a raw sheet).'],
     ['3. Load. Build a Matrix / Pivot visual: Rows = Buyer (or Auction / Material / Unit).'],
-    ['4. Values = Total Receivables in Cash, Total Received, Outstanding. Add Collection % from the measures below.'],
+    ['4. Values = TRIC, Total Received, Outstanding. Add Collection % from the measures below.'],
     [''],
     ['Suggested DAX measures (Model view → New measure)', 1],
-    ['TRIC := SUM(CashReceivables[Total Receivables in Cash])'],
+    ['TRIC := SUM(CashReceivables[TRIC])'],
     ['Received := SUM(CashReceivables[Total Received])'],
     ['Outstanding Amt := SUM(CashReceivables[Outstanding])'],
     ['Collection % := DIVIDE([Received], [TRIC])'],
@@ -5259,11 +5259,11 @@ function buildPowerBiSheet(lots) {
     ['Live Excel formulas already in Cash Receivables', 1],
     ['Material Value = Qty × Rate'],
     ['GST TDS = ROUND(Material Value × GST TDS Rate % ÷ 100, 0)'],
-    ['Total Receivables in Cash = Material Value + GST + TCS − Net Service Charge − TDS 194O − GST TDS'],
+    ['TRIC = Material Value + GST + TCS − Net Service Charge − TDS 194O − GST TDS'],
     ['SD Expected = ROUND(Material Value × 25%, 0)   (unless overridden)'],
-    ['FP Expected = Total Receivables − SD Expected   (unless overridden)'],
+    ['FP Expected = TRIC − SD Expected   (unless overridden)'],
     ['Total Received = SD Received + FP Received'],
-    ['Outstanding = Total Receivables − Total Received'],
+    ['Outstanding = TRIC − Total Received'],
     [''],
     ['Workbook snapshot', 1],
     ['Lots: ' + stats.lots + '   ·   Buyers: ' + stats.buyers + '   ·   Auctions: ' + stats.auctions + '   ·   Collection: ' + stats.collection + '%'],
@@ -5376,7 +5376,7 @@ function buildNativePivotParts(lots, customCols) {
     '<dataFields count="5">' +
       '<dataField name="Lots" fld="' + lotIdx + '" subtotal="count"/>' +
       '<dataField name="Material Value" fld="' + matIdx + '" numFmtId="3"/>' +
-      '<dataField name="Total Receivables" fld="' + tricIdx + '" numFmtId="3"/>' +
+      '<dataField name="TRIC" fld="' + tricIdx + '" numFmtId="3"/>' +
       '<dataField name="Total Received" fld="' + recdIdx + '" numFmtId="3"/>' +
       '<dataField name="Outstanding" fld="' + outIdx + '" numFmtId="3"/>' +
     '</dataFields>' +
@@ -5749,7 +5749,7 @@ var EXPORT_COLS = [
   ['mat_value_plus_gst', 'Mat. Value + GST'], ['tcs', 'TCS'], ['tds194o', 'TDS u/s 194(O)'],
   ['service_charge_mstc', 'Service Charge to MSTC'], ['tds194h', 'TDS u/s 194(H) (-)'],
   ['net_service_charge', 'Net Service Charge'], ['service_charge_to_mstc', 'Service charge to MSTC'],
-  ['gst_tds_rate', 'GST TDS Rate'], ['gst_tds', 'GST TDS'], ['total_receivables', 'Total Receivables in Cash'],
+  ['gst_tds_rate', 'GST TDS Rate'], ['gst_tds', 'GST TDS'], ['total_receivables', 'TRIC'],
   ['sd_expected', 'SD Expected'], ['sd_received', 'SD Received'], ['sd_date', 'SD Date'],
   ['fp_expected', 'FP Expected'], ['fp_received', 'FP Received'], ['fp_date', 'FP Date'],
   ['total_received', 'Total Received'], ['outstanding', 'Outstanding'],
@@ -5806,7 +5806,7 @@ function txtExport(lots, customCols) {
   var COLS = [
     ['lot_no', 'LOT', 'r', 8], ['buyer', 'BUYER', 'l', 0],
     ['mat_value', 'MATERIAL VALUE', 'r', 0], ['gst', 'GST', 'r', 0], ['tcs', 'TCS', 'r', 0],
-    ['total_receivables', 'TOTAL REC. IN CASH', 'r', 0],
+    ['total_receivables', 'TRIC', 'r', 0],
     ['sd_expected', 'SD EXPECTED', 'r', 0], ['sd_received', 'SD RECEIVED', 'r', 0], ['sd_date', 'SD DATE', 'c', 0],
     ['fp_expected', 'FP EXPECTED', 'r', 0], ['fp_received', 'FP RECEIVED', 'r', 0], ['fp_date', 'FP DATE', 'c', 0],
     ['total_received', 'TOTAL RECEIVED', 'r', 0], ['outstanding', 'OUTSTANDING', 'r', 0]
@@ -5832,7 +5832,7 @@ function txtExport(lots, customCols) {
   var nowD = new Date();
   L.push(' Generated: ' + nowD.toLocaleString() + '   ·   Lots: ' + stats.lots + '   ·   Buyers: ' + stats.buyers + '   ·   Collection: ' + stats.collection + '%');
   L.push('-'.repeat(120));
-  L.push(' TOTALS | Total Receivables in Cash: Rs ' + inr(stats.total_receivables) +
+  L.push(' TOTALS | TRIC: Rs ' + inr(stats.total_receivables) +
          '   |   Total Received: Rs ' + inr(stats.total_received) +
          '   |   Outstanding: Rs ' + inr(stats.outstanding) +
          '   |   SD Received: Rs ' + inr(stats.sd_received) +
@@ -5959,7 +5959,7 @@ function htmlExport(lots, customCols) {
   var now = new Date();
   var cards = [
     ["Material Value", inr(stats.mat_value), "blue"],
-    ["Total Receivables", inr(stats.total_receivables), "blue"],
+    ["TRIC", inr(stats.total_receivables), "blue"],
     ["Total Received", inr(stats.total_received), "teal"],
     ["Outstanding Dues", inr(stats.outstanding), stats.outstanding > 1 ? "rose" : "teal"],
     ["SD Received", inr(stats.sd_received), "amber"],
@@ -7541,7 +7541,7 @@ function renderCards() {
   var s = computeStats(rows);
   var cards = [
     ['Material Value', inr(s.mat_value), 'c', 'All lots in view'],
-    ['Total Receivables in Cash', inr(s.total_receivables), 'v', 'incl. GST + TCS − charges'],
+    ['TRIC', inr(s.total_receivables), 'v', 'incl. GST + TCS − charges'],
     ['Total Received', inr(s.total_received), 'g', 'SD + final payments'],
     ['Outstanding', inr(s.outstanding), 'p', 'Payments still pending'],
     ['SD Received', inr(s.sd_received), 'a', 'Security deposits'],
@@ -7561,7 +7561,7 @@ var PIVOT_METRICS = [
   ['mat_value', 'Material Value', false],
   ['gst', 'GST', false],
   ['tcs', 'TCS', false],
-  ['total_receivables', 'Total Receivables in Cash', false],
+  ['total_receivables', 'TRIC', false],
   ['sd_expected', 'SD Expected', false],
   ['sd_received', 'SD Received', false],
   ['fp_expected', 'FP Expected', false],
@@ -7572,7 +7572,7 @@ var PIVOT_METRICS = [
 var DEFAULT_GROUP_COLS = [
   ['lot_no', 'Lot No', 'left', true],
   ['buyer', 'Buyer', 'left', true],
-  ['total_receivables', 'Total Receivables in Cash', 'strong', true],
+  ['total_receivables', 'TRIC', 'strong', true],
   ['sd_expected', 'SD Expected', '', true],
   ['sd_received', 'SD Received', '', true],
   ['sd_date', 'SD Date', 'date', false],
@@ -7600,7 +7600,7 @@ var FIELD_META = {
   service_charge_to_mstc: { label: 'Ser\u00ADvice charge to MSTC', kind: '', sum: true },
   gst_tds_rate: { label: 'GST TDS Rate', kind: 'edit', sum: false, edit: true },
   gst_tds: { label: 'GST TDS', kind: 'edit', sum: true, edit: true },
-  total_receivables: { label: 'To\u00ADtal Re\u00ADceiv\u00ADables in Cash', kind: 'strong', sum: true },
+  total_receivables: { label: 'TRIC', kind: 'strong', sum: true },
   sd_expected: { label: 'SD Ex\u00ADpect\u00ADed', kind: 'edit', sum: true, edit: true },
   sd_received: { label: 'SD Re\u00ADceived', kind: 'edit', sum: true, edit: true },
   sd_date: { label: 'SD Date', kind: 'date-edit', sum: false, edit: true },
@@ -8085,7 +8085,7 @@ var DETAIL_COLS = [
   ['service_charge_to_mstc', 'Service charge to MSTC', ''],
   ['gst_tds_rate', 'GST TDS Rate', 'edit'],
   ['gst_tds', 'GST TDS', 'edit'],
-  ['total_receivables', 'Total Receivables in Cash', 'strong'],
+  ['total_receivables', 'TRIC', 'strong'],
   ['sd_expected', 'SD Expected', 'edit'],
   ['sd_received', 'SD Received', 'edit'],
   ['sd_date', 'SD Date', 'date-edit'],
@@ -8927,7 +8927,7 @@ function onEditInput(input) {
   var table = input.closest('table');
   if (table) updateFormulaBar(table, input.closest('td'));
 
-  // Refresh derived cells (GST TDS, Total Receivables, FP Expected, …) plus
+  // Refresh derived cells (GST TDS, TRIC, FP Expected, …) plus
   // footer totals, KPI cards and pivot — for the row being edited.
   refreshDerivedDOM(pendingEdit.idx);
 }
@@ -9226,7 +9226,7 @@ function getCellFormulaInfo(table, td) {
       var isPos = r.outstanding > 1;
       var isNeg = r.outstanding < -1;
       var outColor = isPos ? '#f43f5e' : (isNeg ? '#10b981' : '#94a3b8');
-      var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">Total Receivables</span> <span class="fx-op">+</span> <span class="fx-field">Late Fee</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
+      var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">TRIC</span> <span class="fx-op">+</span> <span class="fx-field">Late Fee</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> <span class="fx-eval">₹ ' + inr(r.total_receivables) + ' + ₹ ' + inr(r.late_fee || 0) + ' - ₹ ' + inr(r.total_received) + ' =</span> <span class="fx-res" style="color:' + outColor + '">₹ ' + inr(r.outstanding) + '</span>' +
                  '<span class="fx-expl">' + pctOfMat(r.outstanding) + ' · Net Pending Due</span>';
       var plain = '=Total_Receivables + Late_Fee - Total_Received = ' + r.outstanding + ' [' + pctOfMat(r.outstanding) + ']';
@@ -9473,7 +9473,7 @@ function renderPbiKpis(rows) {
       color: '#0284c7'
     },
     {
-      label: 'Total Receivables',
+      label: 'TRIC',
       val: '₹ ' + inr(totRec),
       sub: 'Net invoice cash value',
       barVal: 100,
@@ -9563,7 +9563,7 @@ function renderBuyerMatrixChart(rows) {
     svg += '<text x="' + (padLeft - 10) + '" y="' + (y + 29) + '" font-size="9" fill="currentColor" fill-opacity="0.5" text-anchor="end">' + b.lots + ' lot(s)</text>';
 
     // Bars with data-pbi-tip
-    var tipRec = '<b>' + escHtml(b.buyer) + '</b><br/>Total Receivables: <b>₹ ' + inr(b.rec) + '</b>';
+    var tipRec = '<b>' + escHtml(b.buyer) + '</b><br/>TRIC: <b>₹ ' + inr(b.rec) + '</b>';
     var tipRcv = '<b>' + escHtml(b.buyer) + '</b><br/>Total Received: <b>₹ ' + inr(b.rcv) + '</b> (' + Math.round((b.rcv / (b.rec || 1)) * 100) + '%)';
     var tipOut = '<b>' + escHtml(b.buyer) + '</b><br/>Outstanding Due: <b>₹ ' + inr(b.out) + '</b>';
 
@@ -9780,7 +9780,7 @@ function renderAuctionPerfChart(rows) {
     var yRec = (h - padB) - hRec;
     var yRcv = (h - padB) - hRcv;
 
-    var tipRec = '<b>Auction ' + escHtml(a.name) + '</b><br/>Total Receivables: <b>₹ ' + inr(a.rec) + '</b>';
+    var tipRec = '<b>Auction ' + escHtml(a.name) + '</b><br/>TRIC: <b>₹ ' + inr(a.rec) + '</b>';
     var tipRcv = '<b>Auction ' + escHtml(a.name) + '</b><br/>Total Realized: <b>₹ ' + inr(a.rcv) + '</b> (' + Math.round((a.rcv / (a.rec || 1)) * 100) + '%)';
 
     svg += '<rect x="' + gx + '" y="' + yRec + '" width="' + barW + '" height="' + hRec + '" rx="2" fill="#0284c7" data-pbi-tip="' + escHtml(tipRec) + '" style="cursor:pointer"/>';
@@ -11463,7 +11463,7 @@ function showImportConfirm(fileName, imported) {
   var modal = openModal({
     title: 'Import preview — ' + fileName,
     wide: true,
-    body: '<p><b>' + imported.length + ' lots</b> · ' + s.buyers + ' buyers · Total Receivables in Cash ' + inr(s.total_receivables) + ' · Outstanding ' + inr(s.outstanding) + '</p>' +
+    body: '<p><b>' + imported.length + ' lots</b> · ' + s.buyers + ' buyers · TRIC ' + inr(s.total_receivables) + ' · Outstanding ' + inr(s.outstanding) + '</p>' +
       '<table class="mini-table"><tr><th>Lot</th><th>Buyer</th><th>Total Rec. in Cash</th><th>Received</th><th>Outstanding</th></tr>' + preview +
       (imported.length > 5 ? '<tr><td colspan="5" class="left muted">… and ' + (imported.length - 5) + ' more</td></tr>' : '') + '</table>',
     actions: [
@@ -11639,7 +11639,7 @@ function paintLotForm(c, skipId) {
   set('al_out_amt', c.outstanding);
   var prev = document.getElementById('al_preview');
   if (prev) {
-    prev.innerHTML = '<b>Total Receivables in Cash:</b> ₹ ' + inr(c.total_receivables) +
+    prev.innerHTML = '<b>TRIC:</b> ₹ ' + inr(c.total_receivables) +
       ' &nbsp;·&nbsp; <b>SD Expected:</b> ₹ ' + inr(c.sd_expected) +
       ' &nbsp;·&nbsp; <b>FP Expected:</b> ₹ ' + inr(c.fp_expected) +
       ' &nbsp;·&nbsp; <b>Total Received:</b> ₹ ' + inr(c.total_received) +
@@ -11693,7 +11693,7 @@ function computeAdviceBreakdown(lotsList) {
   // GST TDS
   var totGstTds = lotsList.reduce(function (a, r) { return a + (Number(r.gst_tds) || 0); }, 0);
 
-  // Total Receivables / Cash Payable
+  // TRIC / Cash Payable
   var totRec = lotsList.reduce(function (a, r) { return a + (Number(r.total_receivables) || 0); }, 0);
   if (!totRec) totRec = totBeforeGstTds - totGstTds;
 
@@ -12775,7 +12775,7 @@ function openLotDetails(idx) {
     '<div class="lot-inspect-wrap">' +
       '<div class="lot-inspect-kpis">' +
         '<div class="lot-kpi-card"><div class="lk-lbl">Material Value (100%)</div><div class="lk-val">₹ ' + moneyFmt(r.mat_value || 0) + '</div></div>' +
-        '<div class="lot-kpi-card"><div class="lk-lbl">Total Receivables (' + ((r.total_receivables / mv) * 100).toFixed(1) + '%)</div><div class="lk-val highlight">₹ ' + moneyFmt(r.total_receivables || 0) + '</div></div>' +
+        '<div class="lot-kpi-card"><div class="lk-lbl">TRIC (' + ((r.total_receivables / mv) * 100).toFixed(1) + '%)</div><div class="lk-val highlight">₹ ' + moneyFmt(r.total_receivables || 0) + '</div></div>' +
         '<div class="lot-kpi-card"><div class="lk-lbl">Total Received (' + ((r.total_received / mv) * 100).toFixed(1) + '%)</div><div class="lk-val success">₹ ' + moneyFmt(r.total_received || 0) + '</div></div>' +
         '<div class="lot-kpi-card"><div class="lk-lbl">Outstanding (' + ((r.outstanding / mv) * 100).toFixed(1) + '%)</div><div class="lk-val ' + outClass + '">₹ ' + moneyFmt(r.outstanding || 0) + '</div></div>' +
         '<div class="lot-kpi-card" style="display:flex;flex-direction:column;justify-content:center;align-items:center"><div class="lk-lbl">Settlement</div><div style="margin-top:2px">' + statusBadge + '</div></div>' +
@@ -12810,7 +12810,7 @@ function openLotDetails(idx) {
             '<div class="lic-row"><span class="lic-k">Net Service Charge</span><span class="lic-v">₹ ' + moneyFmt(r.net_service_charge || 0) + pTag(r.net_service_charge) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">SC to MSTC (Col 16)</span><span class="lic-v">₹ ' + moneyFmt(r.service_charge_to_mstc || 0) + pTag(r.service_charge_to_mstc) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">GST TDS (' + (r.gst_tds_rate || 0) + '%)</span><span class="lic-v">₹ ' + moneyFmt(r.gst_tds || 0) + pTag(r.gst_tds) + '</span></div>' +
-            '<div class="lic-row"><span class="lic-k">Total Receivables</span><span class="lic-v highlight strong">₹ ' + moneyFmt(r.total_receivables || 0) + pTag(r.total_receivables) + '</span></div>' +
+            '<div class="lic-row"><span class="lic-k">TRIC</span><span class="lic-v highlight strong">₹ ' + moneyFmt(r.total_receivables || 0) + pTag(r.total_receivables) + '</span></div>' +
           '</div>' +
         '</div>' +
 
