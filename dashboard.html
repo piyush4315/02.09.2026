@@ -942,6 +942,14 @@ thead th.left .th-wrap{justify-content:flex-start}
 [data-theme="light"] .reorder-panel .ro-label.ro-collapsed{color:#64748b!important}
 [data-theme="light"] .reorder-panel .ro-btn{border-color:#cbd5e1!important;background:#f8fafc!important;color:#475569!important}
 [data-theme="light"] .reorder-panel .ro-btn:hover:not(:disabled){border-color:#2563eb!important;color:#2563eb!important;background:#eff6ff!important}
+/* Drag handle + dragging state for the reorder panel rows */
+.reorder-panel .ro-row{user-select:none;-webkit-user-select:none}
+.reorder-panel .ro-grip{width:22px;flex:0 0 auto;text-align:center;color:var(--dim);font-size:15px;line-height:1;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+.reorder-panel .ro-grip:active{cursor:grabbing}
+.reorder-panel .ro-row.ro-dragging{opacity:.45;background:rgba(0,245,255,.12);outline:1px dashed rgba(0,245,255,.55);border-radius:8px}
+.reorder-panel .ro-list.ro-drag-active .ro-row{cursor:grabbing}
+[data-theme="light"] .reorder-panel .ro-grip{color:#94a3b8!important}
+[data-theme="light"] .reorder-panel .ro-row.ro-dragging{background:#eff6ff!important;outline:1px dashed #2563eb!important}
 /* Excel-style right-click header menu */
 #thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
 .excel-menu .xl-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -10910,6 +10918,7 @@ function renderColumnOrderList() {
     var isCollapsed = !!collapsed[key];
     var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '');
     return '<div class="ro-row" data-key="' + escHtml(key) + '">' +
+      '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>' +
       '<span class="ro-rank">' + (i + 1) + '</span>' +
       '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : '') + '" title="' + title + '">' + escHtml(label) +
         (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
@@ -10917,6 +10926,98 @@ function renderColumnOrderList() {
       '<button type="button" class="ro-btn" data-act="down" data-key="' + escHtml(key) + '" title="Move right" aria-label="Move ' + escHtml(label) + ' right"' + (i === arr.length - 1 ? ' disabled' : '') + '>▼</button>' +
     '</div>';
   }).join('');
+  /* Attach drag-to-reorder handlers to every row (pointer-based, so it works
+     with both mouse and touch). The table re-renders live on drop. */
+  Array.prototype.forEach.call(list.querySelectorAll('.ro-row'), function (el) {
+    el.addEventListener('pointerdown', roGripPointerDown);
+  });
+}
+
+/* ---- Drag-and-drop reordering inside the "↕ Reorder columns" panel ----
+   Pointer-based (works with mouse AND touch): grab the ≡ handle, drag the row
+   to its new rank, and the table re-renders live on drop. */
+var roDrag = { active: false, key: null, el: null, startY: 0, moved: false, pointerId: null };
+
+function roGripPointerDown(e) {
+  if (e.button !== undefined && e.button !== 0) return; /* mouse: primary button only */
+  var grip = e.target && e.target.closest ? e.target.closest('.ro-grip') : null;
+  if (!grip) return;
+  var row = grip.closest('.ro-row');
+  if (!row) return;
+  e.preventDefault();
+  roDrag.active = true;
+  roDrag.key = row.getAttribute('data-key');
+  roDrag.el = row;
+  roDrag.startY = e.clientY;
+  roDrag.moved = false;
+  roDrag.pointerId = e.pointerId;
+  row.classList.add('ro-dragging');
+  var list = document.querySelector('#columnOrderPanel .ro-list');
+  if (list) list.classList.add('ro-drag-active');
+  try { row.setPointerCapture(e.pointerId); } catch (err) {}
+}
+
+function roGripPointerMove(e) {
+  if (!roDrag.active || e.pointerId !== roDrag.pointerId) return;
+  if (!roDrag.moved && Math.abs(e.clientY - roDrag.startY) > 5) roDrag.moved = true;
+  if (!roDrag.moved) return;
+  e.preventDefault();
+  var list = document.querySelector('#columnOrderPanel .ro-list');
+  if (!list || !roDrag.el) return;
+  /* auto-scroll while hovering near the list's top/bottom edges */
+  var lr = list.getBoundingClientRect();
+  if (e.clientY < lr.top + 36) list.scrollTop -= 14;
+  else if (e.clientY > lr.bottom - 36) list.scrollTop += 14;
+  var rows = Array.prototype.slice.call(list.querySelectorAll('.ro-row'));
+  var target = null;
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (r === roDrag.el) continue;
+    var rect = r.getBoundingClientRect();
+    if (e.clientY >= rect.top && e.clientY <= rect.bottom) { target = r; break; }
+  }
+  if (target) {
+    var rect = target.getBoundingClientRect();
+    var before = e.clientY < (rect.top + rect.height / 2);
+    list.insertBefore(roDrag.el, before ? target : target.nextSibling);
+  } else if (rows.length) {
+    var others = rows.filter(function (r) { return r !== roDrag.el; });
+    if (others.length) {
+      var first = others[0], last = others[others.length - 1];
+      if (e.clientY < first.getBoundingClientRect().top) list.insertBefore(roDrag.el, first);
+      else if (e.clientY > last.getBoundingClientRect().bottom) list.insertBefore(roDrag.el, null);
+    }
+  }
+}
+
+function roGripPointerEnd() {
+  if (!roDrag.active) return;
+  var el = roDrag.el, key = roDrag.key, moved = roDrag.moved;
+  roDrag.active = false; roDrag.key = null; roDrag.el = null; roDrag.pointerId = null;
+  var list = document.querySelector('#columnOrderPanel .ro-list');
+  if (list) list.classList.remove('ro-drag-active');
+  if (!el) return;
+  el.classList.remove('ro-dragging');
+  if (!moved || !list) return;
+  var order = Array.prototype.slice.call(list.querySelectorAll('.ro-row')).map(function (r) {
+    return r.getAttribute('data-key');
+  });
+  if (!colLayout.detail || JSON.stringify(order) === JSON.stringify(colLayout.detail)) return;
+  pushHistory();
+  colLayout.detail = order;
+  saveState();
+  renderAll();
+  renderColumnOrderList();
+  showToast(fieldLabel(key) + ' moved', 'ok');
+}
+
+var roDragInit = false;
+function initColumnOrderDrag() {
+  if (roDragInit) return;
+  roDragInit = true;
+  document.addEventListener('pointermove', roGripPointerMove, { passive: false });
+  document.addEventListener('pointerup', roGripPointerEnd);
+  document.addEventListener('pointercancel', roGripPointerEnd);
 }
 
 function moveDetailColumn(key, dir) {
@@ -10965,7 +11066,7 @@ function openColumnOrderPanel(anchor) {
   panel.innerHTML =
     '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
     '<div class="ro-list"></div>' +
-    '<div class="ro-hint">Tap ▲ / ▼ to move a column left or right — the table updates instantly. Changes are saved to this workspace.</div>' +
+    '<div class="ro-hint">Drag a row by its ≡ handle to reorder, or tap ▲ / ▼ — the table updates instantly. Changes are saved to this workspace.</div>' +
     '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
   document.body.appendChild(panel);
 
@@ -10982,6 +11083,7 @@ function openColumnOrderPanel(anchor) {
   });
 
   renderColumnOrderList();
+  initColumnOrderDrag();
 
   var currentViewMode = document.documentElement.getAttribute('data-view-mode') || 'desktop';
   var isMobile = (currentViewMode === 'mobile' || (window.innerWidth <= 640 && currentViewMode !== 'desktop'));
