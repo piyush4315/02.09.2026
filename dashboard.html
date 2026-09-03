@@ -947,6 +947,19 @@ thead th.left .th-wrap{justify-content:flex-start}
 .reorder-panel .ro-list.ro-drag-active .ro-row{cursor:grabbing}
 [data-theme="light"] .reorder-panel .ro-grip{color:#94a3b8!important}
 [data-theme="light"] .reorder-panel .ro-row.ro-dragging{background:#eff6ff!important;outline:1px dashed #2563eb!important}
+/* Neon hide/unhide eye toggle in the reorder panel */
+.reorder-panel .ro-eye{width:30px;height:30px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--dim);border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .18s ease;font-family:'Inter',sans-serif;padding:0}
+.reorder-panel .ro-eye:hover{border-color:rgba(0,245,255,.5);color:var(--cyan)}
+.reorder-panel .ro-eye.on{color:var(--cyan);border-color:rgba(0,245,255,.65);background:rgba(0,245,255,.12);box-shadow:0 0 6px rgba(0,245,255,.6),0 0 16px rgba(0,245,255,.35),inset 0 0 6px rgba(0,245,255,.3);text-shadow:0 0 8px rgba(0,245,255,.9)}
+.reorder-panel .ro-eye.off{color:var(--dim);border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.05)}
+.reorder-panel .ro-eye.off:hover{color:var(--cyan);border-color:rgba(0,245,255,.5);box-shadow:0 0 6px rgba(0,245,255,.5),0 0 14px rgba(0,245,255,.3)}
+/* Hidden-columns section inside the reorder panel */
+.reorder-panel .ro-hidden-title{padding:9px 8px 4px;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);border-top:1px solid rgba(255,255,255,.08)}
+.reorder-panel .ro-hidden-row .ro-label{color:var(--dim);font-style:italic}
+[data-theme="light"] .reorder-panel .ro-eye.on{color:#0284c7;border-color:#0284c7;background:rgba(2,132,199,.12);box-shadow:0 0 6px rgba(2,132,199,.4),0 0 16px rgba(2,132,199,.22),inset 0 0 6px rgba(2,132,199,.25);text-shadow:0 0 8px rgba(2,132,199,.8)}
+[data-theme="light"] .reorder-panel .ro-eye.off:hover{color:#0284c7;border-color:#0284c7;box-shadow:0 0 6px rgba(2,132,199,.4),0 0 14px rgba(2,132,199,.25)}
+[data-theme="light"] .reorder-panel .ro-hidden-title{color:#94a3b8!important;border-top:1px solid #e2e8f0!important}
+[data-theme="light"] .reorder-panel .ro-hidden-row .ro-label{color:#94a3b8!important}
 /* Excel-style right-click header menu */
 #thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
 .excel-menu .xl-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -10897,24 +10910,45 @@ function renderColumnOrderList() {
   if (!list) return;
   var arr = colLayout.detail || [];
   var collapsed = collapsedDetailSet();
-  if (!arr.length) {
-    list.innerHTML = '<div class="muted" style="padding:12px;font-size:11.5px">No columns.</div>';
-    return;
+  var html = '';
+
+  /* Visible columns (current rank) — each with a neon hide toggle. */
+  if (arr.length) {
+    html += arr.map(function (key, i) {
+      var label = fieldLabel(key);
+      var isCollapsed = !!collapsed[key];
+      var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '');
+      return '<div class="ro-row" data-key="' + escHtml(key) + '">' +
+        '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>' +
+        '<span class="ro-rank">' + (i + 1) + '</span>' +
+        '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : '') + '" title="' + title + '">' + escHtml(label) +
+          (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
+        '<button type="button" class="ro-eye on" data-act="hide" data-key="' + escHtml(key) + '" title="Hide ' + escHtml(label) + '" aria-label="Hide ' + escHtml(label) + '">👁</button>' +
+      '</div>';
+    }).join('');
+  } else {
+    html += '<div class="muted" style="padding:12px;font-size:11.5px">No visible columns.</div>';
   }
-  list.innerHTML = arr.map(function (key, i) {
-    var label = fieldLabel(key);
-    var isCollapsed = !!collapsed[key];
-    var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '');
-    return '<div class="ro-row" data-key="' + escHtml(key) + '">' +
-      '<span class="ro-grip" title="Drag to reorder" aria-hidden="true">≡</span>' +
-      '<span class="ro-rank">' + (i + 1) + '</span>' +
-      '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : '') + '" title="' + title + '">' + escHtml(label) +
-        (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
-    '</div>';
-  }).join('');
-  /* Attach drag-to-reorder handlers to every row (pointer-based, so it works
-     with both mouse and touch). The table re-renders live on drop. */
-  Array.prototype.forEach.call(list.querySelectorAll('.ro-row'), function (el) {
+
+  /* Hidden columns (not in the layout) — with a neon unhide toggle. */
+  var used = {};
+  arr.forEach(function (k) { used[k] = true; });
+  var hiddenCols = allAssignableFields('detail').filter(function (c) { return !used[c.key]; });
+  if (hiddenCols.length) {
+    html += '<div class="ro-hidden-title">Hidden columns — tap 👁 to show</div>';
+    html += hiddenCols.map(function (c) {
+      return '<div class="ro-row ro-hidden-row" data-key="' + escHtml(c.key) + '">' +
+        '<span class="ro-grip" aria-hidden="true" style="visibility:hidden">≡</span>' +
+        '<span class="ro-rank" style="visibility:hidden">-</span>' +
+        '<span class="ro-label" title="' + escHtml(c.label) + '">' + escHtml(c.label) + '</span>' +
+        '<button type="button" class="ro-eye off" data-act="unhide" data-key="' + escHtml(c.key) + '" title="Show ' + escHtml(c.label) + '" aria-label="Show ' + escHtml(c.label) + '">👁</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  list.innerHTML = html;
+  /* Attach drag-to-reorder handlers to the visible rows only. */
+  Array.prototype.forEach.call(list.querySelectorAll('.ro-row:not(.ro-hidden-row)'), function (el) {
     el.addEventListener('pointerdown', roGripPointerDown);
   });
 }
@@ -10954,7 +10988,7 @@ function roGripPointerMove(e) {
   var lr = list.getBoundingClientRect();
   if (e.clientY < lr.top + 36) list.scrollTop -= 14;
   else if (e.clientY > lr.bottom - 36) list.scrollTop += 14;
-  var rows = Array.prototype.slice.call(list.querySelectorAll('.ro-row'));
+  var rows = Array.prototype.slice.call(list.querySelectorAll('.ro-row:not(.ro-hidden-row)'));
   var target = null;
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
@@ -10985,7 +11019,7 @@ function roGripPointerEnd() {
   if (!el) return;
   el.classList.remove('ro-dragging');
   if (!moved || !list) return;
-  var order = Array.prototype.slice.call(list.querySelectorAll('.ro-row')).map(function (r) {
+  var order = Array.prototype.slice.call(list.querySelectorAll('.ro-row:not(.ro-hidden-row)')).map(function (r) {
     return r.getAttribute('data-key');
   });
   if (!colLayout.detail || JSON.stringify(order) === JSON.stringify(colLayout.detail)) return;
@@ -11004,6 +11038,26 @@ function initColumnOrderDrag() {
   document.addEventListener('pointermove', roGripPointerMove, { passive: false });
   document.addEventListener('pointerup', roGripPointerEnd);
   document.addEventListener('pointercancel', roGripPointerEnd);
+}
+
+function toggleColumnVisibility(key, show) {
+  var arr = colLayout.detail || [];
+  if (show) {
+    if (arr.indexOf(key) !== -1) return;
+    pushHistory();
+    unhideFieldAt('detail', key);
+  } else {
+    var ix = arr.indexOf(key);
+    if (ix === -1) return;
+    if (arr.length <= 1) { showToast('Keep at least one column visible.', 'error'); return; }
+    pushHistory();
+    arr.splice(ix, 1);
+    if (ui.freezeDetailField === key) ui.freezeDetailField = null;
+  }
+  saveState();
+  renderAll();
+  renderColumnOrderList();
+  showToast((show ? 'Shown' : 'Hidden') + ': ' + fieldLabel(key), 'ok');
 }
 
 function resetDetailColumnOrder() {
@@ -11054,6 +11108,8 @@ function openColumnOrderPanel(anchor) {
     var act = btn.getAttribute('data-act');
     if (act === 'close') { closeColumnOrderPanel(); return; }
     if (act === 'reset') { resetDetailColumnOrder(); return; }
+    if (act === 'hide') { toggleColumnVisibility(btn.getAttribute('data-key'), false); return; }
+    if (act === 'unhide') { toggleColumnVisibility(btn.getAttribute('data-key'), true); return; }
   });
 
   renderColumnOrderList();
