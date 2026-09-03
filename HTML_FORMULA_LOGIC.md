@@ -135,7 +135,7 @@ r.fp_expected = (standardRates && !r._manual.sd_expected)
     ? Math.round(mv * 0.9265 - n('gst_tds'))
     : (r.total_receivables - r.sd_expected);
 
-// Delayed Payment Charges (1.18% per week on Material Value from 24.08.2026)
+// Late Fee (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
 r.late_fee = calcLateFee(r);
 
 // Total Received & Outstanding
@@ -171,9 +171,9 @@ formulas it displays:
 | Total Receivables | `ROUND(Mat Value × 117.65% − GST TDS, 0)` |
 | SD Expected | `ROUND(Material Value × 25%, 0)` |
 | FP Expected | `ROUND(Mat Value × 92.65% − GST TDS, 0)` |
-| Late Fee | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−24.08.2026)/7) × 1.18%, 0), 0)` |
+| Late Fee | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−22.08.2026)/7) × 1.18%, 0), 0)` |
 | Total Received | `SD Received + FP Received` |
-| Outstanding | `ROUND(Total Receivables + Delayed Charges − Total Received, 0)` |
+| Outstanding | `ROUND(Total Receivables + Late Fee − Total Received, 0)` |
 | Settlement | `IF(Outstanding ≤ 5, "Settled", "Unsettled")` |
 | Footer total | `SUM(col2:colN)` |
 
@@ -186,10 +186,12 @@ rates as Excel (TCS 2%, SC 2.655%, 194H 2% on base, 194O 0.1%).
 
 ```js
 function calcLateFee(r) {
-  var baseDate = new Date(2026, 7, 24);              // 24 Aug 2026
+  var delayStart = new Date(2026, 7, 22);   // 22 Aug 2026 - delay counted from here
+  var graceEnd   = new Date(2026, 7, 24);   // 24 Aug 2026 - no fee if paid on/before
   var payDate = parseDateStr(r.fp_date);
-  if (!payDate) payDate = isSettled ? baseDate : new Date(2026, 7, 31);  // else 31 Aug
-  var diffDays = Math.ceil((payDate - baseDate) / 86400000);
+  if (!payDate) payDate = isSettled ? graceEnd : new Date(2026, 7, 31);  // else 31 Aug
+  if (payDate <= graceEnd) return 0;        // on time -> no fee
+  var diffDays = Math.ceil((payDate - delayStart) / 86400000);
   if (diffDays <= 0) return 0;
   var weeks = Math.ceil(diffDays / 7);
   return Math.round(r.mat_value * weeks * 0.0118);   // 1.18% per week on Mat Value

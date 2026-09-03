@@ -4079,7 +4079,7 @@ th.left .th-wrap, th.center .th-wrap {
                 <span class="pbi-icon">⏱️</span>
                 <h3>Payment Ageing &amp; Late Fee</h3>
               </div>
-              <span class="muted" style="font-size:11px">Late Fee @ 1.18%/wk from 24.08.2026</span>
+              <span class="muted" style="font-size:11px">Late Fee @ 1.18%/wk from 22.08.2026</span>
             </div>
             <div class="pbi-chart-body" id="chartAgeing"></div>
           </div>
@@ -4241,7 +4241,8 @@ function parseDateStr(s) {
 }
 
 function calcLateFee(r) {
-  var baseDate = new Date(2026, 7, 24); // 24 Aug 2026 (0-indexed month 7)
+  var delayStart = new Date(2026, 7, 22); // 22 Aug 2026 — delay counted from here
+  var graceEnd = new Date(2026, 7, 24);   // 24 Aug 2026 — no fee if paid on/before
   var payDate = null;
   if (r && r.fp_date) {
     payDate = parseDateStr(r.fp_date);
@@ -4251,11 +4252,13 @@ function calcLateFee(r) {
     if (!isSettled) {
       payDate = new Date(2026, 7, 31); // 31 Aug 2026
     } else {
-      payDate = baseDate;
+      payDate = graceEnd;
     }
   }
   if (!payDate) return 0;
-  var diffMs = payDate.getTime() - baseDate.getTime();
+  /* Paid on or before 24 Aug 2026 → on time, no late fee. */
+  if (payDate.getTime() <= graceEnd.getTime()) return 0;
+  var diffMs = payDate.getTime() - delayStart.getTime();
   var diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays <= 0) return 0;
   var weeks = Math.ceil(diffDays / 7);
@@ -4527,7 +4530,7 @@ function recalcRow(r, changed) {
     r.fp_expected = (standardRates && !r._manual.sd_expected) ? Math.round(mv * 0.9265 - n('gst_tds')) : (r.total_receivables - r.sd_expected);
   }
 
-  // Late Fee (1.18% per week on Material Value from 24.08.2026)
+  // Late Fee (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
   if (changed.indexOf('late_fee') !== -1) {
     r._manual.late_fee = true;
   } else if (!r._manual.late_fee) {
@@ -4801,7 +4804,7 @@ var XLSX_COLS = [
   ['fp_expected', 'FP Expected', 'f:ROUND(H{r}*92.65%-R{r},0)'],
   ['fp_received', 'FP Received', 'n'],
   ['fp_date', 'FP Date', 's'],
-  ['late_fee', 'Late Fee', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,24))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,24))/7,0)*0.0118, 0), 0))'],
+  ['late_fee', 'Late Fee', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,22))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,22))/7,0)*0.0118, 0), 0))'],
   ['total_received', 'Total Received', 'f:ROUND(U{r}+X{r},0)'],
   ['outstanding', 'Outstanding', 'f:ROUND(S{r}+Z{r}-AA{r},0)'],
   ['settlement_status', 'Settled / Unsettled', 'f:IF(AB{r}<=5,"Settled","Unsettled")'],
@@ -9006,16 +9009,18 @@ function excelColLetter(colIdx) {
 }
 
 function calcLateFeeWeeks(r) {
-  var baseDate = new Date(2026, 7, 24);
+  var delayStart = new Date(2026, 7, 22); // 22 Aug 2026 — delay counted from here
+  var graceEnd = new Date(2026, 7, 24);   // 24 Aug 2026 — no delay if paid on/before
   var payDate = null;
   if (r && r.fp_date) payDate = parseDateStr(r.fp_date);
   var isSettled = (numOr(r && r.fp_received) > 0 && (numOr(r && r.total_receivables) - (numOr(r && r.sd_received) + numOr(r && r.fp_received))) <= SETTLEMENT_TOLERANCE);
   if (!payDate) {
     if (!isSettled) payDate = new Date(2026, 7, 31);
-    else payDate = baseDate;
+    else payDate = graceEnd;
   }
   if (!payDate) return 0;
-  var diffMs = payDate.getTime() - baseDate.getTime();
+  if (payDate.getTime() <= graceEnd.getTime()) return 0;
+  var diffMs = payDate.getTime() - delayStart.getTime();
   var diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays <= 0) return 0;
   return Math.ceil(diffDays / 7);
@@ -9207,7 +9212,7 @@ function getCellFormulaInfo(table, td) {
 
     if (field === 'late_fee') {
       var wks = calcLateFeeWeeks(r);
-      var html = '<span class="fx-fn">IF</span>(<span class="fx-field">FP Date</span> <span class="fx-op">&gt;</span> <span class="fx-num">24.08.2026</span>, <span class="fx-fn">ROUND</span>(<span class="fx-field">Mat Value</span> <span class="fx-op">×</span> <span class="fx-fn">CEIL</span>((<span class="fx-field">FP Date</span><span class="fx-op">-</span><span class="fx-num">24.08.2026</span>)<span class="fx-op">/</span><span class="fx-num">7</span>) <span class="fx-op">×</span> <span class="fx-num">1.18%</span>, <span class="fx-num">0</span>), <span class="fx-num">0</span>)' +
+      var html = '<span class="fx-fn">IF</span>(<span class="fx-field">FP Date</span> <span class="fx-op">&gt;</span> <span class="fx-num">24.08.2026</span>, <span class="fx-fn">ROUND</span>(<span class="fx-field">Mat Value</span> <span class="fx-op">×</span> <span class="fx-fn">CEIL</span>((<span class="fx-field">FP Date</span><span class="fx-op">-</span><span class="fx-num">22.08.2026</span>)<span class="fx-op">/</span><span class="fx-num">7</span>) <span class="fx-op">×</span> <span class="fx-num">1.18%</span>, <span class="fx-num">0</span>), <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> ' + (r.late_fee > 0 ? ('<span class="fx-eval">₹ ' + inr(r.mat_value) + ' × ' + wks + ' wk(s) × 1.18% =</span> <span class="fx-res">₹ ' + inr(r.late_fee) + '</span>') : '<span class="fx-eval">No delay (FP remitted on/before 24.08.2026) =</span> <span class="fx-res">₹ 0</span>') +
                  '<span class="fx-expl">' + (r.late_fee > 0 ? (pctOfMat(r.late_fee) + ' · ') : '') + 'Late Fee @ 1.18%/wk</span>';
       var plain = '=IF(FP_Date > 24.08.2026, ROUND(Mat_Value * Weeks * 1.18%, 0), 0) = ' + (r.late_fee || 0) + (r.late_fee > 0 ? (' [' + pctOfMat(r.late_fee) + ']') : '');
@@ -11769,8 +11774,8 @@ function generateWhatsAppAdviceText(lotsList, buyerTitle) {
 
   var sdRecLine = '   • SD Received: ₹ ' + inr(b.totSdRec) + (b.totSdRec > 0 && b.sdDatesStr ? (' _(Rec Date: ' + b.sdDatesStr + ')') : '') + '\n';
   var fpRecLine = '   • FP Received: ₹ ' + inr(b.totFpRec) + (b.totFpRec > 0 && b.fpDatesStr ? (' _(Rec Date: ' + b.fpDatesStr + ')') : '') + '\n';
-  var lateFeeLine = '3️⃣ *Late Fee (from 24.08.2026):*\n' +
-    '   • Delay Basis: 1.18% per week or part thereof after 24.08.2026\n' +
+  var lateFeeLine = '3️⃣ *Late Fee (from 22.08.2026):*\n' +
+    '   • Delay Basis: 1.18% per week or part thereof — delay from 22.08.2026\n' +
     '   • *Late Fee Payable:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n';
 
   var msg = 
@@ -11867,8 +11872,8 @@ function generateEmailAdviceText(lotsList, buyerTitle) {
     '   - Expected : Rs. ' + inr(b.totFpExp) + '\n' +
     '   ' + fpRecEmail + '\n' +
     '   - Balance Due : Rs. ' + inr(b.totFpDue) + (b.totFpDue <= 1 ? ' (SETTLED)' : ' (DUE)') + '\n\n' +
-    '3. Late Fee (from 24.08.2026):\n' +
-    '   - Delay Basis      : 1.18% per week or part thereof after 24.08.2026\n' +
+    '3. Late Fee (from 22.08.2026):\n' +
+    '   - Delay Basis      : 1.18% per week or part thereof — delay from 22.08.2026\n' +
     '   - Accrued Late Fee  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n\n' +
     '------------------------------------------------------\n' +
     'Total Amount Received to Date      : Rs. ' + inr(b.totReceived) + '\n' +
@@ -12086,7 +12091,7 @@ function printPaymentAdvice(lotsList, buyerTitle) {
             "<td class=\"cen\">" + (b.totFpDue <= 1 ? "<span class=\"pill-settled\">PAID / SETTLED</span>" : "<span class=\"pill-due\">PENDING PAYMENT</span>") + "</td>" +
           "</tr>" +
           (b.totLateFee > 0 ? ("<tr style=\"background:#fff1f2\">" +
-            "<td><b>3. Late Fee (1.18%/wk from 24.08.2026)</b></td>" +
+            "<td><b>3. Late Fee (1.18%/wk from 22.08.2026)</b></td>" +
             "<td class=\"num\">₹ " + inr(b.totLateFee) + "</td>" +
             "<td class=\"num\">—</td>" +
             "<td class=\"cen\">—</td>" +
