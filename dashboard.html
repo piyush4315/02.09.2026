@@ -914,14 +914,14 @@ thead th.left .th-wrap{justify-content:flex-start}
 .col-menu .cm-item .cm-check{width:14px;text-align:center;color:var(--cyan);font-weight:800}
 .col-menu .cm-item.disabled{opacity:.35;cursor:default;pointer-events:none}
 /* Excel-style right-click header menu */
-#thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
+#thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow-y:auto;overflow-x:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
 .excel-menu .xl-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .excel-menu .xl-actions{padding:6px;flex:0 0 auto}
 
 
 
 .excel-menu .xl-divider{height:1px;background:rgba(255,255,255,.07);margin:4px 6px}
-.excel-menu .xl-filter{border-top:1px solid rgba(255,255,255,.08);padding:8px;min-height:0;display:flex;flex-direction:column;gap:7px}
+.excel-menu .xl-filter{border-top:1px solid rgba(255,255,255,.08);padding:8px;min-height:0;flex:0 0 auto;display:flex;flex-direction:column;gap:7px}
 .excel-menu .xl-filter-title{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--dim)}
 .excel-menu .xl-search{width:100%;min-width:0;margin:0;padding:7px 9px}
 .excel-menu .xl-select-tools{display:flex;gap:5px;flex-wrap:wrap}
@@ -3591,7 +3591,8 @@ th.left .th-wrap, th.center .th-wrap {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
   animation: sheetSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
   z-index: 9999 !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -13842,7 +13843,7 @@ function showHeaderContextMenu(x, y, th) {
           '<button type="button" class="cm-item" data-act="togglelotgroup"><span class="cm-check">' + (ui.collapseLotCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseLotCols ? 'Expand up to Bid Sheet (Unit + Bid Sheet)' : 'Collapse up to Bid Sheet under Lot No.') + '</span></button>' +
           '<button type="button" class="cm-item" data-act="togglebidgroup"><span class="cm-check">' + (ui.collapseBidCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseBidCols ? 'Expand up to Quantity (Qty, Rate, Lot Name)' : 'Collapse up to Quantity under Bid Sheet') + '</span></button>' +
           '<button type="button" class="cm-item" data-act="togglegroup"><span class="cm-check">' + (ui.collapseChargeCols ? '＋' : '−') + '</span><span class="cm-label">' + (ui.collapseChargeCols ? 'Expand bifurcation columns 12–15' : 'Collapse bifurcation columns 12–15') + '</span></button>' +
-          '<button type="button" class="cm-item' + (!selectedForBuyer.length ? ' disabled' : '') + '" data-act="consolidatebuyer" title="Move the Ctrl/Shift-selected columns together after Buyer"><span class="cm-check">⇥</span><span class="cm-label">Consolidate ' + selectedForBuyer.length + ' selected column' + (selectedForBuyer.length === 1 ? '' : 's') + ' after Buyer</span></button>' : '') +
+          '<button type="button" class="cm-item' + (!selectedForBuyer.length ? ' disabled' : '') + '" data-act="consolidatebuyer" title="Move the selected columns together after Buyer"><span class="cm-check">⇥</span><span class="cm-label">Consolidate ' + selectedForBuyer.length + ' selected column' + (selectedForBuyer.length === 1 ? '' : 's') + ' after Buyer</span></button>' : '') +
         '<button type="button" class="cm-item' + (isSingle ? ' disabled' : '') + '" data-act="hide"><span class="cm-check">✕</span><span class="cm-label">Hide column</span></button>' +
         '<button type="button" class="cm-item" data-act="unhideall"><span class="cm-check">↺</span><span class="cm-label">Unhide all columns</span></button>' +
         '<button type="button" class="cm-item" data-act="resetcols"><span class="cm-check">↺</span><span class="cm-label">Reset column order</span></button>' +
@@ -13870,7 +13871,23 @@ function showHeaderContextMenu(x, y, th) {
         '</div>' +
       '</div>';
 
-    menu.innerHTML = actions + filterHtml;
+    /* On touch screens there is no Ctrl/Shift key, so the column context menu
+       also carries a tap-friendly checklist of the currently visible detail
+       columns. Ticking boxes here feeds the same selection used by
+       "Consolidate … after Buyer" (and the "⊗ Hide N columns" toolbar button),
+       so the feature works identically on mobile and desktop. */
+    var colSelHtml = isDetail
+      ? '<div class="xl-filter">' +
+          '<div class="xl-filter-title"><span>Select columns to consolidate after Buyer</span><span class="col-sel-count" style="color:var(--cyan);margin-left:auto">' + colSel.selected.size + ' selected</span></div>' +
+          '<div class="xl-select-tools">' +
+            '<button type="button" class="xl-mini" data-act="colselectall">Select all</button>' +
+            '<button type="button" class="xl-mini" data-act="colclearall">Clear all</button>' +
+          '</div>' +
+          '<div class="xl-values col-sel-list"></div>' +
+        '</div>'
+      : '';
+
+    menu.innerHTML = actions + colSelHtml + filterHtml;
     document.body.appendChild(menu);
 
     var search = menu.querySelector('.xl-search');
@@ -13919,6 +13936,46 @@ function showHeaderContextMenu(x, y, th) {
         ev.preventDefault(); ev.stopPropagation();
         draft = new Set([decodeURIComponent(only.getAttribute('data-only'))]);
         renderValues();
+      });
+    }
+
+    var colSelBox = menu.querySelector('.col-sel-list');
+    function renderColSelList() {
+      if (!colSelBox) return;
+      var movable = detailColKeys().filter(function (key) { return key !== 'buyer'; });
+      colSelBox.innerHTML = movable.length
+        ? movable.map(function (key) {
+            var label = fieldLabel(key);
+            return '<label class="xl-value" title="' + escHtml(label) + '">' +
+              '<input type="checkbox" data-colf="' + escHtml(key) + '"' + (colSel.selected.has(key) ? ' checked' : '') + '/>' +
+              '<span class="xl-vlabel">' + escHtml(label) + '</span>' +
+            '</label>';
+          }).join('')
+        : '<div class="xl-no-values">No movable columns</div>';
+      refreshColSelMeta();
+    }
+    function refreshColSelMeta() {
+      var countEl = menu.querySelector('.col-sel-count');
+      if (countEl) countEl.textContent = colSel.selected.size + ' selected';
+      var consBtn = menu.querySelector('[data-act="consolidatebuyer"]');
+      if (consBtn) {
+        var n = colSel.selected.size;
+        var lbl = consBtn.querySelector('.cm-label');
+        if (lbl) lbl.textContent = 'Consolidate ' + n + ' selected column' + (n === 1 ? '' : 's') + ' after Buyer';
+        if (n) consBtn.classList.remove('disabled'); else consBtn.classList.add('disabled');
+      }
+    }
+    renderColSelList();
+    if (colSelBox) {
+      colSelBox.addEventListener('change', function (ev) {
+        var cb = ev.target.closest('input[data-colf]');
+        if (!cb) return;
+        var key = cb.getAttribute('data-colf');
+        if (cb.checked) { colSel.selected.add(key); colSel.lastAnchor = key; }
+        else colSel.selected.delete(key);
+        colSel.lastTable = 'detail';
+        paintColSelection();
+        refreshColSelMeta();
       });
     }
 
@@ -13996,11 +14053,11 @@ function showHeaderContextMenu(x, y, th) {
       } else if (act === 'togglegroup') {
         closeHeaderContextMenu(); toggleChargeGroup();
       } else if (act === 'consolidatebuyer') {
-        if (!selectedForBuyer.length) return;
-        pushHistory();
         var moving = colLayout.detail.filter(function (key) {
           return key !== 'buyer' && colSel.selected.has(key);
         });
+        if (!moving.length) return;
+        pushHistory();
         var remaining = colLayout.detail.filter(function (key) {
           return moving.indexOf(key) === -1;
         });
@@ -14048,6 +14105,16 @@ function showHeaderContextMenu(x, y, th) {
           colLayout.pivotMetric = DEFAULT_PIVOT_METRIC_KEYS.slice();
         }
         saveState(); closeHeaderContextMenu(); renderAll(); showToast('Column order reset', 'ok');
+      } else if (act === 'colselectall') {
+        colSel.selected = new Set(detailColKeys().filter(function (key) { return key !== 'buyer'; }));
+        colSel.lastTable = 'detail';
+        paintColSelection();
+        renderColSelList();
+      } else if (act === 'colclearall') {
+        colSel.selected.clear();
+        colSel.lastAnchor = null;
+        paintColSelection();
+        renderColSelList();
       } else if (act === 'selectall') {
         visibleValues().forEach(function (v) { draft.add(v); });
         renderValues();
