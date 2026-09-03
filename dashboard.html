@@ -913,6 +913,35 @@ thead th.left .th-wrap{justify-content:flex-start}
 .col-menu .cm-item.active{background:rgba(124,58,237,.16);color:#c4b5fd;font-weight:700}
 .col-menu .cm-item .cm-check{width:14px;text-align:center;color:var(--cyan);font-weight:800}
 .col-menu .cm-item.disabled{opacity:.35;cursor:default;pointer-events:none}
+/* ---- Column reorder panel (Lot detail toolbar "↕ Reorder columns") ---- */
+.reorder-panel{
+  position:fixed;z-index:10000;background:rgba(13,13,36,.97);border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.6);width:min(360px,calc(100vw - 16px));
+  max-height:min(540px,calc(100vh - 16px));padding:0;overflow:hidden;display:none;flex-direction:column;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);font-family:'Inter',sans-serif
+}
+.reorder-panel.open{display:flex}
+.reorder-panel .ro-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px;font-weight:800;color:var(--cyan);display:flex;justify-content:space-between;align-items:center;gap:8px;flex:0 0 auto}
+.reorder-panel .ro-list{overflow-y:auto;padding:6px;min-height:0;flex:1 1 auto;-webkit-overflow-scrolling:touch}
+.reorder-panel .ro-row{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:8px}
+.reorder-panel .ro-row:hover{background:rgba(0,245,255,.06)}
+.reorder-panel .ro-rank{width:20px;flex:0 0 auto;text-align:right;color:var(--dim);font-size:10.5px;font-weight:700}
+.reorder-panel .ro-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text)}
+.reorder-panel .ro-label.ro-collapsed{color:var(--dim);font-style:italic}
+.reorder-panel .ro-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:1px 4px;margin-left:6px;font-style:normal}
+.reorder-panel .ro-btn{width:30px;height:30px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--muted);border-radius:7px;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif}
+.reorder-panel .ro-btn:hover:not(:disabled){border-color:rgba(0,245,255,.4);color:var(--cyan);background:rgba(0,245,255,.08)}
+.reorder-panel .ro-btn:disabled{opacity:.22;cursor:default}
+.reorder-panel .ro-hint{padding:8px 12px;border-top:1px solid rgba(255,255,255,.07);font-size:10.5px;color:var(--dim);line-height:1.5;flex:0 0 auto}
+.reorder-panel .ro-foot{padding:8px 10px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px;justify-content:flex-end;flex:0 0 auto}
+.reorder-panel.mobile-sheet{left:10px!important;right:10px!important;bottom:12px!important;top:auto!important;width:auto!important;max-width:460px!important;margin:0 auto!important;max-height:82vh!important;border-radius:16px!important;box-shadow:0 24px 64px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.15)!important}
+[data-theme="light"] .reorder-panel{background:#ffffff!important;border:1px solid #cbd5e1!important;color:#0f172a!important;box-shadow:0 16px 36px -4px rgba(15,23,42,.14),0 4px 12px rgba(15,23,42,.06)!important}
+[data-theme="light"] .reorder-panel .ro-head{border-bottom:1px solid #e2e8f0!important;color:#0f172a!important}
+[data-theme="light"] .reorder-panel .ro-row:hover{background:#f1f5f9!important}
+[data-theme="light"] .reorder-panel .ro-label{color:#0f172a!important}
+[data-theme="light"] .reorder-panel .ro-label.ro-collapsed{color:#64748b!important}
+[data-theme="light"] .reorder-panel .ro-btn{border-color:#cbd5e1!important;background:#f8fafc!important;color:#475569!important}
+[data-theme="light"] .reorder-panel .ro-btn:hover:not(:disabled){border-color:#2563eb!important;color:#2563eb!important;background:#eff6ff!important}
 /* Excel-style right-click header menu */
 #thCtxMenu.excel-menu{width:min(390px,calc(100vw - 16px));max-height:min(610px,calc(100vh - 16px));overflow:hidden;padding:0;display:flex;flex-direction:column;z-index:10000!important}
 .excel-menu .xl-head{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3901,6 +3930,7 @@ th.left .th-wrap, th.center .th-wrap {
 
               <button class="btn primary" id="addLotBtnDash" type="button">+ Add row</button>
               <button class="btn" id="clearFilterDash" type="button">Clear selection</button>
+              <button class="btn" id="reorderColsBtnDash" type="button" title="Rearrange Lot detail column order — moves apply instantly">↕ Reorder columns</button>
               <button class="btn" id="hideSelColsBtn" type="button" style="display:none;color:#ff6b6b;font-weight:700;border-color:rgba(255,107,107,.3)">⊗ Hide 0 columns</button>
             </div>
           </div>
@@ -10845,6 +10875,140 @@ function toggleColPicker(panelId, layoutKind, btn) {
     panel.classList.add('open');
   }
 }
+
+/* ---- "↕ Reorder columns" panel for Lot detail ----
+   Lists the detail columns in their current rank; tapping ▲/▼ moves a column
+   left/right and the table re-renders immediately (live). Collapsed-group
+   columns stay in the list (they keep their rank) and are marked "collapsed". */
+function columnOrderOutsideHandler(e) {
+  if (e.target && e.target.closest && (e.target.closest('#columnOrderPanel') || e.target.closest('#reorderColsBtnDash'))) return;
+  closeColumnOrderPanel();
+}
+function columnOrderEscHandler(e) { if (e.key === 'Escape') closeColumnOrderPanel(); }
+
+function collapsedDetailSet() {
+  var set = {};
+  if (ui.collapseLotCols) LOT_GROUP_FIELDS.forEach(function (k) { set[k] = true; });
+  if (ui.collapseBidCols) BID_GROUP_FIELDS.forEach(function (k) { set[k] = true; });
+  if (ui.collapseChargeCols) CHARGE_GROUP_FIELDS.forEach(function (k) { set[k] = true; });
+  return set;
+}
+
+function renderColumnOrderList() {
+  var panel = document.getElementById('columnOrderPanel');
+  if (!panel) return;
+  var list = panel.querySelector('.ro-list');
+  if (!list) return;
+  var arr = colLayout.detail || [];
+  var collapsed = collapsedDetailSet();
+  if (!arr.length) {
+    list.innerHTML = '<div class="muted" style="padding:12px;font-size:11.5px">No columns.</div>';
+    return;
+  }
+  list.innerHTML = arr.map(function (key, i) {
+    var label = fieldLabel(key);
+    var isCollapsed = !!collapsed[key];
+    var title = escHtml(label) + (isCollapsed ? ' (collapsed — expand its group to show it)' : '');
+    return '<div class="ro-row" data-key="' + escHtml(key) + '">' +
+      '<span class="ro-rank">' + (i + 1) + '</span>' +
+      '<span class="ro-label' + (isCollapsed ? ' ro-collapsed' : '') + '" title="' + title + '">' + escHtml(label) +
+        (isCollapsed ? '<span class="ro-tag">collapsed</span>' : '') + '</span>' +
+      '<button type="button" class="ro-btn" data-act="up" data-key="' + escHtml(key) + '" title="Move left" aria-label="Move ' + escHtml(label) + ' left"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+      '<button type="button" class="ro-btn" data-act="down" data-key="' + escHtml(key) + '" title="Move right" aria-label="Move ' + escHtml(label) + ' right"' + (i === arr.length - 1 ? ' disabled' : '') + '>▼</button>' +
+    '</div>';
+  }).join('');
+}
+
+function moveDetailColumn(key, dir) {
+  var arr = colLayout.detail;
+  if (!arr) return;
+  var i = arr.indexOf(key);
+  var j = i + dir;
+  if (i === -1 || j < 0 || j >= arr.length) return;
+  pushHistory();
+  var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  saveState();
+  renderAll();
+  renderColumnOrderList();
+  showToast(fieldLabel(key) + ' moved ' + (dir < 0 ? 'left' : 'right'), 'ok');
+}
+
+function resetDetailColumnOrder() {
+  pushHistory();
+  var visibleCustom = colLayout.detail.filter(isCustomField);
+  colLayout.detail = DEFAULT_DETAIL_KEYS.concat(visibleCustom.filter(function (k, i, a) { return a.indexOf(k) === i; }));
+  ui.freezeDetailField = null;
+  saveState();
+  renderAll();
+  renderColumnOrderList();
+  showToast('Column order reset', 'ok');
+}
+
+function closeColumnOrderPanel() {
+  var panel = document.getElementById('columnOrderPanel');
+  if (panel) panel.remove();
+  document.removeEventListener('mousedown', columnOrderOutsideHandler, true);
+  document.removeEventListener('touchstart', columnOrderOutsideHandler, true);
+  document.removeEventListener('keydown', columnOrderEscHandler, true);
+}
+
+function openColumnOrderPanel(anchor) {
+  closeColumnOrderPanel();
+  closeAllColPickers();
+  closeFieldChooser();
+  var ctx = document.getElementById('thCtxMenu'); if (ctx) ctx.remove();
+  var bd = document.getElementById('thCtxBackdrop'); if (bd) bd.remove();
+
+  var panel = document.createElement('div');
+  panel.id = 'columnOrderPanel';
+  panel.className = 'reorder-panel';
+  panel.innerHTML =
+    '<div class="ro-head"><span>↕ Rearrange columns — Lot detail</span><button type="button" class="xclose" data-act="close" title="Close">✕</button></div>' +
+    '<div class="ro-list"></div>' +
+    '<div class="ro-hint">Tap ▲ / ▼ to move a column left or right — the table updates instantly. Changes are saved to this workspace.</div>' +
+    '<div class="ro-foot"><button type="button" class="btn" data-act="reset">↺ Reset order</button></div>';
+  document.body.appendChild(panel);
+
+  panel.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
+    if (!btn || btn.disabled) return;
+    var act = btn.getAttribute('data-act');
+    if (act === 'close') { closeColumnOrderPanel(); return; }
+    if (act === 'reset') { resetDetailColumnOrder(); return; }
+    if (act === 'up' || act === 'down') {
+      moveDetailColumn(btn.getAttribute('data-key'), act === 'up' ? -1 : 1);
+      return;
+    }
+  });
+
+  renderColumnOrderList();
+
+  var currentViewMode = document.documentElement.getAttribute('data-view-mode') || 'desktop';
+  var isMobile = (currentViewMode === 'mobile' || (window.innerWidth <= 640 && currentViewMode !== 'desktop'));
+  if (isMobile) {
+    panel.classList.add('mobile-sheet');
+  } else {
+    var rect = anchor.getBoundingClientRect();
+    var mw = 360, mh = 540;
+    var left = Math.min(Math.max(10, rect.right - mw), Math.max(10, window.innerWidth - mw - 16));
+    var top = rect.bottom + 6;
+    if (top + mh > window.innerHeight - 10) top = Math.max(10, rect.top - mh - 6);
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+  }
+  panel.classList.add('open');
+
+  setTimeout(function () {
+    document.addEventListener('mousedown', columnOrderOutsideHandler, true);
+    document.addEventListener('touchstart', columnOrderOutsideHandler, true);
+    document.addEventListener('keydown', columnOrderEscHandler, true);
+  }, 80);
+}
+
+function toggleColumnOrderPanel(btn) {
+  if (document.getElementById('columnOrderPanel')) { closeColumnOrderPanel(); return; }
+  openColumnOrderPanel(btn);
+}
 function closeFieldChooser() {
   var m = document.getElementById('thFieldMenu');
   if (m) m.remove();
@@ -13264,6 +13428,13 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   document.getElementById('hideSelColsBtn').addEventListener('click', function () {
     hideSelectedCols();
   });
+  var reorderBtn = document.getElementById('reorderColsBtnDash');
+  if (reorderBtn) {
+    reorderBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleColumnOrderPanel(this);
+    });
+  }
   var hidePivotBtn = document.getElementById('hideSelPivotColsBtn');
   if (hidePivotBtn) {
     hidePivotBtn.addEventListener('click', function () {
