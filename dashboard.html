@@ -600,6 +600,9 @@ table td[data-field="gst_tds_rate"] input{
 }
 table th[data-field="gst_tds"],table td[data-field="gst_tds"]{min-width:60px}
 table th[data-field="total_receivables"],table td[data-field="total_receivables"]{min-width:88px}
+/* Buyer Ledger Analytics: keep the Total Receivables in Cash column at the same
+   narrow width as the Lot details table so its header wraps the same way. */
+#pivotTable th[data-field="total_receivables"]{max-width:88px}
 table th[data-field="sd_expected"],table td[data-field="sd_expected"]{min-width:74px}
 table th[data-field="sd_received"],table td[data-field="sd_received"]{min-width:74px}
 table th[data-field="fp_expected"],table td[data-field="fp_expected"]{min-width:74px}
