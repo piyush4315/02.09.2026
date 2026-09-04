@@ -140,6 +140,15 @@ html{scrollbar-width:auto;scrollbar-color:var(--violet) #0d0d1a}
 .nav-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);background:transparent}
 .nav-btn svg{flex-shrink:0}
 .nav-btn .nbadge{margin-left:6px;background:rgba(0,245,255,.12);border:1px solid rgba(0,245,255,.25);color:var(--cyan);border-radius:99px;font-size:10px;padding:1px 7px}
+.gsheet-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:0 32px 12px}
+.gsheet-bar-title{display:flex;flex-direction:column;gap:2px;font-size:12px}
+.gsheet-bar-title .muted{font-size:11px}
+.gsheet-bar-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gsheet-bar-controls input{flex:1 1 260px;max-width:440px}
+.gsheet-frame-wrap{position:relative;margin:0 32px 20px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b0b18;height:calc(100vh - 230px);min-height:420px}
+.gsheet-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+[data-theme="light"] .gsheet-frame-wrap{background:#f6f7fb}
+[data-theme="light"] .gsheet-frame{background:#fff}
 .toolbar-row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:10px 32px 12px}
 .toolbar-title{display:flex;flex-direction:column;gap:3px}
 #topbar h1{font-size:15px;margin:0;color:var(--text);font-weight:700;line-height:1.2}
@@ -4120,6 +4129,10 @@ th.left .th-wrap, th.center .th-wrap {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
           ⬡ Data &amp; Backup
         </button>
+        <button class="nav-btn" data-view="gsheet">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+          ⬈ Google Sheet
+        </button>
       </div>
       <div class="toolbar-row">
         <div class="toolbar-title">
@@ -4483,6 +4496,22 @@ th.left .th-wrap, th.center .th-wrap {
             <button class="btn" id="restoreSample">Restore sample data</button>
             <button class="btn danger" id="clearAll">Clear workspace</button>
           </div>
+        </div>
+      </section>
+      <section id="view-gsheet" hidden>
+        <div class="gsheet-bar">
+          <div class="gsheet-bar-title">
+            <b>Google Sheet preview</b>
+            <span class="muted" id="gsheetStatus">Paste any Google Sheets link to preview it inside the app.</span>
+          </div>
+          <div class="gsheet-bar-controls">
+            <input type="text" id="gsheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit" style="min-width:320px"/>
+            <button class="btn primary" id="gsheetLoadBtn" type="button">Load</button>
+            <button class="btn" id="gsheetOpenBtn" type="button" title="Open this sheet in a new browser tab">↗ Open in tab</button>
+          </div>
+        </div>
+        <div class="gsheet-frame-wrap">
+          <iframe id="gsheetFrame" title="Google Sheet preview" class="gsheet-frame" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
       </section>
     </main>
@@ -6854,6 +6883,7 @@ var dataSyncVersion = 0;
 var customCols = []; /* [{id, name, type: 'text'|'number'|'date'}] */
 var gdriveClientId = '';
 var gdriveToken = null;
+var gsheetUrl = 'https://docs.google.com/spreadsheets/d/1ihLs7bScvTLYB-Ez-Rr5rokJebSAZyRFNsbRt7jid2Q/edit?usp=drivesdk';
 var pendingImportCustom = [];
 /* Canonical 31-column order shared by Lot Detail and data exports. */
 var DEFAULT_DETAIL_KEYS = ['qty','rate','lot_name','auction','unit','lot_no','buyer','mat_value','gst','mat_value_plus_gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','late_fee_received','late_fee_received_date','total_received','outstanding','settlement_status','invoice_no','sap_document_date','doc_invoice_date'];
@@ -7534,6 +7564,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
+    gsheetUrl: gsheetUrl,
     ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
   }));
   lastSaved = new Date();
@@ -7604,6 +7635,7 @@ function loadState() {
     dataSyncVersion = Number(data.dataSyncVersion) || 0;
     ensureGstTdsRateColumn();
     if (data.gdriveClientId) gdriveClientId = String(data.gdriveClientId);
+    if (data.gsheetUrl) gsheetUrl = String(data.gsheetUrl);
     return true;
   } catch (e) { return false; }
 }
@@ -7910,10 +7942,13 @@ function setView(v) {
   var viewAnalytics = document.getElementById('view-analytics');
   if (viewAnalytics) viewAnalytics.hidden = v !== 'analytics';
   document.getElementById('view-data').hidden = v !== 'data';
+  var viewGsheet = document.getElementById('view-gsheet');
+  if (viewGsheet) viewGsheet.hidden = v !== 'gsheet';
   var titles = {
     dashboard: ['Dashboard', 'Buyer Ledger Analytics + lot details on one page · click a row to drill down'],
     analytics: ['Power BI Analytics', 'Exhaustive visual analytics, realization charts, Pareto distributions, and executive KPIs'],
-    data: ['Data & Backup', 'Export to Excel / HTML / PDF / CSV / TXT / JSON / Google Drive · import any of them back']
+    data: ['Data & Backup', 'Export to Excel / HTML / PDF / CSV / TXT / JSON / Google Drive · import any of them back'],
+    gsheet: ['Google Sheet', 'Live Google Sheets preview embedded in the app · paste any share link above']
   };
   if (titles[v]) {
     document.getElementById('viewTitle').textContent = titles[v][0];
@@ -7921,6 +7956,7 @@ function setView(v) {
   }
   renderAll();
   if (v === 'analytics') renderAnalyticsCharts();
+  if (v === 'gsheet') ensureGsheetLoaded();
 }
 function renderCards() {
   var rows = dashFilteredRows();
@@ -12306,6 +12342,50 @@ function uploadToDrive(lotsToExport, fmt, token, colsToExport) {
   reader.readAsArrayBuffer(bodyBlob);
 }
 
+/* ---------------- Google Sheet in-app preview tab ---------------- */
+/* Convert any Google Sheets link (share / edit / preview / published) into a
+   URL that can render inside an iframe. Google's /edit endpoint refuses to be
+   framed, so it is rewritten to the embeddable /preview viewer. */
+function gsheetEmbedUrl(u) {
+  u = String(u || '').trim();
+  if (!u) return '';
+  var m = u.match(/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/);
+  if (m) return 'https://docs.google.com/spreadsheets/d/' + m[1] + '/preview';
+  var p = u.match(/spreadsheets\/d\/e\/([A-Za-z0-9_-]{20,})/);
+  if (p) return 'https://docs.google.com/spreadsheets/d/e/' + p[1] + '/pubhtml?widget=true&headers=false';
+  return u;
+}
+function setGsheetStatus(msg, cls) {
+  var el = document.getElementById('gsheetStatus');
+  if (!el) return;
+  el.textContent = msg || 'Google Sheet preview — the sheet must be shared with you (or “Anyone with the link — Viewer”) to load.';
+  el.className = 'muted' + (cls ? ' ' + cls : '');
+}
+function ensureGsheetLoaded() {
+  var frame = document.getElementById('gsheetFrame');
+  var embed = gsheetEmbedUrl(gsheetUrl);
+  if (!frame) return;
+  if (embed && frame.dataset.loaded !== embed) { frame.src = embed; frame.dataset.loaded = embed; }
+  setGsheetStatus(embed ? '' : 'Paste a Google Sheets link above to load the preview.');
+}
+function gsheetLoad() {
+  var input = document.getElementById('gsheetUrlInput');
+  var u = String(input && input.value || '').trim();
+  if (!u) { setGsheetStatus('Paste a Google Sheets link first.', 'err'); return; }
+  var embed = gsheetEmbedUrl(u);
+  if (!embed) { setGsheetStatus('Could not read that link — expected a docs.google.com/spreadsheets URL.', 'err'); return; }
+  gsheetUrl = u;
+  var frame = document.getElementById('gsheetFrame');
+  if (frame) { frame.src = embed; frame.dataset.loaded = embed; }
+  saveState();
+  setGsheetStatus('Loaded “' + (embed.indexOf('pubhtml') !== -1 ? 'published sheet' : 'sheet preview') + '” — use ↗ Open in tab to edit.', 'ok');
+}
+function gsheetOpenTab() {
+  var u = gsheetEmbedUrl(gsheetUrl) || gsheetUrl;
+  if (!u) { setGsheetStatus('Nothing to open — paste a link first.', 'err'); return; }
+  window.open(u, '_blank', 'noopener');
+}
+
 /* ---------------- column manager ---------------- */
 function closeAllColPickers() {
   document.querySelectorAll('.col-picker-panel').forEach(function (p) { p.classList.remove('open'); });
@@ -15279,6 +15359,15 @@ function init() {
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.addEventListener('click', function () { setView(b.dataset.view); });
   });
+  var gsInput = document.getElementById('gsheetUrlInput');
+  if (gsInput) {
+    gsInput.value = gsheetUrl || '';
+    gsInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') gsheetLoad(); });
+  }
+  var gsLoad = document.getElementById('gsheetLoadBtn');
+  if (gsLoad) gsLoad.addEventListener('click', gsheetLoad);
+  var gsOpen = document.getElementById('gsheetOpenBtn');
+  if (gsOpen) gsOpen.addEventListener('click', gsheetOpenTab);
   document.getElementById('groupBy').addEventListener('change', function (e) {
     ui.groupBy = e.target.value; selectedGroup = null;
     sortState = { table: 'pivot', key: null, dir: -1 };
