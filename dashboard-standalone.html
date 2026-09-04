@@ -230,9 +230,9 @@ tr.detail-summary-row td{background:rgba(124,58,237,.06);font-weight:600}
 tr.detail-summary-row td.g-value-cell{color:var(--text);text-align:left;font-weight:700}
 tr.detail-summary-row .gcount{margin-left:6px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:1px 7px}
 /* Per-group subtotal row (Sections / Collapsible layouts when group totals shown) */
-tr.detail-group-total td{background:rgba(0,245,255,.055);font-weight:600;border-top:1px solid rgba(0,245,255,.18);border-bottom:1px solid rgba(0,245,255,.14)}
-tr.detail-group-total td.g-value-cell{color:var(--cyan);text-align:left;font-weight:700}
-tr.detail-group-total .gcount{margin-left:6px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.2);border-radius:99px;padding:1px 7px}
+tr.detail-group-total td{background:rgba(255,255,255,.03);font-weight:600;border-top:1px solid rgba(255,255,255,.09)}
+tr.detail-group-total td.g-value-cell{color:var(--text);text-align:left;font-weight:700}
+tr.detail-group-total .gcount{margin-left:6px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:1px 7px}
 select,input[type=text],input[type=search],input[type=number],input[type=date]{
   font-family:'Inter',sans-serif;font-size:11px;padding:7px 11px;
   border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(0,0,0,.4);color:var(--text);
@@ -1586,9 +1586,9 @@ table td[data-field="sap_document_date"] input{
 [data-theme="light"] tr.detail-group-hdr .gcount{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
 [data-theme="light"] tr.detail-summary-row td{background:#f5f3ff}
 [data-theme="light"] tr.detail-summary-row td.g-value-cell{color:#1e1b4b}
-[data-theme="light"] tr.detail-group-total td{background:#e0f7fe;border-top-color:#a5e3f5;border-bottom-color:#a5e3f5}
-[data-theme="light"] tr.detail-group-total td.g-value-cell{color:#0e7490}
-[data-theme="light"] tr.detail-group-total .gcount{background:#cffafe;border-color:#67d3ea;color:#0e7490}
+[data-theme="light"] tr.detail-group-total td{background:#f8fafc;border-top-color:#e2e8f0}
+[data-theme="light"] tr.detail-group-total td.g-value-cell{color:#0f172a}
+[data-theme="light"] tr.detail-group-total .gcount{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
 [data-theme="light"] select,
 [data-theme="light"] input[type=text],
 [data-theme="light"] input[type=search],
@@ -8099,8 +8099,10 @@ function pivotGroupHeaderHtml(group, groupKey, isCollapsible, colspan, collapsed
 }
 /* Per-group subtotal row for the pivot Sections / Collapsible layouts. */
 function pivotGroupTotalRowHtml(group, cols) {
+  /* First cell carries the label; the remaining columns line up with the header
+     (same shape as the footer's "Total (N lots)" row). */
   var cells = '<td class="left g-value-cell">Subtotal <span class="gcount">' + group.lots.length + '</span></td>';
-  cells += cols.map(function (f) {
+  cells += cols.slice(1).map(function (f) {
     var meta = FIELD_META[f], custom = customColById(f);
     if ((meta && meta.sum) || (custom && custom.type === 'number')) {
       var s = group.lots.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
@@ -8669,8 +8671,11 @@ function detailSummaryRowHtml(group, groupKey, cols) {
 }
 /* Per-group subtotal row for the Sections / Collapsible layouts. */
 function detailGroupTotalRowHtml(group, groupKey, cols) {
+  /* First cell carries the "Subtotal" label; the remaining columns are the
+     summed numeric values, so the row lines up exactly with the lot rows and
+     the header (mirrors the footer's "Total (N)" layout). */
   var cells = '<td class="left g-value-cell">Subtotal <span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span></td>';
-  cells += cols.map(function (f) {
+  cells += cols.slice(1).map(function (f) {
     var custom = customColById(f);
     if (DETAIL_NUMERIC_FIELDS.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
       var s = group.lots.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
