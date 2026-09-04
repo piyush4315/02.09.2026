@@ -4937,7 +4937,7 @@ var XLSX_COLS = [
   ['fp_expected', 'FP Expected', 'f:ROUND(H{r}*92.65%-R{r},0)'],
   ['fp_received', 'FP Received', 'n'],
   ['fp_date', 'FP Date', 's'],
-  ['late_fee', 'Late Fees', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,22))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,22))/7,0)*0.0118, 0), 0))'],
+  ['late_fee', 'Late Fees Expected', 'f:IF(Y{r}="", IF(AC{r}="Unsettled", ROUND(H{r}*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,22))/7,0)*0.0118, 0), 0), IF(DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))>DATE(2026,8,24), ROUND(H{r}*ROUNDUP((DATE(MID(Y{r},7,4), MID(Y{r},4,2), MID(Y{r},1,2))-DATE(2026,8,22))/7,0)*0.0118, 0), 0))'],
   ['total_received', 'Total Received', 'f:ROUND(U{r}+X{r}+AG{r},0)'],
   ['outstanding', 'Outstanding', 'f:ROUND(S{r}+Z{r}-AA{r},0)'],
   ['settlement_status', 'Settled / Unsettled', 'f:IF(AB{r}<=5,"Settled","Unsettled")'],
@@ -5262,7 +5262,7 @@ var PIVOT_VALUE_COLS = [
   ['sd_received', 'SD Received', 'sum'],
   ['fp_expected', 'FP Expected', 'sum'],
   ['fp_received', 'FP Received', 'sum'],
-  ['late_fee', 'Late Fees', 'sum'],
+  ['late_fee', 'Late Fees Expected', 'sum'],
   ['late_fee_received', 'Late Fees Received', 'sum'],
   ['total_received', 'Total Received', 'sum'],
   ['outstanding', 'Outstanding', 'sum']
@@ -5277,7 +5277,7 @@ var PIVOT_TABLE_COL = {
   sd_received: 'SD Received',
   fp_expected: 'FP Expected',
   fp_received: 'FP Received',
-  late_fee: 'Late Fees',
+  late_fee: 'Late Fees Expected',
   late_fee_received: 'Late Fees Received',
   total_received: 'Total Received',
   outstanding: 'Outstanding'
@@ -5900,7 +5900,7 @@ var EXPORT_COLS = [
   ['gst_tds_rate', 'GST TDS Rate'], ['gst_tds', 'GST TDS'], ['total_receivables', 'TRIC'],
   ['sd_expected', 'SD Expected'], ['sd_received', 'SD Received'], ['sd_date', 'SD Date'],
   ['fp_expected', 'FP Expected'], ['fp_received', 'FP Received'], ['fp_date', 'FP Date'],
-  ['late_fee', 'Late Fees'], ['late_fee_received', 'Late Fees Received'], ['late_fee_received_date', 'Late Fees Received Date'],
+  ['late_fee', 'Late Fees Expected'], ['late_fee_received', 'Late Fees Received'], ['late_fee_received_date', 'Late Fees Received Date'],
   ['total_received', 'Total Received'], ['outstanding', 'Outstanding'],
   ['settlement_status', 'Settled / Unsettled'], ['invoice_no', 'Invoice No.'], ['sap_document_date', 'SAP Document No.'], ['doc_invoice_date', 'Doc./Invoice Date']
 ];
@@ -7786,7 +7786,7 @@ var FIELD_META = {
   fp_expected: { label: 'FP Ex\u00ADpect\u00ADed', kind: 'edit', sum: true, edit: true },
   fp_received: { label: 'FP Re\u00ADceived', kind: 'edit', sum: true, edit: true },
   fp_date: { label: 'FP Date', kind: 'date-edit', sum: false, edit: true },
-  late_fee: { label: 'Late Fees', kind: 'edit', sum: true, edit: true },
+  late_fee: { label: 'Late Fees Expected', kind: 'edit', sum: true, edit: true },
   late_fee_received: { label: 'Late Fees Re\u00ADceived', kind: 'edit', sum: true, edit: true },
   late_fee_received_date: { label: 'Re\u00ADceived Date', kind: 'date-edit', sum: false, edit: true },
   settlement_status: { label: 'Set\u00ADtled / Un\u00ADset\u00ADtled', kind: 'status', sum: false },
@@ -9638,7 +9638,7 @@ function getCellFormulaInfo(table, td) {
       var wks = calcLateFeeWeeks(r);
       var html = '<span class="fx-fn">IF</span>(<span class="fx-field">FP Date</span> <span class="fx-op">&gt;</span> <span class="fx-num">24.08.2026</span>, <span class="fx-fn">ROUND</span>(<span class="fx-field">Mat Value</span> <span class="fx-op">×</span> <span class="fx-fn">CEIL</span>((<span class="fx-field">FP Date</span><span class="fx-op">-</span><span class="fx-num">22.08.2026</span>)<span class="fx-op">/</span><span class="fx-num">7</span>) <span class="fx-op">×</span> <span class="fx-num">1.18%</span>, <span class="fx-num">0</span>), <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> ' + (r.late_fee > 0 ? ('<span class="fx-eval">₹ ' + inr(r.mat_value) + ' × ' + wks + ' wk(s) × 1.18% =</span> <span class="fx-res">₹ ' + inr(r.late_fee) + '</span>') : '<span class="fx-eval">No delay (FP remitted on/before 24.08.2026) =</span> <span class="fx-res">₹ 0</span>') +
-                 '<span class="fx-expl">' + (r.late_fee > 0 ? (pctOfMat(r.late_fee) + ' · ') : '') + 'Late Fees @ 1.18%/wk</span>';
+                 '<span class="fx-expl">' + (r.late_fee > 0 ? (pctOfMat(r.late_fee) + ' · ') : '') + 'Late Fees Expected @ 1.18%/wk</span>';
       var plain = '=IF(FP_Date > 24.08.2026, ROUND(Mat_Value * Weeks * 1.18%, 0), 0) = ' + (r.late_fee || 0) + (r.late_fee > 0 ? (' [' + pctOfMat(r.late_fee) + ']') : '');
       return { name: cellName, html: html, plain: plain };
     }
@@ -9671,7 +9671,7 @@ function getCellFormulaInfo(table, td) {
       var isPos = r.outstanding > 1;
       var isNeg = r.outstanding < -1;
       var outColor = isPos ? '#f43f5e' : (isNeg ? '#10b981' : '#94a3b8');
-      var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">TRIC</span> <span class="fx-op">+</span> <span class="fx-field">Late Fees</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
+      var html = '<span class="fx-fn">ROUND</span>(<span class="fx-field">TRIC</span> <span class="fx-op">+</span> <span class="fx-field">Late Fees Expected</span> <span class="fx-op">-</span> <span class="fx-field">Total Received</span>, <span class="fx-num">0</span>)' +
                  '<span class="fx-arrow">➔</span> <span class="fx-eval">₹ ' + inr(r.total_receivables) + ' + ₹ ' + inr(r.late_fee || 0) + ' - ₹ ' + inr(r.total_received) + ' =</span> <span class="fx-res" style="color:' + outColor + '">₹ ' + inr(r.outstanding) + '</span>' +
                  '<span class="fx-expl">' + pctOfMat(r.outstanding) + ' · Net Pending Due (Total Received incl. Late Fees Received)</span>';
       var plain = '=Total_Receivables + Late_Fee - Total_Received = ' + r.outstanding + ' [' + pctOfMat(r.outstanding) + ']';
@@ -9940,7 +9940,7 @@ function renderPbiKpis(rows) {
       color: totOut > 1 ? '#f43f5e' : '#10b981'
     },
     {
-      label: 'Late Fees',
+      label: 'Late Fees Expected',
       val: '₹ ' + inr(totLate),
       sub: 'Accrued @ 1.18%/wk on Mat Value',
       barVal: Math.min(100, totMat > 0 ? Math.round((totLate / totMat) * 100 * 5) : 0),
@@ -10280,7 +10280,7 @@ function renderAgeingChart(rows) {
     var barH = Math.max(3, (b.mat / maxMat) * plotH);
     var y = (h - padB) - barH;
 
-    var tip = '<b>' + escHtml(b.label) + '</b><br/>Lots: <b>' + b.count + '</b><br/>Material Value: <b>₹ ' + inr(b.mat) + '</b><br/>Late Fees: <b>₹ ' + inr(b.late) + '</b>';
+    var tip = '<b>' + escHtml(b.label) + '</b><br/>Lots: <b>' + b.count + '</b><br/>Material Value: <b>₹ ' + inr(b.mat) + '</b><br/>Late Fees Expected: <b>₹ ' + inr(b.late) + '</b>';
     svg += '<rect x="' + x + '" y="' + y + '" width="' + colW + '" height="' + barH + '" rx="2" fill="' + b.color + '" opacity="0.9" data-pbi-tip="' + escHtml(tip) + '" style="cursor:pointer"/>';
     svg += '<text x="' + (x + colW / 2) + '" y="' + (y - 5) + '" font-size="8.5" font-weight="700" fill="currentColor" text-anchor="middle">' + b.count + ' lots</text>';
     svg += '<text x="' + (x + colW / 2) + '" y="' + (h - padB + 14) + '" font-size="8" fill="currentColor" fill-opacity="0.65" text-anchor="middle">' + escHtml(b.label.split(' ')[0]) + '</text>';
@@ -12150,7 +12150,7 @@ function paintLotForm(c, skipId) {
     prev.innerHTML = '<b>TRIC:</b> ₹ ' + inr(c.total_receivables) +
       ' &nbsp;·&nbsp; <b>SD Expected:</b> ₹ ' + inr(c.sd_expected) +
       ' &nbsp;·&nbsp; <b>FP Expected:</b> ₹ ' + inr(c.fp_expected) +
-      ' &nbsp;·&nbsp; <b>Late Fees:</b> ₹ ' + inr(c.late_fee || 0) +
+      ' &nbsp;·&nbsp; <b>Late Fees Expected:</b> ₹ ' + inr(c.late_fee || 0) +
       ' &nbsp;·&nbsp; <b>Late Fees Received:</b> ₹ ' + inr(c.late_fee_received || 0) +
       ' &nbsp;·&nbsp; <b>Total Received:</b> ₹ ' + inr(c.total_received) +
       ' &nbsp;·&nbsp; <b>Outstanding:</b> ₹ ' + inr(c.outstanding);
@@ -12634,7 +12634,7 @@ function printPaymentAdvice(lotsList, buyerTitle) {
         "<div class=\"sec-title\"><span class=\"sec-indicator\" style=\"background:#7c3aed\"></span> 3. Itemized Lot Breakdown (" + lotsList.length + " Lots)</div>" +
         "<div style=\"overflow-x:auto;margin-bottom:16px;border:1px solid #cbd5e1;border-radius:6px\">" +
           "<table class=\"adv-tbl\" style=\"margin-bottom:0;border:none;min-width:920px\">" +
-            "<thead><tr><th class=\"cen\">#</th><th>Lot No.</th><th>Auction</th><th>Material</th><th class=\"num\">Qty</th><th class=\"num\">Rate</th><th class=\"num\">Mat. Value</th><th class=\"num\">GST</th><th class=\"num\">TCS (2%)</th><th class=\"num\">MSTC SC</th><th class=\"num\">Before GST TDS</th><th class=\"num\">GST TDS</th><th class=\"num\">Total Cash</th><th class=\"num\">SD Due</th><th class=\"cen\">SD Date</th><th class=\"num\">FP Due</th><th class=\"cen\">FP Date</th><th class=\"num\">Late Fees</th><th class=\"num\">LF Rec.</th><th class=\"cen\">LF Rec Date</th><th class=\"num\">Net Due</th></tr></thead>" +
+            "<thead><tr><th class=\"cen\">#</th><th>Lot No.</th><th>Auction</th><th>Material</th><th class=\"num\">Qty</th><th class=\"num\">Rate</th><th class=\"num\">Mat. Value</th><th class=\"num\">GST</th><th class=\"num\">TCS (2%)</th><th class=\"num\">MSTC SC</th><th class=\"num\">Before GST TDS</th><th class=\"num\">GST TDS</th><th class=\"num\">Total Cash</th><th class=\"num\">SD Due</th><th class=\"cen\">SD Date</th><th class=\"num\">FP Due</th><th class=\"cen\">FP Date</th><th class=\"num\">Late Fees Expected</th><th class=\"num\">LF Rec.</th><th class=\"cen\">LF Rec Date</th><th class=\"num\">Net Due</th></tr></thead>" +
             "<tbody>" + lotRowsHtml + "</tbody>" +
           "</table>" +
         "</div>"
@@ -13350,7 +13350,7 @@ function openLotDetails(idx) {
             '<div class="lic-row"><span class="lic-k">FP Expected</span><span class="lic-v">₹ ' + moneyFmt(r.fp_expected || 0) + pTag(r.fp_expected) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">FP Received</span><span class="lic-v">₹ ' + moneyFmt(r.fp_received || 0) + pTag(r.fp_received) + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">FP Date</span><span class="lic-v">' + escHtml(dottedDate(r.fp_date) || '—') + '</span></div>' +
-            '<div class="lic-row"><span class="lic-k">Late Fees</span><span class="lic-v strong" style="color:#f9a8d4">₹ ' + moneyFmt(r.late_fee || 0) + (r.late_fee ? pTag(r.late_fee) : '') + '</span></div>' +
+            '<div class="lic-row"><span class="lic-k">Late Fees Expected</span><span class="lic-v strong" style="color:#f9a8d4">₹ ' + moneyFmt(r.late_fee || 0) + (r.late_fee ? pTag(r.late_fee) : '') + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Late Fees Received</span><span class="lic-v success strong">₹ ' + moneyFmt(r.late_fee_received || 0) + (r.late_fee_received ? pTag(r.late_fee_received) : '') + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Received Date</span><span class="lic-v">' + escHtml(dottedDate(r.late_fee_received_date) || '—') + '</span></div>' +
             '<div class="lic-row"><span class="lic-k">Total Received</span><span class="lic-v success strong">₹ ' + moneyFmt(r.total_received || 0) + pTag(r.total_received) + '</span></div>' +
@@ -13490,7 +13490,7 @@ function openLotForm(idx) {
         '<label>FP date<input id="al_fp_date" type="date" value="' + escHtml(r ? toISODate(r.fp_date) : '') + '"/></label>' +
         '<label>Late Fees received ₹<input id="al_lf_rec" type="number" step="any" value="' + escHtml(r ? numOr(r.late_fee_received) : 0) + '" style="text-align:right"/></label>' +
         '<label>Late Fees received date<input id="al_lf_date" type="date" value="' + escHtml(r ? toISODate(r.late_fee_received_date) : '') + '"/></label>' +
-        '<label>Late Fees (auto)<input id="al_lf_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
+        '<label>Late Fees Expected (auto)<input id="al_lf_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
         '<label>Total received (auto)<input id="al_recd_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
         '<label>Outstanding (auto)<input id="al_out_amt" type="number" class="ro-amt" readonly tabindex="-1" value="0" style="text-align:right"/></label>' +
       '</div>' +
