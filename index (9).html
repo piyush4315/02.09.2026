@@ -146,8 +146,17 @@ html{scrollbar-width:auto;scrollbar-color:var(--violet) #0d0d1a}
 .gsheet-bar-title .muted{font-size:11px}
 .gsheet-bar-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gsheet-bar-controls input{flex:1 1 260px;max-width:440px}
-.gsheet-frame-wrap{position:relative;margin:0 32px 20px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b0b18;height:calc(100vh - 230px);min-height:420px}
+.gsheet-frame-wrap{position:relative;margin:0 32px 20px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b0b18;height:calc(100vh - 300px);min-height:420px}
 .gsheet-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.gsheet-sync{margin:0 32px 16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.gsheet-sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.gsheet-sync-title{display:flex;flex-direction:column;gap:2px;font-size:12px}
+.gsheet-sync-title .muted{font-size:11px}
+.gsheet-sync-toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer}
+.gsheet-sync-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gsheet-sync-note{font-size:10.5px;line-height:1.5}
+.gsheet-sync-status-ok{color:#34d399}.gsheet-sync-status-err{color:#fb7185}.gsheet-sync-status-busy{color:var(--cyan)}
+[data-theme="light"] .gsheet-sync-status-ok{color:#059669}
 [data-theme="light"] .gsheet-frame-wrap{background:#f6f7fb}
 [data-theme="light"] .gsheet-frame{background:#fff}
 .toolbar-row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:10px 32px 12px}
@@ -4511,6 +4520,22 @@ th.left .th-wrap, th.center .th-wrap {
             <button class="btn" id="gsheetOpenBtn" type="button" title="Open this sheet in a new browser tab">↗ Open in tab</button>
           </div>
         </div>
+        <div class="gsheet-sync panel">
+          <div class="gsheet-sync-row">
+            <div class="gsheet-sync-title">
+              <b>Two-way sync</b>
+              <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
+            </div>
+            <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
+          </div>
+          <div class="gsheet-sync-actions">
+            <button class="btn primary" id="gsheetConnectBtn" type="button">Connect &amp; enable sync</button>
+            <button class="btn" id="gsheetSyncNowBtn" type="button" title="Pull the sheet's changes, resolve conflicts, then push the merged result back">⇄ Sync now</button>
+            <button class="btn" id="gsheetPullBtn" type="button" title="Read the sheet and apply its values to the app">↓ Pull (sheet → app)</button>
+            <button class="btn" id="gsheetPushBtn" type="button" title="Write the app's current data into the sheet">↑ Push (app → sheet)</button>
+          </div>
+          <div class="gsheet-sync-note muted" id="gsheetSyncNote">Syncs the whole dataset (all lots, all columns) to the sheet's first tab, matched by column headers. Conflicts keep the newest change — the sheet's last-modified time is used for the sheet side. The sheet must be shared with you (Edit access) and the Sheets API enabled in your Google Cloud project.</div>
+        </div>
         <div class="gsheet-frame-wrap">
           <iframe id="gsheetFrame" title="Google Sheet preview" class="gsheet-frame" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
@@ -6885,6 +6910,19 @@ var customCols = []; /* [{id, name, type: 'text'|'number'|'date'}] */
 var gdriveClientId = '';
 var gdriveToken = null;
 var gsheetUrl = 'https://docs.google.com/spreadsheets/d/1ihLs7bScvTLYB-Ez-Rr5rokJebSAZyRFNsbRt7jid2Q/edit?usp=drivesdk';
+var gsheetToken = null;
+var gsheetSync = {
+  enabled: false,
+  applying: false,
+  lastSyncAt: 0,
+  lastPullAt: 0,
+  lastPushAt: 0,
+  sheetTitle: '',
+  sheetModifiedTime: '',
+  snapshot: {},     /* key: lotNo|field -> last-synced string value */
+  last: { pulled: 0, pushed: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0, error: '' }
+};
+var gsheetTimer = null, gsheetPushTimer = null;
 var pendingImportCustom = [];
 /* Canonical 31-column order shared by Lot Detail and data exports. */
 var DEFAULT_DETAIL_KEYS = ['qty','rate','lot_name','auction','unit','lot_no','buyer','mat_value','gst','mat_value_plus_gst','tcs','tds194o','service_charge_mstc','tds194h','net_service_charge','service_charge_to_mstc','gst_tds_rate','gst_tds','total_receivables','sd_expected','sd_received','sd_date','fp_expected','fp_received','fp_date','late_fee','late_fee_received','late_fee_received_date','total_received','outstanding','settlement_status','invoice_no','sap_document_date','doc_invoice_date'];
@@ -7566,6 +7604,7 @@ function saveState() {
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
     gsheetUrl: gsheetUrl,
+    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot },
     ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
   }));
   lastSaved = new Date();
@@ -7637,6 +7676,15 @@ function loadState() {
     ensureGstTdsRateColumn();
     if (data.gdriveClientId) gdriveClientId = String(data.gdriveClientId);
     if (data.gsheetUrl) gsheetUrl = String(data.gsheetUrl);
+    if (data.gsheetSync && typeof data.gsheetSync === 'object') {
+      gsheetSync.enabled = data.gsheetSync.enabled === true;
+      gsheetSync.lastSyncAt = Number(data.gsheetSync.lastSyncAt) || 0;
+      gsheetSync.lastPullAt = Number(data.gsheetSync.lastPullAt) || 0;
+      gsheetSync.lastPushAt = Number(data.gsheetSync.lastPushAt) || 0;
+      gsheetSync.sheetTitle = String(data.gsheetSync.sheetTitle || '');
+      gsheetSync.sheetModifiedTime = String(data.gsheetSync.sheetModifiedTime || '');
+      if (data.gsheetSync.snapshot && typeof data.gsheetSync.snapshot === 'object') gsheetSync.snapshot = data.gsheetSync.snapshot;
+    }
     return true;
   } catch (e) { return false; }
 }
@@ -9724,11 +9772,14 @@ function endEdit(input, skipNormalize) {
   
   var now = snapshotState();
   if (now !== pe.snap) {
+    if (!r._touched) r._touched = {};
+    r._touched[f] = Date.now();
     hist.undo.push(pe.snap);
     if (hist.undo.length > MAX_HISTORY) hist.undo.shift();
     hist.redo.length = 0;
     updateUndoRedoUI();
     saveState();
+    gsheetSchedulePush();
   }
 }
 
@@ -11854,6 +11905,9 @@ function xlPrevSetValue(row, f, v) {
   if (f === 'gst_tds_rate') row._manual.gst_tds = false;
   if (f === 'gst_tds') row._manual.gst_tds = true;
   recalcRow(row, [f]);
+  if (!row._touched) row._touched = {};
+  row._touched[f] = Date.now();
+  gsheetSchedulePush();
 }
 function xlPrevRender() {
   var d = xlPrevDataset(xlPrev.mode);
@@ -12385,6 +12439,397 @@ function gsheetOpenTab() {
   var u = gsheetEmbedUrl(gsheetUrl) || gsheetUrl;
   if (!u) { setGsheetStatus('Nothing to open — paste a link first.', 'err'); return; }
   window.open(u, '_blank', 'noopener');
+}
+
+/* ---------------- Google Sheet two-way sync ---------------- */
+var GSHEET_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.file';
+var GSHEET_HEADER_ALIASES = {
+  'quantity': 'qty', 'material value': 'mat_value', 'mat value': 'mat_value',
+  'material value gst': 'mat_value_plus_gst', 'mat value gst': 'mat_value_plus_gst',
+  'tds u s 194 o': 'tds194o', 'tds u s 194 h': 'tds194h',
+  'service charge mstc': 'service_charge_mstc', 'service charge to mstc': 'service_charge_to_mstc',
+  'net service charge': 'net_service_charge',
+  'gst tds rate': 'gst_tds_rate', 'gst tds': 'gst_tds',
+  'total receivables in cash': 'total_receivables', 'tric': 'total_receivables',
+  'sd expected': 'sd_expected', 'sd received': 'sd_received', 'sd date': 'sd_date',
+  'fp expected': 'fp_expected', 'fp received': 'fp_received', 'fp date': 'fp_date',
+  'late fees expected': 'late_fee', 'late fees received': 'late_fee_received',
+  'received date': 'late_fee_received_date',
+  'total received': 'total_received', 'outstanding': 'outstanding',
+  'settled unsettled': 'settlement_status', 'invoice no': 'invoice_no',
+  'sap document no': 'sap_document_date', 'doc invoice date': 'doc_invoice_date',
+  'bid sheet': 'auction', 'lot no': 'lot_no', 'buyer': 'buyer',
+  'lot name': 'lot_name', 'unit': 'unit', 'qty': 'qty', 'rate': 'rate',
+  'gst': 'gst', 'tcs': 'tcs'
+};
+function gsheetIdFromUrl(u) {
+  var m = String(u || '').match(/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/);
+  return m ? m[1] : '';
+}
+function gsheetSyncFields() {
+  var keys = DEFAULT_DETAIL_KEYS.slice();
+  customCols.forEach(function (c) { if (keys.indexOf(c.id) === -1) keys.push(c.id); });
+  return keys;
+}
+function gsheetNormHeader(h) {
+  return String(h === null || h === undefined ? '' : h).replace(/\u00AD/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').replace(/ {2,}/g, ' ').trim();
+}
+function gsheetHeaderLabel(f) {
+  var c = customColById(f);
+  var label = c ? c.name : (fieldLabel(f) || f);
+  return String(label).replace(/\u00AD/g, '').replace(' ✎', '').trim();
+}
+function gsheetHeaderDict() {
+  var dict = {};
+  gsheetSyncFields().forEach(function (f) {
+    var n = gsheetNormHeader(gsheetHeaderLabel(f));
+    if (n) dict[n] = f;
+  });
+  Object.keys(GSHEET_HEADER_ALIASES).forEach(function (k) {
+    if (!dict[k]) dict[k] = GSHEET_HEADER_ALIASES[k];
+  });
+  return dict;
+}
+function gsheetHeaderMap(headerRow) {
+  var dict = gsheetHeaderDict();
+  var map = {};
+  (headerRow || []).forEach(function (h, i) {
+    var f = dict[gsheetNormHeader(h)];
+    if (f && map[f] === undefined) map[f] = i;
+  });
+  return map;
+}
+function gsheetCanonVal(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number' && isFinite(v)) return String(Math.round(v * 1000000) / 1000000);
+  return String(v).trim();
+}
+function gsheetTimeAgo(ts) {
+  var s = Math.max(1, Math.round((Date.now() - ts) / 1000));
+  if (s < 60) return s + 's ago';
+  var m = Math.round(s / 60);
+  if (m < 60) return m + 'm ago';
+  var h = Math.round(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.round(h / 24) + 'd ago';
+}
+function gsheetApiError(r) {
+  if (r.status === 401 || r.status === 403) {
+    gsheetToken = null;
+    return 'access denied — reconnect and make sure the sheet is shared with you with Edit access.';
+  }
+  return (r.j && r.j.error && r.j.error.message) || ('HTTP ' + r.status);
+}
+function gsheetApi(opts) {
+  return fetch('https://sheets.googleapis.com/v4/' + opts.path, {
+    method: opts.method || 'GET',
+    headers: { Authorization: 'Bearer ' + opts.token, 'Content-Type': 'application/json' },
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  }).then(function (res) {
+    return res.json().then(function (j) { return { ok: res.ok, status: res.status, j: j }; })
+      .catch(function () { return { ok: res.ok, status: res.status, j: {} }; });
+  });
+}
+function gsheetDriveModifiedTime(id) {
+  return fetch('https://www.googleapis.com/drive/v3/files/' + id + '?fields=modifiedTime', {
+    headers: { Authorization: 'Bearer ' + gsheetToken }
+  }).then(function (res) {
+    if (!res.ok) return 0;
+    return res.json().then(function (j) { return Date.parse(j.modifiedTime) || 0; }).catch(function () { return 0; });
+  }).catch(function () { return 0; });
+}
+function gsheetSetSyncStatus(msg, cls) {
+  var el = document.getElementById('gsheetSyncStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.className = 'muted' + (cls ? ' gsheet-sync-status-' + cls : '');
+}
+function gsheetStatusText() {
+  var l = gsheetSync.last || {};
+  var parts = [];
+  if (gsheetSync.lastSyncAt) parts.push('last sync ' + gsheetTimeAgo(gsheetSync.lastSyncAt));
+  if (l.pulled) parts.push(l.pulled + ' pulled');
+  if (l.pushed) parts.push(l.pushed + ' pushed');
+  if (l.added) parts.push(l.added + ' added');
+  if (l.conflicts) parts.push(l.conflicts + ' conflict' + (l.conflicts > 1 ? 's' : '') + ' (' + l.sheetWins + ' sheet / ' + l.appWins + ' app)');
+  if (l.error) parts.push('error: ' + l.error);
+  return parts.join(' · ') || 'Synced';
+}
+function gsheetSyncUi() {
+  var t = document.getElementById('gsheetSyncToggle');
+  if (t) t.checked = !!gsheetSync.enabled;
+  var c = document.getElementById('gsheetConnectBtn');
+  if (c) c.textContent = gsheetToken ? 'Disconnect sync' : 'Connect & enable sync';
+}
+function gsheetGetToken(cb) {
+  if (!gdriveClientId) {
+    showToast('Add a Google OAuth Client ID in Data & Backup → Workspace first, then connect.', 'error');
+    cb({ error: 'No Google OAuth Client ID configured.' });
+    return;
+  }
+  loadScriptOnce('https://accounts.google.com/gsi/client', 'gis-client').then(function () {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) throw new Error('Google Identity Services did not load');
+    var client = google.accounts.oauth2.initTokenClient({
+      client_id: gdriveClientId,
+      scope: GSHEET_SCOPES,
+      callback: function (resp) {
+        if (resp.error) { cb({ error: resp.error_description || resp.error }); return; }
+        gsheetToken = resp.access_token;
+        cb(null, gsheetToken);
+      }
+    });
+    client.requestAccessToken({ prompt: gsheetToken ? '' : 'consent' });
+  }).catch(function (e) { cb({ error: e.message }); });
+}
+function gsheetConnectIfNeeded(done) {
+  if (gsheetToken) { done(); return; }
+  gsheetSetSyncStatus('Connecting to Google…', 'busy');
+  gsheetGetToken(function (err) {
+    if (err) { gsheetSetSyncStatus('Connection failed: ' + err.error, 'err'); return; }
+    gsheetSyncUi();
+    done();
+  });
+}
+/* Applies the sheet's values into the app, field by field, resolving conflicts
+   with the newest change. Derived columns (GST, TCS, TRIC, Outstanding, …) are
+   skipped — the app recomputes them from their source values. */
+function gsheetPullApply(sheetRows, headerMap, sheetTime) {
+  var stats = { pulled: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0 };
+  var keyCol = headerMap.lot_no;
+  if (keyCol === undefined) return stats;
+  var fields = gsheetSyncFields();
+  var byLot = {};
+  lots.forEach(function (r, i) { byLot[String(r.lot_no)] = i; });
+  var changed = false;
+  for (var ri = 1; ri < sheetRows.length; ri++) {
+    var cells = sheetRows[ri] || [];
+    var lotNoRaw = cells[keyCol] == null ? '' : String(cells[keyCol]).trim();
+    if (!/^\d+$/.test(lotNoRaw)) continue;
+    var idx = byLot[lotNoRaw];
+    var lot, isNew = false;
+    if (idx === undefined) {
+      lot = normalizeLot({ lot_no: Number(lotNoRaw) });
+      lots.push(lot);
+      idx = lots.length - 1;
+      byLot[lotNoRaw] = idx;
+      stats.added++;
+      isNew = true;
+      changed = true;
+    }
+    lot = lots[idx];
+    for (var fi = 0; fi < fields.length; fi++) {
+      var f = fields[fi];
+      if (f === 'lot_no' || !xlPrevEditableField(f)) continue;
+      var col = headerMap[f];
+      if (col === undefined) continue;
+      var sv = cells[col] == null ? '' : cells[col];
+      if (isReceiptDateField(f) && typeof sv === 'number') continue;
+      if (isNew) {
+        xlPrevSetValue(lot, f, typeof sv === 'number' ? String(sv) : sv);
+        stats.pulled++;
+        stats.updated++;
+        continue;
+      }
+      var svStr = gsheetCanonVal(sv);
+      var appStr = gsheetCanonVal(screenExportValue(lot, f));
+      var snap = gsheetSync.snapshot[lotNoRaw + '|' + f];
+      if (snap === undefined) snap = '';
+      var appChanged = appStr !== snap;
+      var sheetChanged = svStr !== snap;
+      if (sheetChanged && appChanged) {
+        stats.conflicts++;
+        var appT = (lot._touched && lot._touched[f]) || gsheetSync.lastSyncAt || 0;
+        var sheetWins = (sheetTime > appT) || (!sheetTime && !appT);
+        if (sheetWins) stats.sheetWins++;
+        else { stats.appWins++; continue; }
+      } else if (!sheetChanged) {
+        continue;
+      }
+      xlPrevSetValue(lot, f, typeof sv === 'number' ? String(sv) : sv);
+      stats.pulled++;
+      stats.updated++;
+      changed = true;
+    }
+  }
+  if (changed) { pushHistory(); saveState(); renderAll(); }
+  return stats;
+}
+/* Builds the full grid to write back: header row, one row per lot, and a TOTAL
+   row — mirroring the app's export. Columns the app does not map are preserved
+   from the sheet's existing values. */
+function gsheetPushBuild(headerMap, existingHeader, existingRows) {
+  var inv = {};
+  Object.keys(headerMap).forEach(function (f) { inv[headerMap[f]] = f; });
+  var mappedCols = Object.keys(inv).map(Number);
+  var maxCols = Math.max(existingHeader.length || 0, mappedCols.length ? Math.max.apply(null, mappedCols) + 1 : 0);
+  var header = [];
+  for (var c = 0; c < maxCols; c++) {
+    var f = inv[c];
+    header.push(f ? gsheetHeaderLabel(f) : (existingHeader[c] != null ? existingHeader[c] : ''));
+  }
+  var sheetLotRows = {};
+  if (headerMap.lot_no !== undefined) {
+    (existingRows || []).forEach(function (r) {
+      var k = String(r[headerMap.lot_no] == null ? '' : r[headerMap.lot_no]).trim();
+      if (/^\d+$/.test(k) && sheetLotRows[k] === undefined) sheetLotRows[k] = r;
+    });
+  }
+  var dataRows = lots.map(function (lot) {
+    var prev = sheetLotRows[String(lot.lot_no)] || [];
+    var row = [];
+    for (var c2 = 0; c2 < maxCols; c2++) {
+      var f2 = inv[c2];
+      if (f2) {
+        var v = screenExportValue(lot, f2);
+        row.push(v === null || v === undefined ? '' : v);
+      } else row.push(prev[c2] != null ? prev[c2] : '');
+    }
+    return row;
+  });
+  var total = [];
+  for (var c3 = 0; c3 < maxCols; c3++) {
+    var f3 = inv[c3];
+    if (c3 === 0) total.push('TOTAL (' + lots.length + ' lots)');
+    else if (f3) {
+      var meta = FIELD_META[f3], cc = customColById(f3);
+      total.push((meta && meta.sum) || (cc && cc.type === 'number') ? sumField(lots, f3) : '');
+    } else total.push('');
+  }
+  return [header].concat(dataRows, [total]);
+}
+function gsheetSnapshotFromGrid(grid, headerMap) {
+  gsheetSync.snapshot = {};
+  var inv = {};
+  Object.keys(headerMap).forEach(function (f) { inv[headerMap[f]] = f; });
+  for (var ri = 1; ri < grid.length; ri++) {
+    var cells = grid[ri] || [];
+    var key = cells[headerMap.lot_no] != null ? String(cells[headerMap.lot_no]).trim() : '';
+    if (!/^\d+$/.test(key)) continue;
+    for (var c = 0; c < cells.length; c++) {
+      var f = inv[c];
+      if (f) gsheetSync.snapshot[key + '|' + f] = gsheetCanonVal(cells[c]);
+    }
+  }
+}
+function gsheetSnapshotFromApp(headerMap) {
+  gsheetSync.snapshot = {};
+  gsheetSyncFields().forEach(function (f) {
+    if (headerMap[f] === undefined) return;
+    lots.forEach(function (r) {
+      gsheetSync.snapshot[String(r.lot_no) + '|' + f] = gsheetCanonVal(screenExportValue(r, f));
+    });
+  });
+}
+/* The core sync: read the sheet, pull + resolve conflicts, push the merged
+   result back. opts.pull / opts.push can disable either direction. */
+function gsheetSyncOnce(opts) {
+  opts = opts || {};
+  var doPull = opts.pull !== false;
+  var doPush = opts.push !== false;
+  var id = gsheetIdFromUrl(gsheetUrl);
+  if (!id) { gsheetSetSyncStatus('Paste a Google Sheets link first.', 'err'); return Promise.resolve(false); }
+  if (gsheetSync.applying) return Promise.resolve(false);
+  if (!gsheetToken) { gsheetSetSyncStatus('Not signed in — click "Connect & enable sync".', 'err'); return Promise.resolve(false); }
+  gsheetSync.applying = true;
+  gsheetSetSyncStatus('Syncing…', 'busy');
+  var headerMap = null;
+  var grid = null;
+  var sheetValues = null;
+  var stats = { pulled: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0 };
+  return gsheetApi({ path: 'spreadsheets/' + id + '?fields=properties.title,sheets(properties(title,index))', token: gsheetToken })
+    .then(function (r) {
+      if (!r.ok) throw new Error(gsheetApiError(r));
+      var title = (r.j.properties && r.j.properties.title) || 'Sheet1';
+      gsheetSync.sheetTitle = title;
+      return gsheetApi({ path: 'spreadsheets/' + id + '/values/' + encodeURIComponent(title) + '!A1:ZZ20000', token: gsheetToken });
+    })
+    .then(function (r) {
+      if (!r.ok) throw new Error(gsheetApiError(r));
+      var values = (r.j && r.j.values) || [];
+      sheetValues = values;
+      headerMap = gsheetHeaderMap(values[0] || []);
+      if (headerMap.lot_no === undefined) throw new Error('Could not find a "Lot No." column in the sheet to match rows by.');
+      if (doPush) {
+        grid = gsheetPushBuild(headerMap, values[0] || [], values.slice(1));
+      }
+      return gsheetDriveModifiedTime(id);
+    })
+    .then(function (sheetTime) {
+      if (sheetTime) gsheetSync.sheetModifiedTime = new Date(sheetTime).toISOString();
+      if (doPull) stats = gsheetPullApply(sheetValues || [], headerMap, sheetTime);
+      if (doPush) {
+        return gsheetApi({ path: 'spreadsheets/' + id + '/values/' + encodeURIComponent(gsheetSync.sheetTitle) + '!A1?valueInputOption=USER_ENTERED', method: 'PUT', token: gsheetToken, body: { values: grid } })
+          .then(function (w) {
+            if (!w.ok) throw new Error(gsheetApiError(w));
+            gsheetSnapshotFromGrid(grid, headerMap);
+            return true;
+          });
+      }
+      gsheetSnapshotFromApp(headerMap);
+      return true;
+    })
+    .then(function () {
+      var now = Date.now();
+      gsheetSync.lastSyncAt = now;
+      if (doPush) gsheetSync.lastPushAt = now;
+      if (doPull) gsheetSync.lastPullAt = now;
+      gsheetSync.last = { pulled: stats.pulled, pushed: doPush ? lots.length : 0, added: stats.added, updated: stats.updated, conflicts: stats.conflicts, sheetWins: stats.sheetWins, appWins: stats.appWins, error: '' };
+      saveState();
+      if (!opts.silent) showToast('Google Sheet sync complete (' + lots.length + ' rows)', 'ok');
+      gsheetSetSyncStatus(gsheetStatusText(), 'ok');
+      return true;
+    })
+    .catch(function (e) {
+      gsheetSync.last.error = e.message;
+      gsheetSetSyncStatus('Sync failed: ' + e.message, 'err');
+      if (!opts.silent) showToast('Google Sheet sync failed: ' + e.message, 'error');
+      return false;
+    })
+    .then(function (res) {
+      gsheetSync.applying = false;
+      gsheetSyncUi();
+      return res;
+    });
+}
+function gsheetConnect() {
+  gsheetSetSyncStatus('Connecting to Google…', 'busy');
+  gsheetGetToken(function (err) {
+    if (err) { gsheetSetSyncStatus('Connection failed: ' + err.error, 'err'); return; }
+    gsheetSync.enabled = true;
+    var t = document.getElementById('gsheetSyncToggle');
+    if (t) t.checked = true;
+    saveState();
+    gsheetSyncUi();
+    gsheetSyncOnce({}).then(function () { gsheetAutoStart(); });
+  });
+}
+function gsheetDisconnect() {
+  gsheetSync.enabled = false;
+  gsheetToken = null;
+  gsheetAutoStop();
+  var t = document.getElementById('gsheetSyncToggle');
+  if (t) t.checked = false;
+  saveState();
+  gsheetSyncUi();
+  gsheetSetSyncStatus('Disconnected — sign in again to sync.', '');
+}
+function gsheetSchedulePush() {
+  if (!gsheetSync.enabled || !gsheetToken || gsheetSync.applying) return;
+  if (!gsheetIdFromUrl(gsheetUrl)) return;
+  clearTimeout(gsheetPushTimer);
+  gsheetPushTimer = setTimeout(function () { gsheetSyncOnce({ silent: true }); }, 4000);
+}
+function gsheetAutoStart() {
+  gsheetAutoStop();
+  if (gsheetSync.enabled && gsheetToken) {
+    gsheetTimer = setInterval(function () { gsheetSyncOnce({ silent: true }); }, 45000);
+  }
+}
+function gsheetAutoStop() {
+  if (gsheetTimer) clearInterval(gsheetTimer);
+  if (gsheetPushTimer) clearTimeout(gsheetPushTimer);
+  gsheetTimer = gsheetPushTimer = null;
 }
 
 /* ---------------- column manager ---------------- */
@@ -13233,6 +13678,7 @@ function afterStateChange(msg) {
   rebuildAuctionOptions();
   renderAll();
   saveState();
+  gsheetSchedulePush();
   if (msg) showToast(msg + (hist.undo.length ? ' (undo: Ctrl+Z)' : ''), 'ok');
 }
 
@@ -15369,6 +15815,24 @@ function init() {
   if (gsLoad) gsLoad.addEventListener('click', gsheetLoad);
   var gsOpen = document.getElementById('gsheetOpenBtn');
   if (gsOpen) gsOpen.addEventListener('click', gsheetOpenTab);
+  var gsConnect = document.getElementById('gsheetConnectBtn');
+  if (gsConnect) gsConnect.addEventListener('click', function () { if (gsheetToken) gsheetDisconnect(); else gsheetConnect(); });
+  var gsToggle = document.getElementById('gsheetSyncToggle');
+  if (gsToggle) gsToggle.addEventListener('change', function () {
+    gsheetSync.enabled = !!gsToggle.checked;
+    saveState();
+    if (gsheetSync.enabled) { if (!gsheetToken) gsheetConnect(); else gsheetAutoStart(); }
+    else gsheetAutoStop();
+    gsheetSyncUi();
+  });
+  var gsSyncNow = document.getElementById('gsheetSyncNowBtn');
+  if (gsSyncNow) gsSyncNow.addEventListener('click', function () { gsheetConnectIfNeeded(function () { gsheetSyncOnce({}); }); });
+  var gsPull = document.getElementById('gsheetPullBtn');
+  if (gsPull) gsPull.addEventListener('click', function () { gsheetConnectIfNeeded(function () { gsheetSyncOnce({ push: false }); }); });
+  var gsPush = document.getElementById('gsheetPushBtn');
+  if (gsPush) gsPush.addEventListener('click', function () { gsheetConnectIfNeeded(function () { gsheetSyncOnce({ pull: false }); }); });
+  gsheetSyncUi();
+  if (gsheetSync.enabled && !gsheetToken) gsheetSetSyncStatus('Auto-sync is on but you are not signed in — reconnect to continue.', '');
   document.getElementById('groupBy').addEventListener('change', function (e) {
     ui.groupBy = e.target.value; selectedGroup = null;
     sortState = { table: 'pivot', key: null, dir: -1 };
