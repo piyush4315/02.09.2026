@@ -4525,18 +4525,20 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v4</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v5</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
           </div>
           <div class="gsheet-sync-actions">
+            <label class="muted" style="font-size:11px;font-weight:700">Tab</label>
+            <select id="gsheetTabSelect" title="Which sheet tab to sync with" style="max-width:220px"></select>
             <button class="btn primary" id="gsheetConnectBtn" type="button">Connect &amp; enable sync</button>
             <button class="btn" id="gsheetSyncNowBtn" type="button" title="Pull the sheet's changes, resolve conflicts, then push the merged result back">⇄ Sync now</button>
             <button class="btn" id="gsheetPullBtn" type="button" title="Read the sheet and apply its values to the app">↓ Pull (sheet → app)</button>
             <button class="btn" id="gsheetPushBtn" type="button" title="Write the app's current data into the sheet">↑ Push (app → sheet)</button>
           </div>
-          <div class="gsheet-sync-note muted" id="gsheetSyncNote">Syncs the whole dataset (all lots, all columns) to the sheet's first tab, matched by column headers. Conflicts keep the newest change — the sheet's last-modified time is used for the sheet side. The sheet must be shared with you (Edit access) and the Sheets API enabled in your Google Cloud project.</div>
+          <div class="gsheet-sync-note muted" id="gsheetSyncNote">Syncs the whole dataset (all lots, all columns) to the selected tab, matched by column headers — the header row is auto-detected (it must contain a "Lot No." column). Conflicts keep the newest change — the sheet's last-modified time is used for the sheet side. The sheet must be shared with you (Edit access) and the Sheets API enabled in your Google Cloud project.</div>
         </div>
         <div class="gsheet-frame-wrap">
           <iframe id="gsheetFrame" title="Google Sheet preview" class="gsheet-frame" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
@@ -6921,6 +6923,8 @@ var gsheetSync = {
   lastPushAt: 0,
   sheetTitle: '',
   sheetFileTitle: '',
+  sheetTab: '',       /* the tab being synced (empty = first tab) */
+  tabs: [],           /* list of tab names in the linked sheet */
   sheetModifiedTime: '',
   snapshot: {},     /* key: lotNo|field -> last-synced string value */
   last: { pulled: 0, pushed: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0, error: '' }
@@ -7607,7 +7611,7 @@ function saveState() {
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
     gsheetUrl: gsheetUrl,
-    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetFileTitle: gsheetSync.sheetFileTitle, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot },
+    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetFileTitle: gsheetSync.sheetFileTitle, sheetTab: gsheetSync.sheetTab, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot },
     ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
   }));
   lastSaved = new Date();
@@ -7686,6 +7690,7 @@ function loadState() {
       gsheetSync.lastPushAt = Number(data.gsheetSync.lastPushAt) || 0;
       gsheetSync.sheetTitle = String(data.gsheetSync.sheetTitle || '');
       gsheetSync.sheetFileTitle = String(data.gsheetSync.sheetFileTitle || '');
+      gsheetSync.sheetTab = String(data.gsheetSync.sheetTab || '');
       gsheetSync.sheetModifiedTime = String(data.gsheetSync.sheetModifiedTime || '');
       if (data.gsheetSync.snapshot && typeof data.gsheetSync.snapshot === 'object') gsheetSync.snapshot = data.gsheetSync.snapshot;
     }
@@ -12464,7 +12469,9 @@ var GSHEET_HEADER_ALIASES = {
   'sap document no': 'sap_document_date', 'doc invoice date': 'doc_invoice_date',
   'bid sheet': 'auction', 'lot no': 'lot_no', 'buyer': 'buyer',
   'lot name': 'lot_name', 'unit': 'unit', 'qty': 'qty', 'rate': 'rate',
-  'gst': 'gst', 'tcs': 'tcs'
+  'gst': 'gst', 'tcs': 'tcs',
+  'lot number': 'lot_no', 'lot no.': 'lot_no', 'lotno': 'lot_no', 'lot #': 'lot_no',
+  'lot': 'lot_no', 'sl no': 'lot_no', 'sr no': 'lot_no', 's no': 'lot_no'
 };
 function gsheetIdFromUrl(u) {
   var m = String(u || '').match(/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/);
@@ -12515,6 +12522,30 @@ function gsheetHeaderMap(headerRow) {
     if (f && map[f] === undefined) map[f] = i;
   });
   return map;
+}
+/* Scans the first few rows for the one that looks most like a header row
+   (title/totals rows often sit above the real column headers). Returns the
+   0-based index of the best row, defaulting to 0 when nothing is recognized. */
+function gsheetFindHeaderRow(rows) {
+  var dict = gsheetHeaderDict();
+  var limit = Math.min((rows || []).length, 10);
+  var best = 0, bestScore = -1;
+  for (var r = 0; r < limit; r++) {
+    var cells = rows[r] || [];
+    var score = 0, hasKey = false;
+    for (var c = 0; c < cells.length; c++) {
+      var f = dict[gsheetNormHeader(cells[c])];
+      if (f) { score++; if (f === 'lot_no') hasKey = true; }
+    }
+    if (hasKey) score += 10; /* a row containing Lot No. is almost certainly the header */
+    if (score > bestScore) { bestScore = score; best = r; }
+  }
+  return best;
+}
+/* Human-readable list of the columns found in a header row (for error messages). */
+function gsheetDetectedHeaders(headerRow) {
+  return (headerRow || []).filter(function (h) { return h !== '' && h != null; })
+    .map(function (h) { return String(h).replace(/\u00AD/g, '').trim(); }).slice(0, 16);
 }
 function gsheetCanonVal(v) {
   if (v === null || v === undefined) return '';
@@ -12577,6 +12608,14 @@ function gsheetSyncUi() {
   if (t) t.checked = !!gsheetSync.enabled;
   var c = document.getElementById('gsheetConnectBtn');
   if (c) c.textContent = gsheetToken ? 'Disconnect sync' : 'Connect & enable sync';
+  var sel = document.getElementById('gsheetTabSelect');
+  if (sel && gsheetSync.tabs && gsheetSync.tabs.length) {
+    var cur = sel.value || gsheetSync.sheetTab || gsheetSync.tabs[0];
+    sel.innerHTML = gsheetSync.tabs.map(function (name) {
+      return '<option value="' + escHtml(name) + '"' + (name === cur ? ' selected' : '') + '>' + escHtml(name) + '</option>';
+    }).join('');
+    if (!gsheetSync.tabs.some(function (n) { return n === cur; })) sel.value = gsheetSync.tabs[0];
+  }
 }
 function gsheetGetToken(cb) {
   if (!gdriveClientId) {
@@ -12610,7 +12649,7 @@ function gsheetConnectIfNeeded(done) {
 /* Applies the sheet's values into the app, field by field, resolving conflicts
    with the newest change. Derived columns (GST, TCS, TRIC, Outstanding, …) are
    skipped — the app recomputes them from their source values. */
-function gsheetPullApply(sheetRows, headerMap, sheetTime) {
+function gsheetPullApply(sheetRows, headerRowIdx, headerMap, sheetTime) {
   var stats = { pulled: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0 };
   var keyCol = headerMap.lot_no;
   if (keyCol === undefined) return stats;
@@ -12618,7 +12657,8 @@ function gsheetPullApply(sheetRows, headerMap, sheetTime) {
   var byLot = {};
   lots.forEach(function (r, i) { byLot[String(r.lot_no)] = i; });
   var changed = false;
-  for (var ri = 1; ri < sheetRows.length; ri++) {
+  var start = (headerRowIdx || 0) + 1;
+  for (var ri = start; ri < sheetRows.length; ri++) {
     var cells = sheetRows[ri] || [];
     var lotNoRaw = cells[keyCol] == null ? '' : String(cells[keyCol]).trim();
     if (!/^\d+$/.test(lotNoRaw)) continue;
@@ -12750,40 +12790,51 @@ function gsheetSyncOnce(opts) {
   gsheetSync.applying = true;
   gsheetSetSyncStatus('Syncing…', 'busy');
   var headerMap = null;
+  var headerRowIdx = 0;
   var grid = null;
   var sheetValues = null;
   var stats = { pulled: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0 };
   return gsheetApi({ path: 'spreadsheets/' + id + '?fields=properties.title,sheets(properties(title,index))', token: gsheetToken })
     .then(function (r) {
       if (!r.ok) throw new Error(gsheetApiError(r));
-      /* The range reference needs the TAB name (sheets[0].properties.title),
-         NOT the spreadsheet file name (properties.title). A file named
-         "Book1 (1)" may have a tab called "Sheet1", and using the file name in
-         a range fails with "unable to parse range". */
+      /* The range reference needs a TAB name, NOT the spreadsheet file name.
+         A file named "Book1 (1)" may have tabs called "Sheet1" / "final
+         calculation sheet", and using the file name in a range fails with
+         "unable to parse range". */
       var sheets = (r.j && r.j.sheets) || [];
-      var firstTab = (sheets[0] && sheets[0].properties && sheets[0].properties.title);
-      var title = firstTab || 'Sheet1';
-      gsheetSync.sheetTitle = title;
+      var tabs = sheets.map(function (s) { return (s.properties && s.properties.title) || ''; }).filter(Boolean);
+      gsheetSync.tabs = tabs;
+      var chosen = gsheetSync.sheetTab && tabs.indexOf(gsheetSync.sheetTab) !== -1 ? gsheetSync.sheetTab : (tabs[0] || 'Sheet1');
+      gsheetSync.sheetTab = chosen;
+      gsheetSync.sheetTitle = chosen;
       gsheetSync.sheetFileTitle = (r.j && r.j.properties && r.j.properties.title) || '';
-      gsheetSetSyncStatus('Connected to “' + gsheetSync.sheetFileTitle + '” · tab “' + title + '”…', 'busy');
-      return gsheetApi({ path: gsheetValuesPath(id, title, 'A1:ZZ20000'), token: gsheetToken });
+      gsheetSyncUi();
+      gsheetSetSyncStatus('Connected to “' + gsheetSync.sheetFileTitle + '” · tab “' + chosen + '”…', 'busy');
+      return gsheetApi({ path: gsheetValuesPath(id, chosen, 'A1:ZZ20000'), token: gsheetToken });
     })
     .then(function (r) {
       if (!r.ok) throw new Error(gsheetApiError(r));
       var values = (r.j && r.j.values) || [];
       sheetValues = values;
-      headerMap = gsheetHeaderMap(values[0] || []);
-      if (headerMap.lot_no === undefined) throw new Error('Could not find a "Lot No." column in the sheet to match rows by.');
+      headerRowIdx = gsheetFindHeaderRow(values);
+      var headerRow = values[headerRowIdx] || [];
+      headerMap = gsheetHeaderMap(headerRow);
+      if (headerMap.lot_no === undefined) {
+        var found = gsheetDetectedHeaders(headerRow).join(' · ');
+        throw new Error('No "Lot No." column found (detected headers: ' + (found || 'none') + '). Rename a column to "Lot No." or pick a different tab.');
+      }
       if (doPush) {
-        grid = gsheetPushBuild(headerMap, values[0] || [], values.slice(1));
+        grid = gsheetPushBuild(headerMap, headerRow, values.slice(headerRowIdx + 1));
       }
       return gsheetDriveModifiedTime(id);
     })
     .then(function (sheetTime) {
       if (sheetTime) gsheetSync.sheetModifiedTime = new Date(sheetTime).toISOString();
-      if (doPull) stats = gsheetPullApply(sheetValues || [], headerMap, sheetTime);
+      if (doPull) stats = gsheetPullApply(sheetValues || [], headerRowIdx, headerMap, sheetTime);
       if (doPush) {
-        return gsheetApi({ path: gsheetValuesPath(id, gsheetSync.sheetTitle, 'A1') + '?valueInputOption=USER_ENTERED', method: 'PUT', token: gsheetToken, body: { values: grid } })
+        /* Write back starting at the detected header row (1-indexed anchor). */
+        var anchor = headerRowIdx + 1;
+        return gsheetApi({ path: gsheetValuesPath(id, gsheetSync.sheetTitle, 'A' + anchor) + '?valueInputOption=USER_ENTERED', method: 'PUT', token: gsheetToken, body: { values: grid } })
           .then(function (w) {
             if (!w.ok) throw new Error(gsheetApiError(w));
             gsheetSnapshotFromGrid(grid, headerMap);
@@ -15856,6 +15907,13 @@ function init() {
   if (gsPull) gsPull.addEventListener('click', function () { gsheetConnectIfNeeded(function () { gsheetSyncOnce({ push: false }); }); });
   var gsPush = document.getElementById('gsheetPushBtn');
   if (gsPush) gsPush.addEventListener('click', function () { gsheetConnectIfNeeded(function () { gsheetSyncOnce({ pull: false }); }); });
+  var gsTabSel = document.getElementById('gsheetTabSelect');
+  if (gsTabSel) gsTabSel.addEventListener('change', function () {
+    gsheetSync.sheetTab = gsTabSel.value || '';
+    gsheetSync.snapshot = {}; /* different tab = different baseline */
+    saveState();
+    if (gsheetToken && gsheetSync.enabled) gsheetSyncOnce({});
+  });
   gsheetSyncUi();
   if (gsheetSync.enabled && !gsheetToken) gsheetSetSyncStatus('Auto-sync is on but you are not signed in — reconnect to continue.', '');
   document.getElementById('groupBy').addEventListener('change', function (e) {
