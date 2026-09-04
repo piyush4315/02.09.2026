@@ -3056,6 +3056,27 @@ body.hand-mode-active.hand-panning table input {
   flex: 1 1 calc(50% - 6px);
   min-width: 120px;
 }
+/* Make the Excel preview the first, full-width, unmistakable action on mobile */
+[data-view-mode="mobile"] .toolbar-right #previewLotExcelBtn {
+  order: -1;
+  flex: 1 1 100%;
+  justify-content: center;
+  font-weight: 800;
+  color: #ffffff !important;
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+@media (max-width: 768px) {
+  .toolbar-right #previewLotExcelBtn {
+    order: -1;
+    flex: 1 1 100%;
+    justify-content: center;
+    font-weight: 800;
+    color: #ffffff !important;
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+}
 
 [data-view-mode="mobile"] .table-wrap {
   border-radius: 10px;
@@ -4158,10 +4179,10 @@ th.left .th-wrap, th.center .th-wrap {
           <div class="detail-header">
             <h2>Lot detail <span class="muted" id="detailCountDash" style="font-weight:400;font-size:12px"></span></h2>
             <div class="toolbar-right">
+              <button class="btn" id="previewLotExcelBtn" type="button" title="Preview the Lot Details Excel worksheet inside the app (like Outlook's attachment preview) — download the .xlsx whenever you're ready" style="color:var(--cyan);border-color:rgba(0,245,255,0.35);background:rgba(0,245,255,0.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Preview Excel</button>
               <input type="text" id="detailSearch" placeholder="Search this table..." style="min-width:170px"/>
               <button class="btn" id="resetDetailFiltersBtn" type="button" title="Reset all Lot Details search, column filters, and selections">↺ Reset Filters</button>
               <button class="btn" id="shareAdviceBtnDash" type="button" title="Generate Buyer Payment Advice with MSTC SC @ 2.71%, SD & FP Due" style="color:var(--cyan);border-color:rgba(0,245,255,0.35);background:rgba(0,245,255,0.08)">📋 Payment Advice</button>
-              <button class="btn" id="previewLotExcelBtn" type="button" title="Preview the Lot Details Excel worksheet inside the app (like Outlook's attachment preview) — download the .xlsx whenever you're ready" style="color:var(--cyan);border-color:rgba(0,245,255,0.35);background:rgba(0,245,255,0.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Preview Excel</button>
 
               <button class="btn primary" id="addLotBtnDash" type="button">+ Add row</button>
               <button class="btn" id="clearFilterDash" type="button">Clear selection</button>
