@@ -177,6 +177,8 @@ html{scrollbar-width:auto;scrollbar-color:var(--violet) #0d0d1a}
   box-shadow:0 1px 4px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(0,0,0,0.2);
 }
 .btn.fx-on{color:var(--cyan);border-color:rgba(0,245,255,.4);background:rgba(0,245,255,.1);font-weight:700}
+.btn.gsheet{color:#fff;background:#0f9d58;border-color:rgba(15,157,88,.6);font-weight:700}
+.btn.gsheet:hover{background:#0b8043;border-color:#0b8043;color:#fff}
 .btn.danger{background:rgba(247,37,133,.12);border:1px solid rgba(247,37,133,.3);color:#f9a8d4}
 .btn.danger:hover{background:rgba(247,37,133,.22);border-color:rgba(247,37,133,.5);color:#fff}
 .btn:disabled{opacity:.35;cursor:default;transform:none!important;pointer-events:none}
@@ -11818,6 +11820,8 @@ function xlPrevRender() {
   if (title) title.textContent = d.label || 'Lot Details';
   var seg = document.getElementById('xlPrevScope');
   if (seg) seg.querySelectorAll('.seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.scope === xlPrev.mode); });
+  var gsBtn = document.getElementById('xlPrevSheets');
+  if (gsBtn) gsBtn.title = 'Open the current "' + (xlPrev.mode === 'filtered' ? 'On screen' : 'Full') + '" data directly in Google Sheets';
   xlPrev.findHits = []; xlPrev.findIdx = 0;
   var cnt = document.getElementById('xlPrevFindCount');
   if (cnt) cnt.textContent = '';
@@ -11833,6 +11837,42 @@ function xlPrevDownload() {
   } catch (e) {
     showToast('Preview download failed: ' + e.message, 'error');
   }
+}
+/* Opens the current preview scope (Full / On screen) directly in Google Sheets.
+   With a Google OAuth Client ID configured, the data is uploaded as a live
+   Google Sheet and opened in a new tab; without one, the rows are copied to the
+   clipboard and a blank Google Sheet is opened for pasting. */
+function xlPrevOpenGoogleSheet() {
+  var d = xlPrevDataset(xlPrev.mode);
+  var rows = d.rows, cols = d.cols;
+  if (!rows || !rows.length) { showToast('No rows to open in Google Sheets.', 'error'); return; }
+  if (!gdriveClientId) {
+    var tsv = tsvForSheets(rows, cols);
+    var done = function () {
+      window.open('https://sheets.new', '_blank', 'noopener');
+      showToast('Copied ' + rows.length + ' rows (' + d.label + ') — paste into the new Google Sheet (Ctrl+V).', 'ok');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(tsv).then(done).catch(function () { fallbackCopy(tsv); window.open('https://sheets.new', '_blank', 'noopener'); });
+    } else { fallbackCopy(tsv); done(); }
+    return;
+  }
+  showToast('Opening ' + d.label + ' in Google Sheets…', 'ok');
+  loadScriptOnce('https://accounts.google.com/gsi/client', 'gis-client').then(function () {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) throw new Error('Google Identity Services did not load');
+    var client = google.accounts.oauth2.initTokenClient({
+      client_id: gdriveClientId,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: function (resp) {
+        if (resp.error) { showToast('Sign-in failed: ' + (resp.error_description || resp.error), 'error'); return; }
+        gdriveToken = resp.access_token;
+        uploadToDrive(rows, 'sheet', gdriveToken, cols);
+      }
+    });
+    client.requestAccessToken({ prompt: gdriveToken ? '' : 'consent' });
+  }).catch(function (e) {
+    showToast(e.message + ' — set an OAuth Client ID in Export → Google Drive, or use the copy/paste fallback.', 'error');
+  });
 }
 function openXlPreview(mode) {
   xlPrev.mode = mode || 'full';
@@ -11851,6 +11891,7 @@ function openXlPreview(mode) {
               '<button type="button" class="seg-btn" data-scope="filtered" title="Exactly the rows and columns currently on screen">On screen</button>' +
             '</div>' +
             '<button type="button" class="btn" id="xlPrevShowFx" title="Toggle formula view (like Ctrl+` in Excel)">ƒ Show formulas</button>' +
+            '<button type="button" class="btn gsheet" id="xlPrevSheets" title="Open the current Full / On screen data directly in Google Sheets">⬈ Open in Google Sheets</button>' +
             '<button type="button" class="btn primary" id="xlPrevDownload">⬇ Download .xlsx</button>' +
             '<button class="xclose" type="button" aria-label="Close">✕</button>' +
           '</div>' +
@@ -11977,6 +12018,7 @@ function openXlPreview(mode) {
   overlay.querySelector('#xlPrevClose').addEventListener('click', close);
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
   overlay.querySelector('#xlPrevDownload').addEventListener('click', xlPrevDownload);
+  overlay.querySelector('#xlPrevSheets').addEventListener('click', xlPrevOpenGoogleSheet);
   overlay.querySelector('#xlPrevShowFx').addEventListener('click', function () {
     var keepR = xlPrev.selR, keepC = xlPrev.selC;
     xlPrevToggleFormulas();
