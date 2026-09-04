@@ -4208,9 +4208,9 @@ th.left .th-wrap, th.center .th-wrap {
             <div class="pbi-card-head">
               <div class="pbi-card-title">
                 <span class="pbi-icon">⏱️</span>
-                <h3>Payment Ageing &amp; Late Fees</h3>
+                <h3>Payment Ageing &amp; Late Fees Expected</h3>
               </div>
-              <span class="muted" style="font-size:11px">Late Fees @ 1.18%/wk from 22.08.2026</span>
+              <span class="muted" style="font-size:11px">Late Fees Expected @ 1.18%/wk from 22.08.2026</span>
             </div>
             <div class="pbi-chart-body" id="chartAgeing"></div>
           </div>
@@ -9646,7 +9646,7 @@ function getCellFormulaInfo(table, td) {
     if (field === 'late_fee_received') {
       var html = '<span class="fx-field">Late Fees Received</span> <span class="fx-op">(manual receipt)</span>' +
                  '<span class="fx-arrow">➔</span> <span class="fx-res">₹ ' + inr(r.late_fee_received || 0) + '</span>' +
-                 '<span class="fx-expl">Received against accrued Late Fees · counts toward Total Received</span>';
+                 '<span class="fx-expl">Received against Late Fees Expected · counts toward Total Received</span>';
       var plain = 'Late_Fees_Received = ' + (r.late_fee_received || 0);
       return { name: cellName, html: html, plain: plain };
     }
@@ -9949,7 +9949,7 @@ function renderPbiKpis(rows) {
     {
       label: 'Late Fees Received',
       val: '₹ ' + inr(totLateRec),
-      sub: totLate > 0 ? Math.round((totLateRec / totLate) * 100) + '% of accrued Late Fees collected' : 'No accrued Late Fees',
+      sub: totLate > 0 ? Math.round((totLateRec / totLate) * 100) + '% of Late Fees Expected collected' : 'No Late Fees Expected',
       barVal: Math.min(100, totLate > 0 ? Math.round((totLateRec / totLate) * 100) : 0),
       color: '#10b981'
     },
@@ -12288,9 +12288,9 @@ function generateWhatsAppAdviceText(lotsList, buyerTitle) {
 
   var sdRecLine = '   • SD Received: ₹ ' + inr(b.totSdRec) + (b.totSdRec > 0 && b.sdDatesStr ? (' _(Rec Date: ' + b.sdDatesStr + ')') : '') + '\n';
   var fpRecLine = '   • FP Received: ₹ ' + inr(b.totFpRec) + (b.totFpRec > 0 && b.fpDatesStr ? (' _(Rec Date: ' + b.fpDatesStr + ')') : '') + '\n';
-  var lateFeeLine = '3️⃣ *Late Fees (from 22.08.2026):*\n' +
+  var lateFeeLine = '3️⃣ *Late Fees Expected (from 22.08.2026):*\n' +
     '   • Delay Basis: 1.18% per week or part thereof — delay from 22.08.2026\n' +
-    '   • *Late Fees Payable:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n' +
+    '   • *Late Fees Expected:* ₹ ' + inr(b.totLateFee) + (b.totLateFee > 0 ? '  ⏳ [DUE]' : '  ✅ [NIL / ON TIME]') + '\n' +
     '   • Late Fees Received: ₹ ' + inr(b.totLateFeeRec) + (b.totLateFeeRec > 0 && b.lfRecDatesStr ? (' _(Rec Date: ' + b.lfRecDatesStr + ')') : '') + '\n' +
     '   • *Late Fees Balance Due:* ₹ ' + inr(b.totLateFeeDue) + (b.totLateFeeDue <= 1 ? '  ✅ [RECEIVED]' : '  ⏳ [DUE]') + '\n';
 
@@ -12331,7 +12331,7 @@ function generateWhatsAppAdviceText(lotsList, buyerTitle) {
     lateFeeLine +
     '━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
     '📥 *Total Received to Date:* ₹ ' + inr(b.totReceived) + '\n' +
-    '🔴 *NET AMOUNT PAYABLE NOW (INCL. DELAYED PAYMENT CHARGES):* ₹ ' + inr(b.totOut) + '\n' +
+    '🔴 *NET AMOUNT PAYABLE NOW (INCL. LATE FEES EXPECTED):* ₹ ' + inr(b.totOut) + '\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
     '🏦 *Bank Remittance Details:*\n' +
     '• Beneficiary: MSETCL LIMITED\n' +
@@ -12388,9 +12388,9 @@ function generateEmailAdviceText(lotsList, buyerTitle) {
     '   - Expected : Rs. ' + inr(b.totFpExp) + '\n' +
     '   ' + fpRecEmail + '\n' +
     '   - Balance Due : Rs. ' + inr(b.totFpDue) + (b.totFpDue <= 1 ? ' (SETTLED)' : ' (DUE)') + '\n\n' +
-    '3. Late Fees (from 22.08.2026):\n' +
+    '3. Late Fees Expected (from 22.08.2026):\n' +
     '   - Delay Basis      : 1.18% per week or part thereof — delay from 22.08.2026\n' +
-    '   - Accrued Late Fees  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n' +
+    '   - Late Fees Expected  : Rs. ' + inr(b.totLateFee) + (b.totLateFee > 0 ? ' (PAYABLE)' : ' (NIL / ON TIME)') + '\n' +
     '   - Received     : Rs. ' + inr(b.totLateFeeRec) + (b.totLateFeeRec > 0 && b.lfRecDatesStr ? (' (Date: ' + b.lfRecDatesStr + ')') : '') + '\n' +
     '   - Balance Due : Rs. ' + inr(b.totLateFeeDue) + (b.totLateFeeDue <= 1 ? ' (RECEIVED)' : ' (DUE)') + '\n\n' +
     '------------------------------------------------------\n' +
@@ -12612,7 +12612,7 @@ function printPaymentAdvice(lotsList, buyerTitle) {
             "<td class=\"cen\">" + (b.totFpDue <= 1 ? "<span class=\"pill-settled\">PAID / SETTLED</span>" : "<span class=\"pill-due\">PENDING PAYMENT</span>") + "</td>" +
           "</tr>" +
           ((b.totLateFee > 0 || b.totLateFeeRec > 0) ? ("<tr style=\"background:#fff1f2\">" +
-            "<td><b>3. Late Fees (1.18%/wk from 22.08.2026)</b></td>" +
+            "<td><b>3. Late Fees Expected (1.18%/wk from 22.08.2026)</b></td>" +
             "<td class=\"num\">₹ " + inr(b.totLateFee) + "</td>" +
             "<td class=\"num\" style=\"font-weight:bold;color:#059669\">₹ " + inr(b.totLateFeeRec) + "</td>" +
             "<td class=\"cen\"><span class=\"pill-date\">" + escHtml(b.lfRecDatesStr || "—") + "</span></td>" +
