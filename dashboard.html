@@ -504,6 +504,54 @@ td.rng.rng-top.rng-bottom.rng-left.rng-right {
   color:#f9a8d4;
   border-color:rgba(247, 37, 133, 0.4);
 }
+.excel-calc-hud .calc-area{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:2px 4px;
+  border-radius:8px;
+  background:rgba(255, 255, 255, 0.03);
+}
+.excel-calc-hud .calc-area-lbl{
+  font-size:11px;
+  font-weight:800;
+  line-height:1;
+  padding:0 2px;
+  user-select:none;
+}
+.excel-calc-hud .calc-area-lbl-plus{color:var(--cyan);}
+.excel-calc-hud .calc-area-lbl-minus{color:#f9a8d4;}
+.excel-calc-hud .calc-arrow{
+  width:24px;
+  height:24px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0, 245, 255, 0.08);
+  border:1px solid rgba(0, 245, 255, 0.25);
+  color:var(--cyan);
+  border-radius:6px;
+  font-size:12px;
+  line-height:1;
+  padding:0;
+  cursor:pointer;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.excel-calc-hud .calc-arrow:hover{
+  background:rgba(0, 245, 255, 0.2);
+  border-color:rgba(0, 245, 255, 0.5);
+  color:#e0fbff;
+}
+.excel-calc-hud .calc-arrow.calc-arrow-reduce{
+  background:rgba(247, 37, 133, 0.08);
+  border-color:rgba(247, 37, 133, 0.25);
+  color:#f9a8d4;
+}
+.excel-calc-hud .calc-arrow.calc-arrow-reduce:hover{
+  background:rgba(247, 37, 133, 0.2);
+  border-color:rgba(247, 37, 133, 0.5);
+  color:#fce7f3;
+}
 tbody td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.025);text-align:right;color:#e2e8f0;vertical-align:middle;font-size:11.5px}
 tbody tr{transition:background .12s,color .18s}
 tbody tr.selected{background:rgba(124,58,237,.08)}
@@ -2714,6 +2762,29 @@ table td[data-field="sap_document_date"] input{
   border-color: #fca5a5 !important;
   color: #dc2626 !important;
 }
+[data-theme="light"] .excel-calc-hud .calc-area {
+  background: rgba(15, 23, 42, 0.04);
+}
+[data-theme="light"] .excel-calc-hud .calc-arrow {
+  background: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+}
+[data-theme="light"] .excel-calc-hud .calc-arrow:hover {
+  background: #bae6fd !important;
+  border-color: #38bdf8 !important;
+  color: #0c4a6e !important;
+}
+[data-theme="light"] .excel-calc-hud .calc-arrow.calc-arrow-reduce {
+  background: #fce7f3 !important;
+  border-color: #f9a8d4 !important;
+  color: #be185d !important;
+}
+[data-theme="light"] .excel-calc-hud .calc-arrow.calc-arrow-reduce:hover {
+  background: #fbcfe8 !important;
+  border-color: #f472b6 !important;
+  color: #9d174d !important;
+}
 
 /* Light Theme Column Picker & Field Chooser */
 [data-theme="light"] .col-picker-panel,
@@ -3286,6 +3357,18 @@ body.hand-mode-active.hand-panning table input {
   .excel-calc-hud .calc-close-btn {
     padding: 3px 6px !important;
     font-size: 10px !important;
+  }
+  .excel-calc-hud {
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+  }
+  .excel-calc-hud .calc-arrow {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 11px !important;
+  }
+  .excel-calc-hud .calc-area {
+    gap: 2px !important;
   }
 }
 
@@ -8855,6 +8938,7 @@ function setFreezePivot(field) {
 
 /* ---------- Excel-like Shift range select ---------- */
 var gridSel = { table: null, ar: null, ac: null, r1: null, c1: null, r2: null, c2: null, mode: 'cells', shiftDown: false, ctrlDown: false, selectedCells: [] };
+var gridLongPressAt = 0; /* timestamp of the last long-press selection (to swallow the synthetic click that follows) */
 /* Excel-like multi-column selection for lot-detail headers */
 var colSel = { selected: new Set(), lastAnchor: null, lastTable: null };
 function gridTableFromEvent(el) {
@@ -8988,6 +9072,25 @@ function gridShowInfo() {
     updateFormulaBar(table, selectedTds[0]);
   }
 
+  /* Area grow/shrink controls (long-press selection gets a rectangular range) */
+  var areaCtrl = '';
+  if (gridSel.r1 != null && gridSel.c1 != null) {
+    areaCtrl =
+      '<div class="calc-divider"></div>' +
+      '<div class="calc-area" title="Grow or shrink the selected area one row or column at a time">' +
+        '<span class="calc-area-lbl calc-area-lbl-plus" title="Expand area">＋</span>' +
+        '<button type="button" class="calc-arrow" data-nudge="up" title="Expand area: add a row above">↑</button>' +
+        '<button type="button" class="calc-arrow" data-nudge="down" title="Expand area: add a row below">↓</button>' +
+        '<button type="button" class="calc-arrow" data-nudge="left" title="Expand area: add a column to the left">←</button>' +
+        '<button type="button" class="calc-arrow" data-nudge="right" title="Expand area: add a column to the right">→</button>' +
+        '<span class="calc-area-lbl calc-area-lbl-minus" title="Reduce area">−</span>' +
+        '<button type="button" class="calc-arrow calc-arrow-reduce" data-nudge="shrink-up" title="Reduce area: remove the top row">↑</button>' +
+        '<button type="button" class="calc-arrow calc-arrow-reduce" data-nudge="shrink-down" title="Reduce area: remove the bottom row">↓</button>' +
+        '<button type="button" class="calc-arrow calc-arrow-reduce" data-nudge="shrink-left" title="Reduce area: remove the left column">←</button>' +
+        '<button type="button" class="calc-arrow calc-arrow-reduce" data-nudge="shrink-right" title="Reduce area: remove the right column">→</button>' +
+      '</div>';
+  }
+
   var html =
     '<div class="excel-calc-hud">' +
       '<div class="calc-item calc-sum" data-copy="' + escHtml(String(sum)) + '" title="Click to copy SUM (' + escHtml(sumDisp) + ')">' +
@@ -8999,6 +9102,7 @@ function gridShowInfo() {
         '<span class="calc-lbl">COUNT</span>' +
         '<span class="calc-val">' + countTotal + (countNum < countTotal && countNum > 0 ? ' (' + countNum + ' num)' : '') + '</span>' +
       '</div>' +
+      areaCtrl +
       '<div class="calc-divider"></div>' +
       '<button type="button" class="calc-copy-all-btn" title="Copy selected cells to clipboard (Ctrl+C)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy</button>' +
       '<button type="button" class="calc-close-btn" title="Clear selection (Esc)">✕</button>' +
@@ -9015,27 +9119,24 @@ function gridPaint() {
   if (!table) { gridShowInfo(); return; }
   gridClearPaint(table);
   var bodyRows = table.querySelectorAll('tbody tr');
-  // Paint range selection (Shift+drag/click multi-cell range only)
+  // Paint range selection (Shift+drag/click multi-cell range AND single-cell
+  // selections — a lone cell must still show the SUM/COUNT HUD).
   var hasCtrlSelection = (gridSel.selectedCells && gridSel.selectedCells.length > 0);
   if (gridSel.r1 != null) {
     var rmin = Math.min(gridSel.r1, gridSel.r2), rmax = Math.max(gridSel.r1, gridSel.r2);
     var cmin = Math.min(gridSel.c1, gridSel.c2), cmax = Math.max(gridSel.c1, gridSel.c2);
-    var isRangeMulti = (rmin !== rmax || cmin !== cmax);
-    
-    // Only paint bounding outline on range selection if multi-cell range is selected
-    if (isRangeMulti) {
-      for (var r = rmin; r <= rmax; r++) {
-        var tr = bodyRows[r];
-        if (!tr || !tr.children) continue;
-        for (var c2 = cmin; c2 <= cmax; c2++) {
-          var td = tr.children[c2];
-          if (!td) continue;
-          td.classList.add('rng');
-          if (r === rmin) td.classList.add('rng-top');
-          if (r === rmax) td.classList.add('rng-bottom');
-          if (c2 === cmin) td.classList.add('rng-left');
-          if (c2 === cmax) td.classList.add('rng-right');
-        }
+    for (var r = rmin; r <= rmax; r++) {
+      var tr = bodyRows[r];
+      if (!tr || !tr.children) continue;
+      if (tr.classList && tr.classList.contains('detail-group-hdr')) continue; /* section headers aren't data */
+      for (var c2 = cmin; c2 <= cmax; c2++) {
+        var td = tr.children[c2];
+        if (!td) continue;
+        td.classList.add('rng');
+        if (r === rmin) td.classList.add('rng-top');
+        if (r === rmax) td.classList.add('rng-bottom');
+        if (c2 === cmin) td.classList.add('rng-left');
+        if (c2 === cmax) td.classList.add('rng-right');
       }
     }
   }
@@ -9076,6 +9177,55 @@ function gridExtend(table, r, c) {
     return;
   }
   gridSel.r2 = r; gridSel.c2 = c;
+  gridPaint();
+}
+/* Touch long-press on a data cell: first press anchors the selection, later
+   presses extend the area (like Shift+click) so multiple rows/fields can be
+   summed at once. Long-pressing inside the current area shrinks it back. */
+function gridLongPressSelect(td) {
+  var table = gridTableFromEvent(td);
+  if (!table) return;
+  var tr = td.parentElement;
+  if (!tr || (tr.classList && tr.classList.contains('detail-group-hdr'))) return;
+  if (!tr.parentElement || tr.parentElement.tagName !== 'TBODY') return;
+  var r = gridRowIndex(tr, table);
+  var c = gridCellIndex(td);
+  if (r < 0 || c < 0) return;
+  gridSel.selectedCells = [];
+  if (gridSel.table !== table || gridSel.ar == null) {
+    gridSetAnchor(table, r, c);
+  } else {
+    gridExtend(table, r, c);
+  }
+}
+/* Grow / shrink the selected rectangular area one row or column at a time. */
+function gridNudge(dir) {
+  var table = gridSel.table;
+  if (!table || gridSel.r1 == null || gridSel.c1 == null) return;
+  var rmin = Math.min(gridSel.r1, gridSel.r2), rmax = Math.max(gridSel.r1, gridSel.r2);
+  var cmin = Math.min(gridSel.c1, gridSel.c2), cmax = Math.max(gridSel.c1, gridSel.c2);
+  var nRows = table.querySelectorAll('tbody tr').length;
+  /* Count selectable columns: every thead cell with a data-field, excluding a
+     trailing spacer/actions header (no data-field). */
+  var ths = table.querySelectorAll('thead th');
+  var nCols = ths.length;
+  if (nCols > 0) {
+    var lastTh = ths[nCols - 1];
+    if (!lastTh.hasAttribute('data-field') && !lastTh.hasAttribute('data-group')) nCols -= 1;
+  }
+  switch (dir) {
+    case 'up':         rmin = Math.max(0, rmin - 1); break;
+    case 'down':       rmax = Math.min(nRows - 1, rmax + 1); break;
+    case 'left':       cmin = Math.max(0, cmin - 1); break;
+    case 'right':      cmax = Math.min(nCols - 1, cmax + 1); break;
+    case 'shrink-up':  rmin = Math.min(rmin + 1, rmax); break;
+    case 'shrink-down':rmax = Math.max(rmax - 1, rmin); break;
+    case 'shrink-left':cmin = Math.min(cmin + 1, cmax); break;
+    case 'shrink-right':cmax = Math.max(cmax - 1, cmin); break;
+    default: return;
+  }
+  gridSel.r1 = rmin; gridSel.c1 = cmin;
+  gridSel.r2 = rmax; gridSel.c2 = cmax;
   gridPaint();
 }
 function gridCopy() {
@@ -14790,6 +14940,10 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
       var gt = gridTableFromEvent(e.target);
       if (gt) { gridHandlePointer(e, false); return; }
     } else if (e.target.closest && e.target.closest('#detailTableDash td, #pivotTable td')) {
+      /* A long-press just handled the selection — swallow the synthetic click
+         that mobile browsers fire right after touchend so it doesn't collapse
+         the area back to a single cell. */
+      if (gridLongPressAt && (Date.now() - gridLongPressAt) < 700) { gridLongPressAt = 0; return; }
       gridHandlePointer(e, false);
     }
     var filtBtn = (e.target && e.target.closest) ? e.target.closest('.th-filt-btn, [data-filter-field]') : null;
@@ -15282,6 +15436,54 @@ function showHeaderContextMenu(x, y, th) {
     }, { passive: true });
   })();
 
+  /* Mobile touch long-press on a data cell: select it (or extend the selection
+     area) and show the SUM + COUNT HUD. Long-press inside the current area
+     shrinks it back toward that cell. */
+  (function () {
+    var lpTimer = null, lpX = 0, lpY = 0, lpCell = null;
+    function dataCellFromTouch(t) {
+      if (!t || !t.closest) return null;
+      var td = t.closest('#detailTableDash tbody td[data-field], #pivotTable tbody td[data-field]');
+      if (!td) return null;
+      var tr = td.parentElement;
+      if (tr && tr.classList && tr.classList.contains('detail-group-hdr')) return null;
+      return td;
+    }
+    document.addEventListener('touchstart', function (e) {
+      if (!e.touches || !e.touches[0]) return;
+      var td = dataCellFromTouch(e.touches[0].target);
+      if (!td) return;
+      lpCell = td;
+      var touch = e.touches[0];
+      lpX = touch.clientX;
+      lpY = touch.clientY;
+      if (lpTimer) clearTimeout(lpTimer);
+      lpTimer = setTimeout(function () {
+        if (lpCell === td) {
+          gridLongPressAt = Date.now();
+          if (navigator.vibrate) { try { navigator.vibrate(30); } catch (ignore) {} }
+          gridLongPressSelect(td);
+          lpTimer = null;
+        }
+      }, 420);
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (lpTimer && e.touches && e.touches[0]) {
+        var touch = e.touches[0];
+        if (Math.abs(touch.clientX - lpX) > 10 || Math.abs(touch.clientY - lpY) > 10) {
+          clearTimeout(lpTimer);
+          lpTimer = null;
+        }
+      }
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (lpTimer) {
+        clearTimeout(lpTimer);
+        lpTimer = null;
+      }
+    }, { passive: true });
+  })();
+
   document.addEventListener('contextmenu', function (e) {
     /* 1. Date inputs/editing components: prevent browser menu to keep date picking smooth */
     var dateInput = e.target && e.target.closest ? e.target.closest('input.dt-edit, .date-empty-editor, td.date input, [data-field="sd_date"] input, [data-field="fp_date"] input, [data-field="doc_invoice_date"] input, [data-field="sap_document_date"] input') : null;
@@ -15407,6 +15609,13 @@ function showHeaderContextMenu(x, y, th) {
     gridSel.isDragging = false;
   });
   document.addEventListener('click', function (e) {
+    var nudgeBtn = e.target && e.target.closest ? e.target.closest('.calc-arrow[data-nudge]') : null;
+    if (nudgeBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      gridNudge(nudgeBtn.getAttribute('data-nudge'));
+      return;
+    }
     var closeBtn = e.target && e.target.closest ? e.target.closest('.calc-close-btn') : null;
     if (closeBtn) {
       e.preventDefault();
