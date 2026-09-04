@@ -4029,10 +4029,36 @@ th.left .th-wrap, th.center .th-wrap {
 .xlprev-grid td.xl-cell.num .xlprev-edit{text-align:right}
 .xlprev-grid td.xl-cell.cen .xlprev-edit{text-align:center}
 .xlprev-grid td.xl-cell:hover{background:rgba(0,245,255,.055)}
-.xlprev-grid td.xl-cell.xl-sel{outline:2px solid var(--cyan);outline-offset:-2px;background:rgba(0,245,255,.1)}
+.xlprev-grid td.xl-cell.xl-sel{background:rgba(0,245,255,.13)}
+.xlprev-grid td.xl-cell.xl-focus{outline:2px solid var(--cyan);outline-offset:-2px;position:relative;z-index:1}
+.xlprev-grid td.xl-cell.xl-find-hit{background:rgba(255,214,102,.16)}
+.xlprev-grid td.xl-cell.xl-find-cur{outline:2px solid #fbbf24;outline-offset:-2px;background:rgba(255,214,102,.3);position:relative;z-index:1}
 .xlprev-grid tr.xl-total td{background:rgba(255,255,255,.045);font-weight:800;border-top:1px solid rgba(255,255,255,.16)}
 .xlprev-grid tr.xl-total th.xl-r{background:#1a2340;border-top:1px solid rgba(255,255,255,.16)}
 .xlprev-status{font-size:11px;color:var(--dim);line-height:1.4}
+.xlprev-statusbar{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:5px 12px;font-size:11px;color:var(--dim);border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.xlprev-statusbar .xlprev-stat.strong{color:var(--text);font-weight:700}
+.xlprev-status-spacer{flex:1}
+.xlprev-status-hint{opacity:.55;font-size:10px;letter-spacing:.02em}
+.xlprev-findbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font-size:11.5px}
+.xlprev-findlabel{color:var(--dim);font-weight:700;letter-spacing:.04em}
+.xlprev-findbar input{flex:0 0 220px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:var(--text);border-radius:6px;padding:5px 9px;font:inherit}
+.xlprev-findbar input:focus{outline:none;border-color:var(--cyan)}
+.xlprev-findcount{color:var(--dim);min-width:70px}
+.xlprev-findbar button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:var(--text);border-radius:6px;padding:4px 9px;cursor:pointer;font-size:11px}
+.xlprev-findbar button:hover{background:rgba(255,255,255,.12)}
+.xlprev-ctx{position:fixed;z-index:200;min-width:150px;background:#161c33;border:1px solid rgba(255,255,255,.14);border-radius:9px;box-shadow:0 12px 32px rgba(0,0,0,.5);padding:5px;display:flex;flex-direction:column}
+.xlprev-ctx button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--text);padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.xlprev-ctx button:hover{background:rgba(0,245,255,.12)}
+[data-theme="light"] .xlprev-statusbar{background:#f8fafc;border-top-color:#e2e8f0}
+[data-theme="light"] .xlprev-findbar{background:#f8fafc;border-bottom-color:#e2e8f0}
+[data-theme="light"] .xlprev-findbar input{background:#ffffff;border-color:#cbd5e1;color:#0f172a}
+[data-theme="light"] .xlprev-findbar input:focus{border-color:#2563eb}
+[data-theme="light"] .xlprev-findbar button{background:#ffffff;border-color:#cbd5e1;color:#0f172a}
+[data-theme="light"] .xlprev-findbar button:hover{background:#f1f5f9}
+[data-theme="light"] .xlprev-ctx{background:#ffffff;border-color:#cbd5e1;box-shadow:0 12px 32px rgba(15,23,42,.18)}
+[data-theme="light"] .xlprev-ctx button{color:#0f172a}
+[data-theme="light"] .xlprev-ctx button:hover{background:#eff6ff}
 
 [data-theme="light"] .xlprev-sheetchip{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
 [data-theme="light"] .xlprev-formula{background:#f8fafc;border-bottom-color:#e2e8f0}
@@ -4045,7 +4071,10 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-grid th.xl-label{background:#e2e8f0;color:#0f172a;border-color:#cbd5e1}
 [data-theme="light"] .xlprev-grid th.xl-r.xl-labelrow{background:#e2e8f0;color:#64748b}
 [data-theme="light"] .xlprev-grid td.xl-cell:hover{background:#f1f5f9}
-[data-theme="light"] .xlprev-grid td.xl-cell.xl-sel{outline-color:#2563eb;background:#eff6ff}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-sel{background:#dbeafe}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-focus{outline-color:#2563eb}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-find-hit{background:#fef3c7}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-find-cur{outline-color:#d97706;background:#fde68a}
 [data-theme="light"] .xlprev-grid tr.xl-total td{background:#f1f5f9;border-top-color:#cbd5e1}
 [data-theme="light"] .xlprev-grid tr.xl-total th.xl-r{background:#e2e8f0;border-top-color:#cbd5e1}
 [data-theme="light"] .xlprev-grid td.xl-cell.tric{color:#1e3a8a}
@@ -11274,7 +11303,9 @@ function doExport(id) {
 /* Opens the Lot Details worksheet as an in-app, Excel-looking grid (column
    letters, row numbers, frozen header) so the user can inspect the file the
    same way Outlook previews an attachment — and download the .xlsx later. */
-var xlPrev = { mode: 'full', rows: [], cols: [], selR: null, selC: null, showFormulas: false };
+var xlPrev = { mode: 'full', rows: [], cols: [], selR: null, selC: null, showFormulas: false,
+               anchorR: null, anchorC: null, sel: {}, clip: '', dragging: false, dragMoved: false,
+               dragStartR: null, dragStartC: null, lastSelAt: 0, findHits: [], findIdx: 0, ctx: null };
 function xlPrevDataset(mode) {
   var d = prepareExportChoice('detail', mode || xlPrev.mode || 'full');
   exportColumnLabels = Object.assign(exportColumnLabels || {}, d.labels || {});
@@ -11396,43 +11427,258 @@ function xlPrevGridHtml(d) {
   }
   return h.join('');
 }
-function xlPrevSetCell(r, c) {
+/* ---------- Selection model (Excel-style: single, rectangle, Ctrl multi) ---------- */
+function xlPrevSelKey(r, c) { return r + ',' + c; }
+function xlPrevSelectSingle(r, c) {
+  xlPrev.sel = {};
+  if (r != null && c != null) xlPrev.sel[xlPrevSelKey(r, c)] = true;
+  xlPrev.anchorR = r; xlPrev.anchorC = c;
   xlPrev.selR = r; xlPrev.selC = c;
+  xlPrevPaintSelection();
+}
+function xlPrevSelectRect(r1, c1, r2, c2) {
+  if (r1 == null || c1 == null || r2 == null || c2 == null) return;
+  xlPrev.sel = {};
+  var rmin = Math.min(r1, r2), rmax = Math.max(r1, r2);
+  var cmin = Math.min(c1, c2), cmax = Math.max(c1, c2);
+  for (var r = rmin; r <= rmax; r++) for (var c = cmin; c <= cmax; c++) xlPrev.sel[xlPrevSelKey(r, c)] = true;
+  xlPrev.anchorR = r1; xlPrev.anchorC = c1;
+  xlPrev.selR = r2; xlPrev.selC = c2;
+  xlPrevPaintSelection();
+}
+function xlPrevToggleCell(r, c) {
+  var k = xlPrevSelKey(r, c);
+  if (xlPrev.sel[k]) delete xlPrev.sel[k]; else xlPrev.sel[k] = true;
+  xlPrev.anchorR = r; xlPrev.anchorC = c;
+  xlPrev.selR = r; xlPrev.selC = c;
+  xlPrevPaintSelection();
+}
+function xlPrevSelectedCells() {
+  var cells = [];
+  Object.keys(xlPrev.sel).forEach(function (k) { var p = k.split(','); cells.push({ r: +p[0], c: +p[1] }); });
+  cells.sort(function (a, b) { return (a.r - b.r) || (a.c - b.c); });
+  return cells;
+}
+function xlPrevCellRaw(r, c) {
+  var f = xlPrev.cols[c];
+  if (r < xlPrev.rows.length) {
+    var v = xlPrevCellVal(xlPrev.rows[r], f);
+    return (v === '' || v === null || v === undefined) ? '' : v;
+  }
+  var meta = FIELD_META[f], custom = customColById(f);
+  if ((meta && meta.sum) || (custom && custom.type === 'number')) return sumField(xlPrev.rows, f);
+  if (c === 0) return 'TOTAL (' + xlPrev.rows.length + ' lots)';
+  return '';
+}
+function xlPrevFocusTd() {
+  if (xlPrev.selR == null || xlPrev.selC == null) return null;
   var grid = document.getElementById('xlPrevScroll');
-  var name = document.getElementById('xlPrevName');
-  var val = document.getElementById('xlPrevVal');
-  if (!name || !val) return;
+  if (!grid) return null;
+  return grid.querySelector('td.xl-cell[data-r="' + xlPrev.selR + '"][data-c="' + xlPrev.selC + '"]');
+}
+/* Paints the selection highlight + focus cell, then refreshes the formula bar
+   and the Excel-style status bar (Sum / Average / Count / Min / Max). */
+function xlPrevPaintSelection() {
+  var grid = document.getElementById('xlPrevScroll');
   if (grid) {
     grid.querySelectorAll('td.xl-cell.xl-sel').forEach(function (t) { t.classList.remove('xl-sel'); });
-    if (r != null && c != null && grid) {
+    grid.querySelectorAll('td.xl-cell.xl-focus').forEach(function (t) { t.classList.remove('xl-focus'); });
+    Object.keys(xlPrev.sel).forEach(function (k) {
+      var p = k.split(','); var r = +p[0], c = +p[1];
       var td = grid.querySelector('td.xl-cell[data-r="' + r + '"][data-c="' + c + '"]');
       if (td) td.classList.add('xl-sel');
+    });
+    if (xlPrev.selR != null && xlPrev.selC != null) {
+      var ftd = grid.querySelector('td.xl-cell[data-r="' + xlPrev.selR + '"][data-c="' + xlPrev.selC + '"]');
+      if (ftd) ftd.classList.add('xl-focus');
     }
   }
-  if (r == null || c == null) {
-    name.textContent = '';
-    val.textContent = 'Click any cell to inspect it, then download the .xlsx when you are ready.';
+  xlPrevUpdateInfo();
+}
+function xlPrevUpdateInfo() {
+  var name = document.getElementById('xlPrevName');
+  var val = document.getElementById('xlPrevVal');
+  var stReady = document.getElementById('xlPrevStatReady');
+  var stSel = document.getElementById('xlPrevStatSel');
+  var stSum = document.getElementById('xlPrevStatSum');
+  var stAvg = document.getElementById('xlPrevStatAvg');
+  var stCnt = document.getElementById('xlPrevStatCnt');
+  var stMin = document.getElementById('xlPrevStatMin');
+  var stMax = document.getElementById('xlPrevStatMax');
+  var n = Object.keys(xlPrev.sel).length;
+  if (xlPrev.selR == null || xlPrev.selC == null) {
+    if (name) name.textContent = '';
+    if (val) val.textContent = 'Click a cell to inspect it · F2 to edit · download the .xlsx when ready.';
+    if (stReady) stReady.textContent = 'Ready';
+    if (stSel) stSel.textContent = '';
+    ['xlPrevStatSum', 'xlPrevStatAvg', 'xlPrevStatCnt', 'xlPrevStatMin', 'xlPrevStatMax'].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = ''; });
     return;
   }
-  var f = xlPrev.cols[c];
-  name.textContent = excelColLetter(c) + (r + 2);
-  var fx = '';
-  var disp = '';
-  if (r < xlPrev.rows.length) {
-    fx = xlPrevFormula(r, f);
-    disp = xlPrevCellDisp(xlPrev.rows[r], f);
+  if (stReady) stReady.textContent = (xlPrev.selR < xlPrev.rows.length ? 'Ready' : 'TOTAL');
+  if (stSel) stSel.textContent = n > 1 ? (n + ' cells') : '';
+  if (name) name.textContent = excelColLetter(xlPrev.selC) + (xlPrev.selR + 2);
+  var f = xlPrev.cols[xlPrev.selC];
+  var fx = '', disp = '';
+  if (xlPrev.selR < xlPrev.rows.length) {
+    fx = xlPrevFormula(xlPrev.selR, f);
+    disp = xlPrevCellDisp(xlPrev.rows[xlPrev.selR], f);
   } else {
     var meta = FIELD_META[f], custom = customColById(f);
     if ((meta && meta.sum) || (custom && custom.type === 'number')) {
       var s = sumField(xlPrev.rows, f);
-      fx = '=SUM(' + excelColLetter(c) + '2:' + excelColLetter(c) + (xlPrev.rows.length + 1) + ')';
+      fx = '=SUM(' + excelColLetter(xlPrev.selC) + '2:' + excelColLetter(xlPrev.selC) + (xlPrev.rows.length + 1) + ')';
       disp = MONEY_FIELDS.has(f) ? inr(s) : numFmt(s);
-    } else if (c === 0) {
-      disp = 'TOTAL (' + xlPrev.rows.length + ' lots)';
+    } else if (xlPrev.selC === 0) disp = 'TOTAL (' + xlPrev.rows.length + ' lots)';
+  }
+  if (val) val.textContent = fx ? (fx + ' = ' + disp) : disp;
+  var sum = 0, cnt = 0, min = Infinity, max = -Infinity;
+  Object.keys(xlPrev.sel).forEach(function (k) {
+    var p = k.split(','); var r = +p[0], c = +p[1];
+    var v = xlPrevCellRaw(r, c);
+    if (typeof v === 'number' && isFinite(v)) {
+      sum += v; cnt++;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+  });
+  if (stSum) stSum.textContent = cnt ? ('Sum: ' + inr(sum)) : '';
+  if (stAvg) stAvg.textContent = cnt ? ('Average: ' + inr(sum / cnt, 2)) : '';
+  if (stCnt) stCnt.textContent = cnt ? ('Count: ' + cnt) : '';
+  if (stMin) stMin.textContent = cnt ? ('Min: ' + inr(min)) : '';
+  if (stMax) stMax.textContent = cnt ? ('Max: ' + inr(max)) : '';
+}
+/* Compatibility wrapper: single-cell selection. */
+function xlPrevSetCell(r, c) { xlPrevSelectSingle(r, c); }
+/* ---------- Clipboard (Ctrl+C / Ctrl+X / Ctrl+V) ---------- */
+function xlPrevCopy(cut) {
+  var cells = xlPrevSelectedCells();
+  if (!cells.length) return;
+  var rmin = Infinity, rmax = -Infinity, cmin = Infinity, cmax = -Infinity;
+  cells.forEach(function (x) { rmin = Math.min(rmin, x.r); rmax = Math.max(rmax, x.r); cmin = Math.min(cmin, x.c); cmax = Math.max(cmax, x.c); });
+  var lines = [];
+  for (var r = rmin; r <= rmax; r++) {
+    var row = [];
+    for (var c = cmin; c <= cmax; c++) {
+      var v = xlPrev.sel[xlPrevSelKey(r, c)] ? xlPrevCellRaw(r, c) : '';
+      row.push(v === '' || v === null || v === undefined ? '' : String(v));
+    }
+    lines.push(row.join('\t'));
+  }
+  var tsv = lines.join('\n');
+  xlPrev.clip = tsv;
+  if (navigator.clipboard && navigator.clipboard.writeText) { try { navigator.clipboard.writeText(tsv); } catch (e) {} }
+  if (cut) xlPrevClearContents(cells);
+  showToast('Copied ' + cells.length + ' cell' + (cells.length === 1 ? '' : 's') + (cut ? ' (cut)' : ''), 'ok');
+}
+function xlPrevClearContents(cells) {
+  cells = cells || xlPrevSelectedCells();
+  var affected = {};
+  var any = false;
+  cells.forEach(function (x) {
+    if (x.r >= xlPrev.rows.length) return;
+    var f = xlPrev.cols[x.c];
+    if (!xlPrevEditableField(f)) return;
+    if (!affected[x.r]) affected[x.r] = [];
+    affected[x.r].push(f);
+    any = true;
+  });
+  if (!any) return;
+  pushHistory();
+  Object.keys(affected).forEach(function (rk) {
+    var row = xlPrev.rows[+rk];
+    affected[rk].forEach(function (f) { xlPrevSetValue(row, f, ''); });
+  });
+  saveState(); renderAll(); xlPrevRender();
+}
+function xlPrevPasteText(tsv) {
+  if (xlPrev.selR == null || xlPrev.selC == null) return;
+  var lines = String(tsv).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  var rows = lines.map(function (l) { return l.split('\t'); });
+  var maxC = 0; rows.forEach(function (r) { maxC = Math.max(maxC, r.length); });
+  var r0 = xlPrev.selR, c0 = xlPrev.selC;
+  var affected = {};
+  pushHistory();
+  for (var i = 0; i < rows.length; i++) {
+    var r = r0 + i;
+    if (r >= xlPrev.rows.length) break;
+    var row = xlPrev.rows[r];
+    for (var j = 0; j < maxC; j++) {
+      var c = c0 + j;
+      if (c >= xlPrev.cols.length) break;
+      var f = xlPrev.cols[c];
+      if (!xlPrevEditableField(f)) continue;
+      var v = rows[i][j];
+      if (v === undefined) v = '';
+      if (!affected[r]) affected[r] = [];
+      affected[r].push({ f: f, v: v });
     }
   }
-  val.textContent = fx ? (fx + ' = ' + disp) : disp;
+  Object.keys(affected).forEach(function (rk) {
+    var row = xlPrev.rows[+rk];
+    affected[rk].forEach(function (o) { xlPrevSetValue(row, o.f, o.v); });
+  });
+  saveState(); renderAll(); xlPrevRender();
+  xlPrevSelectRect(r0, c0, Math.min(r0 + rows.length - 1, xlPrev.rows.length - 1), Math.min(c0 + maxC - 1, xlPrev.cols.length - 1));
+  showToast('Pasted', 'ok');
 }
+function xlPrevPaste() {
+  if (xlPrev.clip) { xlPrevPasteText(xlPrev.clip); return; }
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    navigator.clipboard.readText().then(function (t) { xlPrevPasteText(t); }).catch(function () {});
+    return;
+  }
+  showToast('Nothing to paste — copy cells first (Ctrl+C)', 'error');
+}
+/* ---------- Find (Ctrl+F) ---------- */
+function xlPrevOpenFind() {
+  var bar = document.getElementById('xlPrevFindBar');
+  if (!bar) return;
+  bar.hidden = false;
+  var inp = document.getElementById('xlPrevFindInput');
+  if (inp) inp.focus();
+}
+function xlPrevFind(text) {
+  text = (text || '').toLowerCase();
+  var grid = document.getElementById('xlPrevScroll');
+  if (!grid) return;
+  grid.querySelectorAll('td.xl-cell.xl-find-hit, td.xl-cell.xl-find-cur').forEach(function (t) { t.classList.remove('xl-find-hit', 'xl-find-cur'); });
+  xlPrev.findHits = []; xlPrev.findIdx = 0;
+  var cnt = document.getElementById('xlPrevFindCount');
+  if (!text) { if (cnt) cnt.textContent = ''; return; }
+  grid.querySelectorAll('td.xl-cell').forEach(function (td) {
+    if ((td.textContent || '').toLowerCase().indexOf(text) !== -1) {
+      td.classList.add('xl-find-hit');
+      xlPrev.findHits.push(td);
+    }
+  });
+  if (cnt) cnt.textContent = xlPrev.findHits.length ? ('1 of ' + xlPrev.findHits.length) : 'No matches';
+  if (xlPrev.findHits.length) xlPrevFindJump(0);
+}
+function xlPrevFindJump(dir) {
+  if (!xlPrev.findHits.length) return;
+  xlPrev.findIdx = (xlPrev.findIdx + dir + xlPrev.findHits.length) % xlPrev.findHits.length;
+  var td = xlPrev.findHits[xlPrev.findIdx];
+  xlPrev.findHits.forEach(function (t) { t.classList.remove('xl-find-cur'); });
+  td.classList.add('xl-find-cur');
+  var cnt = document.getElementById('xlPrevFindCount');
+  if (cnt) cnt.textContent = (xlPrev.findIdx + 1) + ' of ' + xlPrev.findHits.length;
+  if (typeof td.scrollIntoView === 'function') td.scrollIntoView({ block: 'nearest' });
+  xlPrevSelectSingle(+td.getAttribute('data-r'), +td.getAttribute('data-c'));
+}
+/* ---------- Right-click context menu ---------- */
+function xlPrevShowCtx(x, y, td) {
+  var menu = document.getElementById('xlPrevCtx');
+  if (!menu) return;
+  menu.hidden = false;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  xlPrev.ctx = td;
+}
+function xlPrevHideCtx() {
+  var menu = document.getElementById('xlPrevCtx');
+  if (menu) menu.hidden = true;
+}
+
 /* Toggles formula view, the same way Ctrl+` works in real Excel. */
 function xlPrevToggleFormulas() {
   xlPrev.showFormulas = !xlPrev.showFormulas;
@@ -11568,11 +11814,14 @@ function xlPrevRender() {
   var scroll = document.getElementById('xlPrevScroll');
   if (scroll) scroll.innerHTML = '<table class="xlprev-grid">' + xlPrevGridHtml(d) + '</table>';
   var status = document.getElementById('xlPrevStatus');
-  if (status) status.textContent = (d.rows.length + ' rows × ' + d.cols.length + ' columns · Sheet1 “' + (d.label || 'Lot Details') + '” · double-click a cell to edit · this is exactly what the .xlsx will contain');
+  if (status) status.textContent = (d.rows.length + ' rows × ' + d.cols.length + ' columns · Sheet1 “' + (d.label || 'Lot Details') + '” · F2 edit · double-click edit · this is exactly what the .xlsx will contain');
   var title = document.getElementById('xlPrevSheetTitle');
   if (title) title.textContent = d.label || 'Lot Details';
   var seg = document.getElementById('xlPrevScope');
   if (seg) seg.querySelectorAll('.seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.scope === xlPrev.mode); });
+  xlPrev.findHits = []; xlPrev.findIdx = 0;
+  var cnt = document.getElementById('xlPrevFindCount');
+  if (cnt) cnt.textContent = '';
   xlPrevSetCell(null, null);
 }
 function xlPrevDownload() {
@@ -11613,28 +11862,118 @@ function openXlPreview(mode) {
             '<span class="xlprev-fx">fx</span>' +
             '<span class="xlprev-fxval" id="xlPrevVal"></span>' +
           '</div>' +
+          '<div class="xlprev-findbar" id="xlPrevFindBar" hidden>' +
+            '<span class="xlprev-findlabel">Find</span>' +
+            '<input type="text" id="xlPrevFindInput" placeholder="Search this sheet…" />' +
+            '<span class="xlprev-findcount" id="xlPrevFindCount"></span>' +
+            '<button type="button" id="xlPrevFindPrev" title="Previous match (Shift+Enter)">↑</button>' +
+            '<button type="button" id="xlPrevFindNext" title="Next match (Enter)">↓</button>' +
+            '<button type="button" id="xlPrevFindClose" title="Close (Esc)">✕</button>' +
+          '</div>' +
           '<div class="xlprev-scroll" id="xlPrevScroll"></div>' +
+          '<div class="xlprev-statusbar">' +
+            '<span class="xlprev-stat" id="xlPrevStatReady">Ready</span>' +
+            '<span class="xlprev-stat" id="xlPrevStatSel"></span>' +
+            '<span class="xlprev-stat strong" id="xlPrevStatSum"></span>' +
+            '<span class="xlprev-stat" id="xlPrevStatAvg"></span>' +
+            '<span class="xlprev-stat" id="xlPrevStatCnt"></span>' +
+            '<span class="xlprev-stat" id="xlPrevStatMin"></span>' +
+            '<span class="xlprev-stat" id="xlPrevStatMax"></span>' +
+            '<span class="xlprev-status-spacer"></span>' +
+            '<span class="xlprev-status-hint">F2 edit · arrows move · Shift range · Ctrl multi · drag select · Ctrl+C/V · Ctrl+F</span>' +
+          '</div>' +
         '</div>' +
         '<div class="modal-foot">' +
           '<span class="xlprev-status" id="xlPrevStatus"></span>' +
           '<span style="flex:1"></span>' +
           '<button type="button" class="btn" id="xlPrevClose">Close</button>' +
         '</div>' +
+        '<div class="xlprev-ctx" id="xlPrevCtx" hidden>' +
+          '<button type="button" data-act="copy">Copy</button>' +
+          '<button type="button" data-act="cut">Cut</button>' +
+          '<button type="button" data-act="paste">Paste</button>' +
+          '<button type="button" data-act="clear">Clear contents</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   var overlay = root.firstElementChild;
-  var close = function () { document.removeEventListener('keydown', onKey); root.innerHTML = ''; };
+  var onDocUp = function () { xlPrev.dragging = false; };
+  var onDocDown = function (e) {
+    var m = document.getElementById('xlPrevCtx');
+    if (m && !m.hidden && m.contains && !m.contains(e.target)) xlPrevHideCtx();
+  };
+  var close = function () {
+    document.removeEventListener('keydown', onKey, true);
+    document.removeEventListener('mouseup', onDocUp);
+    document.removeEventListener('mousedown', onDocDown);
+    xlPrev.dragging = false; xlPrev.ctx = null;
+    root.innerHTML = '';
+  };
   var onKey = function (e) {
-    if (e.key === 'Escape') { close(); return; }
-    if ((e.key === 'F2' || e.key === 'Enter') && e.target && e.target.tagName !== 'INPUT') {
-      if (xlPrev.selR == null || xlPrev.selC == null) return;
-      var grid = document.getElementById('xlPrevScroll');
-      if (!grid) return;
-      var td = grid.querySelector('td.xl-cell[data-r="' + xlPrev.selR + '"][data-c="' + xlPrev.selC + '"]');
-      if (td) { e.preventDefault(); xlPrevBeginEdit(td); }
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+    var ctrl = e.ctrlKey || e.metaKey;
+    if (e.key === 'Escape') {
+      var fb = document.getElementById('xlPrevFindBar');
+      if (fb && !fb.hidden) { fb.hidden = true; return; }
+      var cm = document.getElementById('xlPrevCtx');
+      if (cm && !cm.hidden) { cm.hidden = true; return; }
+      close(); return;
+    }
+    if (ctrl && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); e.stopPropagation(); xlPrevCopy(false); return; }
+    if (ctrl && (e.key === 'x' || e.key === 'X')) { e.preventDefault(); e.stopPropagation(); xlPrevCopy(true); return; }
+    if (ctrl && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); e.stopPropagation(); xlPrevPaste(); return; }
+    if (ctrl && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); e.stopPropagation(); xlPrevOpenFind(); return; }
+    if (ctrl && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); e.stopPropagation(); xlPrevSelectRect(0, 0, Math.max(0, xlPrev.rows.length - 1), xlPrev.cols.length - 1); return; }
+    if (e.key === 'F2') { var ftd = xlPrevFocusTd(); if (ftd) { e.preventDefault(); e.stopPropagation(); xlPrevBeginEdit(ftd); } return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); xlPrevClearContents(); return; }
+    if (e.key.length === 1 && !ctrl && !e.altKey && e.key !== ' ') {
+      var t0 = xlPrevFocusTd();
+      if (t0 && xlPrevEditableField(xlPrev.cols[+t0.getAttribute('data-c')])) {
+        e.preventDefault(); e.stopPropagation();
+        xlPrevBeginEdit(t0);
+        var tInp = t0.querySelector('input.xlprev-edit');
+        if (tInp) tInp.value = '';
+      }
+      return;
+    }
+    var r = xlPrev.selR, c = xlPrev.selC;
+    if (r == null || c == null) {
+      if (e.key.indexOf('Arrow') === 0 || e.key === 'Tab' || e.key === 'Enter' || e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown') {
+        e.preventDefault(); e.stopPropagation(); xlPrevSetCell(0, 0);
+      }
+      return;
+    }
+    var nr = r, nc = c;
+    var shift = e.shiftKey;
+    var handled = true;
+    if (ctrl && e.key === 'ArrowUp') nr = 0;
+    else if (ctrl && e.key === 'ArrowDown') nr = xlPrev.rows.length;
+    else if (ctrl && e.key === 'ArrowLeft') nc = 0;
+    else if (ctrl && e.key === 'ArrowRight') nc = xlPrev.cols.length - 1;
+    else if (e.key === 'ArrowLeft') nc = Math.max(0, c - 1);
+    else if (e.key === 'ArrowRight') nc = Math.min(xlPrev.cols.length - 1, c + 1);
+    else if (e.key === 'ArrowUp') nr = Math.max(0, r - 1);
+    else if (e.key === 'ArrowDown') nr = Math.min(xlPrev.rows.length, r + 1);
+    else if (e.key === 'Tab') { if (shift) { nc = c - 1; if (nc < 0) { nc = xlPrev.cols.length - 1; nr = Math.max(0, r - 1); } } else { nc = c + 1; if (nc >= xlPrev.cols.length) { nc = 0; nr = Math.min(xlPrev.rows.length, r + 1); } } }
+    else if (e.key === 'Enter') nr = shift ? Math.max(0, r - 1) : Math.min(xlPrev.rows.length, r + 1);
+    else if (e.key === 'Home') { nc = 0; if (ctrl) nr = 0; }
+    else if (e.key === 'End') { nc = xlPrev.cols.length - 1; if (ctrl) nr = xlPrev.rows.length; }
+    else if (e.key === 'PageUp') nr = Math.max(0, r - 20);
+    else if (e.key === 'PageDown') nr = Math.min(xlPrev.rows.length, r + 20);
+    else handled = false;
+    if (!handled) return;
+    e.preventDefault(); e.stopPropagation();
+    if (shift) {
+      if (xlPrev.anchorR == null || xlPrev.anchorC == null) { xlPrev.anchorR = r; xlPrev.anchorC = c; }
+      xlPrevSelectRect(xlPrev.anchorR, xlPrev.anchorC, nr, nc);
+    } else {
+      xlPrevSelectSingle(nr, nc);
     }
   };
-  document.addEventListener('keydown', onKey);
+  document.addEventListener('keydown', onKey, true);
+  document.addEventListener('mouseup', onDocUp);
+  document.addEventListener('mousedown', onDocDown);
   overlay.querySelector('.xclose').addEventListener('click', close);
   overlay.querySelector('#xlPrevClose').addEventListener('click', close);
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
@@ -11648,8 +11987,36 @@ function openXlPreview(mode) {
     b.addEventListener('click', function () { xlPrev.mode = b.dataset.scope; xlPrevRender(); });
   });
   var scroll = overlay.querySelector('#xlPrevScroll');
+  /* Drag selection (Excel-style). */
+  scroll.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    if (e.target && e.target.matches && e.target.matches('input.xlprev-edit')) return;
+    var td = e.target && e.target.closest ? e.target.closest('td.xl-cell') : null;
+    if (!td) return;
+    var r = +td.getAttribute('data-r'), c = +td.getAttribute('data-c');
+    if (e.shiftKey && xlPrev.anchorR != null && xlPrev.anchorC != null) {
+      xlPrevSelectRect(xlPrev.anchorR, xlPrev.anchorC, r, c);
+    } else if (e.ctrlKey || e.metaKey) {
+      xlPrevToggleCell(r, c);
+    } else {
+      xlPrev.dragStartR = r; xlPrev.dragStartC = c;
+      xlPrev.dragging = true;
+      xlPrevSelectSingle(r, c);
+    }
+    e.preventDefault();
+  });
+  scroll.addEventListener('mousemove', function (e) {
+    if (!xlPrev.dragging) return;
+    var td = e.target && e.target.closest ? e.target.closest('td.xl-cell') : null;
+    if (!td) return;
+    var r = +td.getAttribute('data-r'), c = +td.getAttribute('data-c');
+    if (r === xlPrev.selR && c === xlPrev.selC && Object.keys(xlPrev.sel).length === 1) return;
+    xlPrev.lastDragAt = Date.now();
+    xlPrevSelectRect(xlPrev.dragStartR, xlPrev.dragStartC, r, c);
+  });
   scroll.addEventListener('click', function (e) {
     if (e.target && e.target.matches && e.target.matches('input.xlprev-edit')) return;
+    if ((Date.now() - (xlPrev.lastDragAt || 0)) < 250) return; /* trailing click of a drag */
     var td = e.target && e.target.closest ? e.target.closest('td.xl-cell') : null;
     if (!td) return;
     var r = td.dataset.r, c = td.dataset.c;
@@ -11663,6 +12030,35 @@ function openXlPreview(mode) {
     }
     xlPrev.lastSelAt = Date.now();
     xlPrevSetCell(ri, ci);
+  });
+  scroll.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+    var td = e.target && e.target.closest ? e.target.closest('td.xl-cell') : null;
+    if (!td) return;
+    var r = +td.getAttribute('data-r'), c = +td.getAttribute('data-c');
+    if (!xlPrev.sel[xlPrevSelKey(r, c)]) xlPrevSelectSingle(r, c);
+    xlPrevShowCtx(e.clientX, e.clientY, td);
+  });
+  var findBar = overlay.querySelector('#xlPrevFindBar');
+  var findInp = overlay.querySelector('#xlPrevFindInput');
+  findInp.addEventListener('input', function () { xlPrevFind(findInp.value); });
+  findInp.addEventListener('keydown', function (e) {
+    e.stopPropagation();
+    if (e.key === 'Enter') { e.preventDefault(); xlPrevFindJump(e.shiftKey ? -1 : 1); }
+    else if (e.key === 'Escape') { findBar.hidden = true; }
+  });
+  overlay.querySelector('#xlPrevFindNext').addEventListener('click', function () { xlPrevFindJump(1); });
+  overlay.querySelector('#xlPrevFindPrev').addEventListener('click', function () { xlPrevFindJump(-1); });
+  overlay.querySelector('#xlPrevFindClose').addEventListener('click', function () { findBar.hidden = true; });
+  overlay.querySelectorAll('#xlPrevCtx button[data-act]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var act = b.dataset.act;
+      xlPrevHideCtx();
+      if (act === 'copy') xlPrevCopy(false);
+      else if (act === 'cut') xlPrevCopy(true);
+      else if (act === 'paste') xlPrevPaste();
+      else if (act === 'clear') xlPrevClearContents();
+    });
   });
   xlPrevRender();
   return { el: overlay, close: close };
