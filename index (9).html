@@ -11858,14 +11858,18 @@ function xlPrevOpenGoogleSheet(mode) {
   var rows = d.rows, cols = d.cols;
   if (!rows || !rows.length) { showToast('No rows to open in Google Sheets.', 'error'); return; }
   if (!gdriveClientId) {
+    /* No OAuth Client ID: copy the rows to the clipboard and open a blank
+       Google Sheet for pasting. Copy synchronously (execCommand first) so it
+       runs inside the user gesture, then open the sheet immediately so popup
+       blockers do not suppress it. */
     var tsv = tsvForSheets(rows, cols);
-    var done = function () {
+    var copied = copyTextToClipboard(tsv);
+    if (copied) {
       window.open('https://sheets.new', '_blank', 'noopener');
-      showToast('Copied ' + rows.length + ' rows (' + d.label + ') — paste into the new Google Sheet (Ctrl+V).', 'ok');
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(tsv).then(done).catch(function () { fallbackCopy(tsv); window.open('https://sheets.new', '_blank', 'noopener'); });
-    } else { fallbackCopy(tsv); done(); }
+      showToast('Copied ' + rows.length + ' rows (' + d.label + ') — in the new Google Sheet press Ctrl+V to paste.', 'ok');
+    } else {
+      showToast('Could not copy automatically. Use Export → Google Drive → "Copy for Sheets", or add a Google OAuth Client ID to open the sheet already populated.', 'error');
+    }
     return;
   }
   showToast('Opening ' + d.label + ' in Google Sheets…', 'ok');
@@ -12128,7 +12132,7 @@ function loadScriptOnce(src, id) {
   });
 }
 function tsvForSheets(rows, cols) {
-  return screenCsvExport(rows, cols, '\t').replace(/^\ufeff/, '');
+  return screenCsvExport(rows, cols, '\t').replace(/^\ufeff/, '').replace(/\u00AD/g, '');
 }
 function openGoogleDriveExport(lotsToExport, colsToExport, exportCount, exportLabel) {
   if (!lotsToExport.length) { showToast('No rows available for ' + exportLabel + '.', 'error'); return; }
@@ -12188,6 +12192,33 @@ function fallbackCopy(text) {
   try { document.execCommand('copy'); showToast('Copied as spreadsheet rows — paste into Google Sheets.', 'ok'); }
   catch (e) { showToast('Could not copy automatically.', 'error'); }
   ta.remove();
+}
+/* Copy text to the clipboard as reliably as possible. Prefers the synchronous
+   document.execCommand path (works under a user gesture even in non-secure
+   contexts like file:// or plain http://), then falls back to the async
+   Clipboard API. Returns true when a copy was performed or attempted. */
+function copyTextToClipboard(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-9999px';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  var ok = false;
+  try {
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    ok = document.execCommand('copy');
+  } catch (e) { ok = false; }
+  ta.remove();
+  if (ok) return true;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {}, function () {});
+    return true;
+  }
+  return false;
 }
 function setDriveStatus(msg, cls) {
   var el = document.getElementById('driveStatus');
