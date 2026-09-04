@@ -15437,9 +15437,11 @@ function showHeaderContextMenu(x, y, th) {
 
   /* Mobile touch long-press on a data cell: select it (or extend the selection
      area) and show the SUM + COUNT HUD. Long-press inside the current area
-     shrinks it back toward that cell. */
+     shrinks it back toward that cell. Keeping the finger down and dragging
+     extends the area to whatever cell is under the finger, so the SUM updates
+     live while the finger moves. */
   (function () {
-    var lpTimer = null, lpX = 0, lpY = 0, lpCell = null;
+    var lpTimer = null, lpX = 0, lpY = 0, lpCell = null, lpActive = false;
     function dataCellFromTouch(t) {
       if (!t || !t.closest) return null;
       var td = t.closest('#detailTableDash tbody td[data-field], #pivotTable tbody td[data-field]');
@@ -15448,11 +15450,17 @@ function showHeaderContextMenu(x, y, th) {
       if (tr && tr.classList && tr.classList.contains('detail-group-hdr')) return null;
       return td;
     }
+    /* Cell under a screen point (used while dragging a long-press selection). */
+    function dataCellFromPoint(x, y) {
+      var el = document.elementFromPoint && document.elementFromPoint(x, y);
+      return el ? dataCellFromTouch(el) : null;
+    }
     document.addEventListener('touchstart', function (e) {
       if (!e.touches || !e.touches[0]) return;
       var td = dataCellFromTouch(e.touches[0].target);
       if (!td) return;
       lpCell = td;
+      lpActive = false;
       var touch = e.touches[0];
       lpX = touch.clientX;
       lpY = touch.clientY;
@@ -15462,23 +15470,53 @@ function showHeaderContextMenu(x, y, th) {
           if (navigator.vibrate) { try { navigator.vibrate(30); } catch (ignore) {} }
           gridLongPressSelect(td);
           lpTimer = null;
+          /* Finger is still down: dragging now extends the anchored area. */
+          lpActive = (gridSel.table != null);
         }
       }, 420);
     }, { passive: true });
     document.addEventListener('touchmove', function (e) {
-      if (lpTimer && e.touches && e.touches[0]) {
-        var touch = e.touches[0];
+      if (!e.touches || !e.touches[0]) return;
+      var touch = e.touches[0];
+      /* Long-press already fired: extend the selection to the cell under the
+         finger so the SUM/COUNT updates live while the finger drags. */
+      if (lpActive) {
+        var td = dataCellFromPoint(touch.clientX, touch.clientY);
+        if (td) {
+          var table = gridTableFromEvent(td);
+          var tr = td.parentElement;
+          if (table && tr && tr.parentElement && tr.parentElement.tagName === 'TBODY') {
+            var r = gridRowIndex(tr, table);
+            var c = gridCellIndex(td);
+            if (r >= 0 && c >= 0) {
+              if (e.cancelable) e.preventDefault(); /* stop the page from scrolling mid-drag */
+              gridSel.selectedCells = [];
+              gridExtend(table, r, c);
+            }
+          }
+        }
+        return;
+      }
+      if (lpTimer) {
         if (Math.abs(touch.clientX - lpX) > 10 || Math.abs(touch.clientY - lpY) > 10) {
           clearTimeout(lpTimer);
           lpTimer = null;
         }
       }
-    }, { passive: true });
+    });
     document.addEventListener('touchend', function () {
       if (lpTimer) {
         clearTimeout(lpTimer);
         lpTimer = null;
       }
+      lpActive = false;
+    }, { passive: true });
+    document.addEventListener('touchcancel', function () {
+      if (lpTimer) {
+        clearTimeout(lpTimer);
+        lpTimer = null;
+      }
+      lpActive = false;
     }, { passive: true });
   })();
 
@@ -16369,5 +16407,5 @@ initFrozenColumnSwipeEngine();
 init();
 </script>
 
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a34aa3aabe2bffa7',t:'MTc4ODMzMjQ0Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
