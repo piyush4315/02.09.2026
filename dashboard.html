@@ -8943,7 +8943,6 @@ function setFreezePivot(field) {
 
 /* ---------- Excel-like Shift range select ---------- */
 var gridSel = { table: null, ar: null, ac: null, r1: null, c1: null, r2: null, c2: null, mode: 'cells', shiftDown: false, ctrlDown: false, selectedCells: [] };
-var gridLongPressAt = 0; /* timestamp of the last long-press selection (to swallow the synthetic click that follows) */
 /* Excel-like multi-column selection for lot-detail headers */
 var colSel = { selected: new Set(), lastAnchor: null, lastTable: null };
 function gridTableFromEvent(el) {
@@ -9386,10 +9385,10 @@ function gridHandlePointer(e, isMove) {
     e.stopPropagation();
     gridSel.selectedCells = []; // Clear individual selections when using range
     gridExtend(table, r, c2);
-  } else {
-    gridSel.selectedCells = []; // Clear individual selections on normal click
-    gridSetAnchor(table, r, c2);
   }
+  /* Plain click/tap deliberately does nothing: cell selection (and the
+     SUM/COUNT HUD) is triggered by long-press on touch, or Shift/Ctrl on
+     desktop — never by a normal click on a row cell. */
 }
 function renderDetailFooter() {
   var rows = detailRows;
@@ -14945,10 +14944,6 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
       var gt = gridTableFromEvent(e.target);
       if (gt) { gridHandlePointer(e, false); return; }
     } else if (e.target.closest && e.target.closest('#detailTableDash td, #pivotTable td')) {
-      /* A long-press just handled the selection — swallow the synthetic click
-         that mobile browsers fire right after touchend so it doesn't collapse
-         the area back to a single cell. */
-      if (gridLongPressAt && (Date.now() - gridLongPressAt) < 700) { gridLongPressAt = 0; return; }
       gridHandlePointer(e, false);
     }
     var filtBtn = (e.target && e.target.closest) ? e.target.closest('.th-filt-btn, [data-filter-field]') : null;
@@ -15465,7 +15460,6 @@ function showHeaderContextMenu(x, y, th) {
       if (lpTimer) clearTimeout(lpTimer);
       lpTimer = setTimeout(function () {
         if (lpCell === td) {
-          gridLongPressAt = Date.now();
           if (navigator.vibrate) { try { navigator.vibrate(30); } catch (ignore) {} }
           gridLongPressSelect(td);
           lpTimer = null;
