@@ -4035,11 +4035,25 @@ th.left .th-wrap, th.center .th-wrap {
 .xlprev-grid .xl-r{position:sticky;left:0;z-index:25;min-width:40px;padding:0 6px;border-right:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.07)}
 .xlprev-grid .xl-corner{position:sticky;top:0;left:0;z-index:40;height:24px;min-width:40px;background:#141a30;border-right:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}
 .xlprev-grid td.xl-cell{border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);padding:4px 9px;white-space:nowrap;cursor:cell;background:#0b0f1e;text-align:left}
-.xlprev-grid th.xl-label{position:sticky;top:24px;z-index:20;background:#1a2340;color:var(--text);font-weight:800;text-align:left;padding:5px 9px;border-right:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.14);white-space:nowrap}
+.xlprev-grid{table-layout:fixed}
+.xlprev-grid th.xl-label{position:sticky;top:24px;z-index:20;background:#1a2340;color:var(--text);font-weight:800;text-align:left;padding:5px 9px;border-right:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.14);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none;cursor:pointer}
+.xlprev-grid th.xl-label:hover{background:#223058}
+.xlprev-grid th.xl-label.xl-sorted{color:var(--cyan)}
+.xlprev-sortarrow{color:var(--cyan);font-size:9px;margin-left:2px;font-weight:800}
+.xlprev-resize{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;z-index:5;opacity:0;transition:opacity .12s}
+.xlprev-resize:hover{opacity:1;background:rgba(0,245,255,.45)}
+.xlprev-grid th.xl-label:hover .xlprev-resize{opacity:.55}
+.xlprev-fill{position:absolute;width:9px;height:9px;background:var(--cyan);border:1px solid #06141b;border-radius:2px;cursor:crosshair;z-index:60;box-sizing:border-box}
+[data-theme="light"] .xlprev-grid th.xl-label:hover{background:#dbe4f0}
+[data-theme="light"] .xlprev-grid th.xl-label.xl-sorted{color:#2563eb}
+[data-theme="light"] .xlprev-sortarrow{color:#2563eb}
+[data-theme="light"] .xlprev-fill{background:#2563eb;border-color:#ffffff}
+[data-theme="light"] .xlprev-resize:hover{background:rgba(37,99,235,.35)}
 .xlprev-grid th.xl-r.xl-labelrow{position:sticky;top:24px;left:0;z-index:35;background:#1a2340;color:var(--dim)}
-.xlprev-grid td.xl-cell.num{text-align:right}
+.xlprev-grid td.xl-cell.num{text-align:right;font-variant-numeric:tabular-nums}
 .xlprev-grid th.xl-label.num{text-align:right}
 .xlprev-grid td.xl-cell.cen,.xlprev-grid th.xl-label.cen{text-align:center}
+.xlprev-grid td.xl-cell.money{font-variant-numeric:tabular-nums;color:#86efac}
 .xlprev-grid td.xl-cell.neg{color:#f9a8d4}
 .xlprev-grid td.xl-cell.pos{color:#86efac}
 .xlprev-grid td.xl-cell.tric{color:#7dd3fc;font-weight:700}
@@ -4100,7 +4114,10 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-grid tr.xl-total td{background:#f1f5f9;border-top-color:#cbd5e1}
 [data-theme="light"] .xlprev-grid tr.xl-total th.xl-r{background:#e2e8f0;border-top-color:#cbd5e1}
 [data-theme="light"] .xlprev-grid td.xl-cell.tric{color:#1e3a8a}
+[data-theme="light"] .xlprev-grid td.xl-cell.money{color:#047857}
 [data-theme="light"] .xlprev-grid td.xl-cell.neg{color:#be123c}
+.xlprev-resize-guide{position:fixed;top:0;bottom:0;width:1px;background:var(--cyan);z-index:9999;pointer-events:none;box-shadow:0 0 0 .5px rgba(0,0,0,.25)}
+[data-theme="light"] .xlprev-resize-guide{background:#2563eb}
 [data-theme="light"] .xlprev-grid td.xl-cell.pos{color:#15803d}
 [data-theme="light"] .xlprev-grid td.xl-cell.xl-fxcell{color:#2563eb}
 [data-theme="light"] .xlprev-grid td.xl-cell.xl-edit:hover{outline-color:#2563eb}
@@ -4526,7 +4543,7 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v6</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v7</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
@@ -11413,7 +11430,8 @@ function doExport(id) {
    same way Outlook previews an attachment — and download the .xlsx later. */
 var xlPrev = { mode: 'full', rows: [], cols: [], selR: null, selC: null, showFormulas: false,
                anchorR: null, anchorC: null, sel: {}, clip: '', dragging: false, dragMoved: false,
-               dragStartR: null, dragStartC: null, lastSelAt: 0, findHits: [], findIdx: 0, ctx: null };
+               dragStartR: null, dragStartC: null, lastSelAt: 0, findHits: [], findIdx: 0, ctx: null,
+               colW: {}, sort: null, resizing: null, filling: null };
 function xlPrevDataset(mode) {
   var d = prepareExportChoice('detail', mode || xlPrev.mode || 'full');
   exportColumnLabels = Object.assign(exportColumnLabels || {}, d.labels || {});
@@ -11475,21 +11493,144 @@ function xlPrevAlignClass(f) {
   if (k === 'status' || k === 'date-edit') return 'cen';
   return 'num';
 }
+/* ---------- Column widths (user-resizable, non-persistent) ---------- */
+function xlPrevColWidth(ci, label) {
+  var custom = xlPrev.colW[ci];
+  if (custom) return custom;
+  var base = 96;
+  if (xlPrev.sort && xlPrev.sort.c === ci) base += 22; /* room for the ▲/▼ glyph */
+  var t = String(label || '').length;
+  return Math.min(260, Math.max(64, base + t * 7));
+}
+function xlPrevColW(ci) { return xlPrevColWidth(ci, xlPrev.cols[ci] ? xlPrevColLabel(xlPrev.cols[ci]) : ''); }
+/* Live-updates every cell of one column while the resize drag is in progress. */
+function xlPrevSetColWidth(ci, w) {
+  xlPrev.colW[ci] = w;
+  var scroll = document.getElementById('xlPrevScroll');
+  if (!scroll) return;
+  var col = scroll.querySelector('colgroup > col:nth-child(' + (ci + 1) + ')');
+  if (col) col.style.width = w + 'px';
+  var q = 'th.xl-label[data-c="' + ci + '"],td.xl-cell[data-c="' + ci + '"]';
+  scroll.querySelectorAll(q).forEach(function (el) { el.style.width = w + 'px'; });
+}
+/* ---------- Column sorting (click a header to sort, click again to reverse) ---------- */
+function xlPrevApplySort(rows) {
+  var s = xlPrev.sort;
+  if (!s) return;
+  var f = xlPrev.cols[s.c];
+  if (f == null) return;
+  var dir = s.dir;
+  rows.sort(function (a, b) {
+    var va = xlPrevCellVal(a, f), vb = xlPrevCellVal(b, f);
+    var na = typeof va === 'number' && isFinite(va), nb = typeof vb === 'number' && isFinite(vb);
+    if (na && nb) return (va - vb) * dir;
+    if (na !== nb) return na ? -dir : dir;
+    va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+    if (va < vb) return -dir; if (va > vb) return dir; return 0;
+  });
+}
+function xlPrevSortByCol(ci) {
+  var f = xlPrev.cols[ci];
+  if (f == null) return;
+  var dir = (xlPrev.sort && xlPrev.sort.c === ci) ? -xlPrev.sort.dir : 1;
+  xlPrev.sort = { c: ci, dir: dir };
+  xlPrevRender();
+  showToast('Sorted by ' + xlPrevColLabel(f) + ' (' + (dir === 1 ? 'ascending' : 'descending') + ').', 'ok');
+}
+/* ---------- Drag-fill (Excel autofill) ---------- */
+function xlPrevFillCellValue(srcR, srcC, dstR, dstC) {
+  var f = xlPrev.cols[dstC];
+  var v = xlPrevCellVal(xlPrev.rows[srcR], xlPrev.cols[srcC]);
+  if (dstC === srcC) {
+    /* Same column: continue numeric series, otherwise copy the value down. */
+    if (typeof v === 'number' && isFinite(v)) {
+      var step = (srcR > 0) ? (v - xlPrevCellVal(xlPrev.rows[srcR - 1], f)) : 1;
+      if (typeof step !== 'number' || !isFinite(step) || step === 0) step = 1;
+      return v + step * (dstR - srcR);
+    }
+    return v;
+  }
+  /* Adjacent column: copy the plain value (no series). */
+  return v;
+}
+/* Applies a drag-fill rectangle: the source column continues a numeric series
+   (or copies text down); every other selected column copies its source-row
+   value straight down. Only editable fields are written; derived columns are
+   recomputed automatically by xlPrevSetValue. */
+function xlPrevApplyFill(fl) {
+  var rMin = Math.min(fl.r0, fl.curR), rMax = Math.max(fl.r0, fl.curR);
+  var cMin = Math.min(fl.c0, fl.curC), cMax = Math.max(fl.c0, fl.curC);
+  var srcR = fl.r0, srcC = fl.c0;
+  var count = 0, skipped = 0;
+  pushHistory();
+  for (var c = cMin; c <= cMax; c++) {
+    if (c >= xlPrev.cols.length) break;
+    var f = xlPrev.cols[c];
+    var editable = xlPrevEditableField(f);
+    for (var r = rMin; r <= rMax; r++) {
+      if (r >= xlPrev.rows.length) break;
+      if (r === srcR && c === srcC) continue;
+      if (!editable) { skipped++; continue; }
+      var row = xlPrev.rows[r];
+      var v;
+      if (c === srcC) v = xlPrevFillCellValue(srcR, srcC, r, c);   /* series / copy down */
+      else v = xlPrevCellVal(xlPrev.rows[srcR], f);                /* copy source row across */
+      var old = xlPrevCellVal(row, f);
+      if (String(old) === String(v)) { continue; }
+      xlPrevSetValue(row, f, v);
+      count++;
+    }
+  }
+  saveState();
+  renderAll();
+  xlPrevRender();
+  xlPrevSetCell(Math.min(rMax, Math.max(rMin, srcR)), srcC);
+  xlPrev.filling = null;
+  xlPrev.lastDragAt = Date.now(); /* swallow the trailing click of the drag */
+  var msg = 'Filled ' + count + ' cell' + (count === 1 ? '' : 's');
+  if (skipped) msg += ' · ' + skipped + ' calculated cell' + (skipped === 1 ? '' : 's') + ' skipped';
+  showToast(msg, 'ok');
+}
+function xlPrevShowFillHandle() {
+  var h = document.getElementById('xlPrevFillHandle');
+  if (!h) return;
+  var td = xlPrevFocusTd();
+  var one = td && Object.keys(xlPrev.sel).length === 1;
+  if (!td || !one || xlPrev.selR >= xlPrev.rows.length || !xlPrevEditableField(xlPrev.cols[xlPrev.selC])) { h.style.display = 'none'; return; }
+  var r = td.getBoundingClientRect();
+  var scr = document.getElementById('xlPrevScroll');
+  if (!scr) return;
+  var sr = scr.getBoundingClientRect();
+  h.style.display = 'block';
+  h.style.left = (r.right - sr.left - 5) + 'px';
+  h.style.top = (r.bottom - sr.top - 5) + 'px';
+  h.dataset.r = xlPrev.selR; h.dataset.c = xlPrev.selC;
+}
+function xlPrevHideFillHandle() {
+  var h = document.getElementById('xlPrevFillHandle');
+  if (h) h.style.display = 'none';
+}
 function xlPrevGridHtml(d) {
   var cols = d.cols, rows = d.rows;
   var captured = cols.length && String(cols[0]).indexOf('__screen_') === 0;
   var showFx = !!xlPrev.showFormulas;
   var h = [];
+  /* Fixed layout + per-column widths (resizable). */
+  h.push('<colgroup>');
+  cols.forEach(function (f, ci) { h.push('<col style="width:' + xlPrevColW(ci) + 'px">'); });
+  h.push('</colgroup>');
   /* Column letters (A, B, C, …) */
   h.push('<tr>');
   h.push('<th class="xl-corner"></th>');
   cols.forEach(function (f, ci) { h.push('<th class="xl-c">' + excelColLetter(ci) + '</th>'); });
   h.push('</tr>');
-  /* Sheet row 1 = field-label header */
+  /* Sheet row 1 = field-label header (click to sort, drag the edge to resize) */
   h.push('<tr>');
   h.push('<th class="xl-r xl-labelrow">1</th>');
-  cols.forEach(function (f) {
-    h.push('<th class="xl-label ' + xlPrevAlignClass(f) + '">' + escHtml(xlPrevColLabel(f)) + '</th>');
+  cols.forEach(function (f, ci) {
+    var sortArrow = '';
+    if (xlPrev.sort && xlPrev.sort.c === ci) sortArrow = '<span class="xlprev-sortarrow">' + (xlPrev.sort.dir === 1 ? '▲' : '▼') + '</span>';
+    h.push('<th class="xl-label ' + xlPrevAlignClass(f) + (xlPrev.sort && xlPrev.sort.c === ci ? ' xl-sorted' : '') + '" style="width:' + xlPrevColW(ci) + 'px" data-c="' + ci + '" title="Click to sort · drag the right edge to resize">' + escHtml(xlPrevColLabel(f)) + sortArrow + '<span class="xlprev-resize"></span></th>');
   });
   h.push('</tr>');
   /* Data rows (sheet rows 2 … n+1) */
@@ -11501,6 +11642,7 @@ function xlPrevGridHtml(d) {
       var fx = showFx ? xlPrevFormula(ri, f) : '';
       var editable = xlPrevEditableField(f);
       var cls = 'xl-cell ' + xlPrevAlignClass(f);
+      if (MONEY_FIELDS.has(f)) cls += ' money';
       if (typeof v === 'number' && isFinite(v)) {
         if (f === 'outstanding') cls += v > 1 ? ' neg' : ' pos';
         else if (f === 'total_received' || f === 'sd_received' || f === 'fp_received') cls += v > 0 ? ' pos' : '';
@@ -11509,7 +11651,7 @@ function xlPrevGridHtml(d) {
       if (fx) cls += ' xl-fxcell';
       if (editable) cls += ' xl-edit';
       var ttl = fx ? fx : (editable ? 'Double-click to edit' : (f && String(f).indexOf('__screen_') !== 0 ? 'Auto-calculated' : ''));
-      h.push('<td class="' + cls + '" data-r="' + ri + '" data-c="' + ci + '" data-edit="' + (editable ? '1' : '0') + '"' + (ttl ? ' title="' + escHtml(ttl) + '"' : '') + '>' + escHtml(fx || xlPrevCellDisp(r, f)) + '</td>');
+      h.push('<td class="' + cls + '" style="width:' + xlPrevColW(ci) + 'px" data-r="' + ri + '" data-c="' + ci + '" data-edit="' + (editable ? '1' : '0') + '"' + (ttl ? ' title="' + escHtml(ttl) + '"' : '') + '>' + escHtml(fx || xlPrevCellDisp(r, f)) + '</td>');
     });
     h.push('</tr>');
   });
@@ -11519,16 +11661,16 @@ function xlPrevGridHtml(d) {
     h.push('<th class="xl-r">' + (rows.length + 2) + '</th>');
     cols.forEach(function (f, ci) {
       if (ci === 0) {
-        h.push('<td class="xl-cell" data-r="' + rows.length + '" data-c="0">TOTAL (' + rows.length + ' lots)</td>');
+        h.push('<td class="xl-cell" style="width:' + xlPrevColW(ci) + 'px" data-r="' + rows.length + '" data-c="0">TOTAL (' + rows.length + ' lots)</td>');
         return;
       }
       var meta = FIELD_META[f], custom = customColById(f);
       if ((meta && meta.sum) || (custom && custom.type === 'number')) {
         var s = sumField(rows, f);
         var sfx = showFx ? '=SUM(' + excelColLetter(ci) + '2:' + excelColLetter(ci) + (rows.length + 1) + ')' : '';
-        h.push('<td class="xl-cell num' + (sfx ? ' xl-fxcell' : '') + '" data-r="' + rows.length + '" data-c="' + ci + '"' + (sfx ? ' title="' + escHtml(sfx) + '"' : '') + '>' + escHtml(sfx || (MONEY_FIELDS.has(f) ? inr(s) : numFmt(s))) + '</td>');
+        h.push('<td class="xl-cell num' + (MONEY_FIELDS.has(f) ? ' money' : '') + (sfx ? ' xl-fxcell' : '') + '" style="width:' + xlPrevColW(ci) + 'px" data-r="' + rows.length + '" data-c="' + ci + '"' + (sfx ? ' title="' + escHtml(sfx) + '"' : '') + '>' + escHtml(sfx || (MONEY_FIELDS.has(f) ? inr(s) : numFmt(s))) + '</td>');
       } else {
-        h.push('<td class="xl-cell" data-r="' + rows.length + '" data-c="' + ci + '"></td>');
+        h.push('<td class="xl-cell" style="width:' + xlPrevColW(ci) + 'px" data-r="' + rows.length + '" data-c="' + ci + '"></td>');
       }
     });
     h.push('</tr>');
@@ -11602,6 +11744,7 @@ function xlPrevPaintSelection() {
     }
   }
   xlPrevUpdateInfo();
+  xlPrevShowFillHandle();
 }
 function xlPrevUpdateInfo() {
   var name = document.getElementById('xlPrevName');
@@ -11922,8 +12065,17 @@ function xlPrevSetValue(row, f, v) {
 function xlPrevRender() {
   var d = xlPrevDataset(xlPrev.mode);
   xlPrev.rows = d.rows; xlPrev.cols = d.cols;
+  if (xlPrev.sort) xlPrevApplySort(xlPrev.rows);
   var scroll = document.getElementById('xlPrevScroll');
-  if (scroll) scroll.innerHTML = '<table class="xlprev-grid">' + xlPrevGridHtml(d) + '</table>';
+  if (scroll) {
+    scroll.innerHTML = '<table class="xlprev-grid">' + xlPrevGridHtml(d) + '</table>';
+    var fh = document.createElement('span');
+    fh.id = 'xlPrevFillHandle';
+    fh.className = 'xlprev-fill';
+    fh.style.display = 'none';
+    fh.setAttribute('aria-hidden', 'true');
+    scroll.appendChild(fh);
+  }
   var status = document.getElementById('xlPrevStatus');
   if (status) status.textContent = (d.rows.length + ' rows × ' + d.cols.length + ' columns · Sheet1 “' + (d.label || 'Lot Details') + '” · F2 edit · double-click edit · this is exactly what the .xlsx will contain');
   var title = document.getElementById('xlPrevSheetTitle');
@@ -12035,7 +12187,7 @@ function openXlPreview(mode) {
             '<span class="xlprev-stat" id="xlPrevStatMin"></span>' +
             '<span class="xlprev-stat" id="xlPrevStatMax"></span>' +
             '<span class="xlprev-status-spacer"></span>' +
-            '<span class="xlprev-status-hint">F2 edit · arrows move · Shift range · Ctrl multi · drag select · Ctrl+C/V · Ctrl+F</span>' +
+            '<span class="xlprev-status-hint">F2 edit · click header to sort · drag header edge to resize · drag ⌞ to fill · Ctrl+C/V · Ctrl+F</span>' +
           '</div>' +
         '</div>' +
         '<div class="modal-foot">' +
@@ -12057,11 +12209,54 @@ function openXlPreview(mode) {
     var m = document.getElementById('xlPrevCtx');
     if (m && !m.hidden && m.contains && !m.contains(e.target)) xlPrevHideCtx();
   };
+  /* Column resize + drag-fill live pointer tracking (document-level). */
+  var onMove = function (e) {
+    if (xlPrev.resizing) {
+      var rs = xlPrev.resizing;
+      var dx = e.clientX - rs.startX;
+      var w = Math.min(420, Math.max(52, rs.startW + dx));
+      rs.guide.style.left = e.clientX + 'px';
+      xlPrevSetColWidth(rs.ci, w);
+      return;
+    }
+    if (xlPrev.filling) {
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      var td = el && el.closest ? el.closest('td.xl-cell') : null;
+      if (!td) return;
+      var r = +td.getAttribute('data-r'), c = +td.getAttribute('data-c');
+      if (isNaN(r) || isNaN(c) || r >= xlPrev.rows.length) return;
+      xlPrev.filling.curR = r; xlPrev.filling.curC = c;
+      xlPrevSelectRect(xlPrev.filling.r0, xlPrev.filling.c0, r, c);
+    }
+  };
+  var onUp = function (e) {
+    if (xlPrev.resizing) {
+      var rs = xlPrev.resizing;
+      if (rs.guide && rs.guide.parentNode) rs.guide.parentNode.removeChild(rs.guide);
+      xlPrev.lastResizeAt = Date.now();
+      xlPrev.resizing = null;
+      return;
+    }
+    if (xlPrev.filling) {
+      var fl = xlPrev.filling;
+      if (fl.curR != null && fl.curC != null && (fl.curR !== fl.r0 || fl.curC !== fl.c0)) {
+        xlPrevApplyFill(fl);
+      } else {
+        xlPrev.filling = null;
+        xlPrevShowFillHandle();
+      }
+    }
+  };
   var close = function () {
     document.removeEventListener('keydown', onKey, true);
     document.removeEventListener('mouseup', onDocUp);
     document.removeEventListener('mousedown', onDocDown);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
     xlPrev.dragging = false; xlPrev.ctx = null;
+    xlPrev.resizing = null; xlPrev.filling = null;
+    var g = document.querySelector('.xlprev-resize-guide');
+    if (g && g.parentNode) g.parentNode.removeChild(g);
     root.innerHTML = '';
   };
   var onKey = function (e) {
@@ -12129,6 +12324,8 @@ function openXlPreview(mode) {
   document.addEventListener('keydown', onKey, true);
   document.addEventListener('mouseup', onDocUp);
   document.addEventListener('mousedown', onDocDown);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
   overlay.querySelector('.xclose').addEventListener('click', close);
   overlay.querySelector('#xlPrevClose').addEventListener('click', close);
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
@@ -12140,7 +12337,7 @@ function openXlPreview(mode) {
     if (keepR != null && keepC != null) xlPrevSetCell(keepR, keepC);
   });
   overlay.querySelectorAll('#xlPrevScope .seg-btn').forEach(function (b) {
-    b.addEventListener('click', function () { xlPrev.mode = b.dataset.scope; xlPrevRender(); });
+    b.addEventListener('click', function () { xlPrev.mode = b.dataset.scope; xlPrev.sort = null; xlPrevRender(); });
   });
   var scroll = overlay.querySelector('#xlPrevScroll');
   /* Drag selection (Excel-style). */
@@ -12160,6 +12357,41 @@ function openXlPreview(mode) {
       xlPrevSelectSingle(r, c);
     }
     e.preventDefault();
+  });
+  /* Header click = sort (ignored right after a resize drag). */
+  scroll.addEventListener('click', function (e) {
+    if (e.target && e.target.matches && e.target.matches('.xlprev-resize')) return;
+    if ((Date.now() - (xlPrev.lastResizeAt || 0)) < 300) return;
+    var th = e.target && e.target.closest ? e.target.closest('th.xl-label') : null;
+    if (!th) return;
+    var ci = +th.getAttribute('data-c');
+    if (!isNaN(ci)) xlPrevSortByCol(ci);
+  });
+  /* Column resize handle (drag the right edge of a header). */
+  scroll.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    var rs = e.target && e.target.closest ? e.target.closest('.xlprev-resize') : null;
+    if (!rs) return;
+    e.preventDefault(); e.stopPropagation();
+    var th = rs.closest('th.xl-label');
+    if (!th) return;
+    var ci = +th.getAttribute('data-c');
+    if (isNaN(ci)) return;
+    var guide = document.createElement('div');
+    guide.className = 'xlprev-resize-guide';
+    guide.style.left = e.clientX + 'px';
+    document.body.appendChild(guide);
+    xlPrev.resizing = { ci: ci, startX: e.clientX, startW: xlPrevColW(ci), guide: guide };
+  });
+  /* Drag-fill handle (bottom-right corner of the focus cell). */
+  scroll.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    var h = e.target && e.target.id === 'xlPrevFillHandle' ? e.target : null;
+    if (!h) return;
+    e.preventDefault(); e.stopPropagation();
+    var r = +h.getAttribute('data-r'), c = +h.getAttribute('data-c');
+    if (isNaN(r) || isNaN(c)) return;
+    xlPrev.filling = { r0: r, c0: c, curR: r, curC: c };
   });
   scroll.addEventListener('mousemove', function (e) {
     if (!xlPrev.dragging) return;
