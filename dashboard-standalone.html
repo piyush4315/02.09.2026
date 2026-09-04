@@ -229,6 +229,10 @@ tr.detail-group-hdr .gcount{margin-left:8px;color:var(--dim);font-weight:600;fon
 tr.detail-summary-row td{background:rgba(124,58,237,.06);font-weight:600}
 tr.detail-summary-row td.g-value-cell{color:var(--text);text-align:left;font-weight:700}
 tr.detail-summary-row .gcount{margin-left:6px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:1px 7px}
+/* Per-group subtotal row (Sections / Collapsible layouts when group totals shown) */
+tr.detail-group-total td{background:rgba(0,245,255,.055);font-weight:600;border-top:1px solid rgba(0,245,255,.18);border-bottom:1px solid rgba(0,245,255,.14)}
+tr.detail-group-total td.g-value-cell{color:var(--cyan);text-align:left;font-weight:700}
+tr.detail-group-total .gcount{margin-left:6px;color:var(--dim);font-weight:600;font-size:10px;background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.2);border-radius:99px;padding:1px 7px}
 select,input[type=text],input[type=search],input[type=number],input[type=date]{
   font-family:'Inter',sans-serif;font-size:11px;padding:7px 11px;
   border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(0,0,0,.4);color:var(--text);
@@ -1534,6 +1538,9 @@ table td[data-field="sap_document_date"] input{
 [data-theme="light"] tr.detail-group-hdr .gcount{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
 [data-theme="light"] tr.detail-summary-row td{background:#f5f3ff}
 [data-theme="light"] tr.detail-summary-row td.g-value-cell{color:#1e1b4b}
+[data-theme="light"] tr.detail-group-total td{background:#e0f7fe;border-top-color:#a5e3f5;border-bottom-color:#a5e3f5}
+[data-theme="light"] tr.detail-group-total td.g-value-cell{color:#0e7490}
+[data-theme="light"] tr.detail-group-total .gcount{background:#cffafe;border-color:#67d3ea;color:#0e7490}
 [data-theme="light"] select,
 [data-theme="light"] input[type=text],
 [data-theme="light"] input[type=search],
@@ -3991,6 +3998,20 @@ th.left .th-wrap, th.center .th-wrap {
                 <button type="button" class="seg-btn" data-default="flat" title="Start Buyer Ledger Analytics as a flat Lot details list">Flat</button>
               </div>
             </div>
+            <div id="pivotGroupTotalsWrap">
+              <label>Group total</label>
+              <div class="seg-control" id="pivotGroupTotals" role="group" aria-label="Group total">
+                <button type="button" class="seg-btn" data-totals="hide" title="Do not show a per-group subtotal row">Hide</button>
+                <button type="button" class="seg-btn" data-totals="show" title="Show a per-group subtotal row for Sections and Collapsible layouts">Show</button>
+              </div>
+            </div>
+            <div id="pivotGroupTotalPosWrap">
+              <label>Total position</label>
+              <div class="seg-control" id="pivotGroupTotalPos" role="group" aria-label="Total position">
+                <button type="button" class="seg-btn" data-pos="above" title="Place the group subtotal directly under the group header, above its lot rows">Above rows</button>
+                <button type="button" class="seg-btn" data-pos="below" title="Place the group subtotal after the group's lot rows">Below rows</button>
+              </div>
+            </div>
           </div>
           <div id="pivotActiveFiltersBar" class="active-filters-bar" style="display:none"></div>
           <div class="col-toggles" id="pivotColToggles"></div>
@@ -4037,6 +4058,20 @@ th.left .th-wrap, th.center .th-wrap {
               <div class="seg-control" id="detailDefaultView" role="group" aria-label="Default startup view">
                 <button type="button" class="seg-btn" data-default="flat" title="Start Lot details as a flat list (no grouping)">Flat</button>
                 <button type="button" class="seg-btn" data-default="buyer" title="Start Lot details grouped by Buyer">Group by Buyer</button>
+              </div>
+            </div>
+            <div id="detailGroupTotalsWrap">
+              <label>Group total</label>
+              <div class="seg-control" id="detailGroupTotals" role="group" aria-label="Group total">
+                <button type="button" class="seg-btn" data-totals="hide" title="Do not show a per-group subtotal row">Hide</button>
+                <button type="button" class="seg-btn" data-totals="show" title="Show a per-group subtotal row for Sections and Collapsible layouts">Show</button>
+              </div>
+            </div>
+            <div id="detailGroupTotalPosWrap">
+              <label>Total position</label>
+              <div class="seg-control" id="detailGroupTotalPos" role="group" aria-label="Total position">
+                <button type="button" class="seg-btn" data-pos="above" title="Place the group subtotal directly under the group header, above its lot rows">Above rows</button>
+                <button type="button" class="seg-btn" data-pos="below" title="Place the group subtotal after the group's lot rows">Below rows</button>
               </div>
             </div>
           </div>
@@ -6594,7 +6629,7 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat', pivotGroupLayout: 'summary', pivotDefaultView: 'buyer' };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat', detailGroupTotals: 'hide', detailGroupTotalPos: 'below', pivotGroupLayout: 'summary', pivotDefaultView: 'buyer', pivotGroupTotals: 'hide', pivotGroupTotalPos: 'below' };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
 var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
@@ -7292,7 +7327,7 @@ function saveState() {
     buyerViewVersion: buyerViewVersion,
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7343,8 +7378,12 @@ function loadState() {
       ui.detailGroupBy = data.ui.detailGroupBy || 'default';
       ui.detailGroupLayout = data.ui.detailGroupLayout || 'sections';
       ui.detailDefaultView = data.ui.detailDefaultView || 'flat';
+      ui.detailGroupTotals = data.ui.detailGroupTotals || 'hide';
+      ui.detailGroupTotalPos = data.ui.detailGroupTotalPos || 'below';
       ui.pivotGroupLayout = data.ui.pivotGroupLayout || 'summary';
       ui.pivotDefaultView = data.ui.pivotDefaultView || 'buyer';
+      ui.pivotGroupTotals = data.ui.pivotGroupTotals || 'hide';
+      ui.pivotGroupTotalPos = data.ui.pivotGroupTotalPos || 'below';
     }
     if (Array.isArray(data.customCols)) customCols = data.customCols;
     if (data.colLayout && typeof data.colLayout === 'object') {
@@ -7975,6 +8014,19 @@ function pivotGroupHeaderHtml(group, groupKey, isCollapsible, colspan, collapsed
     ' <span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span>' +
     '</td></tr>';
 }
+/* Per-group subtotal row for the pivot Sections / Collapsible layouts. */
+function pivotGroupTotalRowHtml(group, cols) {
+  var cells = '<td class="left g-value-cell">Subtotal <span class="gcount">' + group.lots.length + '</span></td>';
+  cells += cols.map(function (f) {
+    var meta = FIELD_META[f], custom = customColById(f);
+    if ((meta && meta.sum) || (custom && custom.type === 'number')) {
+      var s = group.lots.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
+      return detailSumTdHtml(f, s);
+    }
+    return '<td></td>';
+  }).join('');
+  return '<tr class="detail-group-total">' + cells + '</tr>';
+}
 /* Sections / Collapsible rendering for the grouped pivot: a section header row
    per group with the individual lot rows (pivotLot columns) underneath. */
 function renderPivotGroupedSections(rows, groupKey, layout) {
@@ -8000,15 +8052,20 @@ function renderPivotGroupedSections(rows, groupKey, layout) {
   thead.innerHTML = '<tr>' + cols.map(function (f, i) { return thPickerHtml(f, 'pivot', i, 'pivotLot'); }).join('') + '</tr>';
   var groups = detailGroupsFor(dRows, groupKey);
   var isCollapsible = (layout === 'collapse');
+  var showTotals = ui.pivotGroupTotals === 'show';
+  var totalsAbove = ui.pivotGroupTotalPos === 'above';
   var html = '';
   groups.forEach(function (g) {
     var collapsed = isCollapsible && !!pivotCollapsedGroups[groupKey + '|' + g.key];
+    var totalRow = showTotals ? pivotGroupTotalRowHtml(g, cols) : '';
     html += pivotGroupHeaderHtml(g, groupKey, isCollapsible, cols.length, collapsed);
+    if (showTotals && totalsAbove) html += totalRow;
     if (!collapsed) {
       g.lots.forEach(function (r) {
         html += pivotLotRowHtml(r, cols);
       });
     }
+    if (showTotals && !totalsAbove) html += totalRow;
   });
   tbody.innerHTML = html;
   tfoot.innerHTML = '<tr>' + cols.map(function (f, i) {
@@ -8527,6 +8584,20 @@ function detailSummaryRowHtml(group, groupKey, cols) {
   cells += '<td class="row-actions"></td>';
   return '<tr class="detail-summary-row" data-dgroup="' + escHtml(groupKey) + '" data-dgval="' + escHtml(group.key) + '">' + cells + '</tr>';
 }
+/* Per-group subtotal row for the Sections / Collapsible layouts. */
+function detailGroupTotalRowHtml(group, groupKey, cols) {
+  var cells = '<td class="left g-value-cell">Subtotal <span class="gcount">' + group.lots.length + ' lot' + (group.lots.length === 1 ? '' : 's') + '</span></td>';
+  cells += cols.map(function (f) {
+    var custom = customColById(f);
+    if (DETAIL_NUMERIC_FIELDS.indexOf(f) !== -1 || (custom && custom.type === 'number')) {
+      var s = group.lots.reduce(function (a, r) { return a + numOr(getLotField(r, f)); }, 0);
+      return detailSumTdHtml(f, s);
+    }
+    return '<td></td>';
+  }).join('');
+  cells += '<td class="row-actions"></td>';
+  return '<tr class="detail-group-total" data-dgroup="' + escHtml(groupKey) + '" data-dgval="' + escHtml(group.key) + '">' + cells + '</tr>';
+}
 function renderDetailInto(tableId, countId) {
   var table = document.getElementById(tableId);
   var countEl = document.getElementById(countId);
@@ -8572,15 +8643,20 @@ function renderDetailInto(tableId, countId) {
     }).join('');
   } else if (groupKey) {
     var isCollapsible = (layout === 'collapse');
+    var showTotals = ui.detailGroupTotals === 'show';
+    var totalsAbove = ui.detailGroupTotalPos === 'above';
     var html = '';
     detailGroupsFor(rows, groupKey).forEach(function (g) {
       var collapsed = isCollapsible && !!detailCollapsedGroups[groupKey + '|' + g.key];
+      var totalRow = showTotals ? detailGroupTotalRowHtml(g, groupKey, cols) : '';
       html += detailGroupHeaderHtml(g, groupKey, layout, cols.length + 1, collapsed);
+      if (showTotals && totalsAbove) html += totalRow;
       if (!collapsed) {
         g.lots.forEach(function (r) {
           html += detailLotRowHtml(r, lots.indexOf(r), cols, groupKey, g.key);
         });
       }
+      if (showTotals && !totalsAbove) html += totalRow;
     });
     tbody.innerHTML = html;
   } else {
@@ -14125,6 +14201,26 @@ function init() {
       renderDetail(); saveState();
     });
   }
+  var detailTotalsEl = document.getElementById('detailGroupTotals');
+  if (detailTotalsEl) {
+    detailTotalsEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !detailTotalsEl.contains(b)) return;
+      ui.detailGroupTotals = b.dataset.totals;
+      paintDetailGroupControls();
+      renderDetail(); saveState();
+    });
+  }
+  var detailTotalPosEl = document.getElementById('detailGroupTotalPos');
+  if (detailTotalPosEl) {
+    detailTotalPosEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !detailTotalPosEl.contains(b)) return;
+      ui.detailGroupTotalPos = b.dataset.pos;
+      paintDetailGroupControls();
+      renderDetail(); saveState();
+    });
+  }
   var pivotLayoutEl = document.getElementById('pivotGroupLayout');
   if (pivotLayoutEl) {
     pivotLayoutEl.addEventListener('click', function (e) {
@@ -14153,6 +14249,26 @@ function init() {
       renderAll(); saveState();
     });
   }
+  var pivotTotalsEl = document.getElementById('pivotGroupTotals');
+  if (pivotTotalsEl) {
+    pivotTotalsEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !pivotTotalsEl.contains(b)) return;
+      ui.pivotGroupTotals = b.dataset.totals;
+      paintPivotGroupControls();
+      renderPivot(); saveState();
+    });
+  }
+  var pivotTotalPosEl = document.getElementById('pivotGroupTotalPos');
+  if (pivotTotalPosEl) {
+    pivotTotalPosEl.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b || !pivotTotalPosEl.contains(b)) return;
+      ui.pivotGroupTotalPos = b.dataset.pos;
+      paintPivotGroupControls();
+      renderPivot(); saveState();
+    });
+  }
   
   function resetPivotFilters() {
     ui.groupBy = 'buyer';
@@ -14162,6 +14278,8 @@ function init() {
     ui.colFilters = {};
     ui.pivotGroupLayout = 'summary';
     ui.pivotDefaultView = 'buyer';
+    ui.pivotGroupTotals = 'hide';
+    ui.pivotGroupTotalPos = 'below';
     pivotCollapsedGroups = {};
     selectedGroup = null;
     clearGridSelection();
@@ -14185,6 +14303,8 @@ function init() {
     ui.detailGroupBy = 'default';
     ui.detailGroupLayout = 'sections';
     ui.detailDefaultView = 'flat';
+    ui.detailGroupTotals = 'hide';
+    ui.detailGroupTotalPos = 'below';
     detailCollapsedGroups = {};
     clearGridSelection();
     colSel.selected.clear();
@@ -14218,6 +14338,25 @@ function init() {
         b.classList.toggle('active', b.dataset.default === (ui.detailDefaultView || 'flat'));
       });
     }
+    var tEl = document.getElementById('detailGroupTotals');
+    if (tEl) {
+      tEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.totals === (ui.detailGroupTotals || 'hide'));
+      });
+    }
+    var pEl = document.getElementById('detailGroupTotalPos');
+    if (pEl) {
+      pEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.pos === (ui.detailGroupTotalPos || 'below'));
+      });
+    }
+    /* Group total controls only apply to Sections / Collapsible (Summary already
+       shows one row per group). Dim them when Summary is active. */
+    var isSummary = ui.detailGroupBy !== 'default' && ui.detailGroupLayout === 'summary';
+    var wrap = document.getElementById('detailGroupTotalsWrap');
+    if (wrap) wrap.style.opacity = isSummary ? '0.45' : '';
+    var wrapPos = document.getElementById('detailGroupTotalPosWrap');
+    if (wrapPos) wrapPos.style.opacity = isSummary ? '0.45' : '';
   }
   window.paintDetailGroupControls = paintDetailGroupControls;
 
@@ -14234,6 +14373,23 @@ function init() {
         b.classList.toggle('active', b.dataset.default === (ui.pivotDefaultView || 'buyer'));
       });
     }
+    var tEl = document.getElementById('pivotGroupTotals');
+    if (tEl) {
+      tEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.totals === (ui.pivotGroupTotals || 'hide'));
+      });
+    }
+    var pEl = document.getElementById('pivotGroupTotalPos');
+    if (pEl) {
+      pEl.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.pos === (ui.pivotGroupTotalPos || 'below'));
+      });
+    }
+    var isSummary = ui.groupBy !== 'default' && ui.pivotGroupLayout === 'summary';
+    var wrap = document.getElementById('pivotGroupTotalsWrap');
+    if (wrap) wrap.style.opacity = isSummary ? '0.45' : '';
+    var wrapPos = document.getElementById('pivotGroupTotalPosWrap');
+    if (wrapPos) wrapPos.style.opacity = isSummary ? '0.45' : '';
   }
   window.paintPivotGroupControls = paintPivotGroupControls;
 
