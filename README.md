@@ -19,3 +19,4 @@ GitHub Pages: https://piyush4315.github.io/02.09.2026/
 - `dashboard-static.html` — zero-JS static view.
 - `Book1 (1).xlsx` — source data (37 rows).
 - `DATA_CHECK_AND_FORMULAS.md`, `HTML_FORMULA_LOGIC.md`, `ROW_FORMULA_CALCULATION.md` — formula documentation.
+ 
