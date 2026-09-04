@@ -4118,6 +4118,12 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-grid td.xl-cell.neg{color:#be123c}
 .xlprev-resize-guide{position:fixed;top:0;bottom:0;width:1px;background:var(--cyan);z-index:9999;pointer-events:none;box-shadow:0 0 0 .5px rgba(0,0,0,.25)}
 [data-theme="light"] .xlprev-resize-guide{background:#2563eb}
+.xlhot-body{display:flex;flex-direction:column;gap:8px;min-height:0}
+.xlhot-hint{flex:0 0 auto;font-size:11px;color:var(--dim)}
+.xlhot-wrap{flex:1 1 auto;min-height:0;position:relative;width:100%;border:1px solid rgba(255,255,255,.09);border-radius:8px;overflow:hidden;background:#0b0f1e}
+.xlhot-wrap .handsontable{font-size:12px}
+.xlhot-wrap .ht_master .wtHolder{scrollbar-color:rgba(0,245,255,.35) transparent}
+[data-theme="light"] .xlhot-wrap{background:#ffffff;border-color:#e2e8f0}
 [data-theme="light"] .xlprev-grid td.xl-cell.pos{color:#15803d}
 [data-theme="light"] .xlprev-grid td.xl-cell.xl-fxcell{color:#2563eb}
 [data-theme="light"] .xlprev-grid td.xl-cell.xl-edit:hover{outline-color:#2563eb}
@@ -4536,14 +4542,14 @@ th.left .th-wrap, th.center .th-wrap {
           <div class="gsheet-bar-controls">
             <input type="text" id="gsheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit" style="min-width:320px"/>
             <button class="btn primary" id="gsheetLoadBtn" type="button">Load</button>
-            <button class="btn gsheet" id="gsheetEditBtn" type="button" title="Load this sheet's data into the app's editable Excel grid — your edits sync back to the sheet">✎ Edit</button>
+            <button class="btn gsheet" id="gsheetEditBtn" type="button" title="Open this sheet's data in a spreadsheet-style editor (drag-fill, resize, sort) — your edits sync back to the sheet">✎ Edit</button>
             <button class="btn" id="gsheetOpenBtn" type="button" title="Open this sheet in a new browser tab">↗ Open in tab</button>
           </div>
         </div>
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v7</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v8</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
@@ -12452,6 +12458,18 @@ function openXlPreview(mode) {
   return { el: overlay, close: close };
 }
 /* ---------------- Google Drive ---------------- */
+function loadCssOnce(href, id) {
+  return new Promise(function (resolve, reject) {
+    if (id && document.getElementById(id)) { resolve(); return; }
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    if (id) l.id = id;
+    l.onload = function () { resolve(); };
+    l.onerror = function () { reject(new Error('Could not load ' + href)); };
+    document.head.appendChild(l);
+  });
+}
 function loadScriptOnce(src, id) {
   return new Promise(function (resolve, reject) {
     if (id && document.getElementById(id)) { resolve(); return; }
@@ -12701,7 +12719,7 @@ function gsheetDoOpenEditor() {
       gsheetSetSyncStatus('Could not load the sheet — check the tab selection and that a "Lot No." column exists.', 'err');
       return;
     }
-    openXlPreview('full');
+    gsheetOpenHotEditor();
     showToast('Editing Google Sheet data in-app — changes sync back to “' + (gsheetSync.sheetTitle || 'the sheet') + '”.', 'ok');
   });
 }
@@ -12714,6 +12732,172 @@ function gsheetOpenEditor() {
     return;
   }
   gsheetDoOpenEditor();
+}
+
+/* ---------------- Handsontable spreadsheet editor (✎ Edit) ----------------
+   Google's native /edit page cannot be embedded in an iframe, so the in-app
+   edit experience uses a real spreadsheet component (Handsontable) wired to
+   the two-way sync engine: pull → edit (drag-fill, resize, sort, undo) →
+   auto-push back to the sheet. The same read-only rules apply: derived
+   columns (GST, TCS, TRIC, Outstanding, …) are never editable or overwritten. */
+var HOT_JS = 'https://cdn.jsdelivr.net/npm/handsontable@14/dist/handsontable.full.min.js';
+var HOT_CSS_BASE = 'https://cdn.jsdelivr.net/npm/handsontable@14/styles/handsontable.min.css';
+var HOT_CSS_THEME = 'https://cdn.jsdelivr.net/npm/handsontable@14/styles/ht-theme-main.min.css';
+var gsheetHotEditor = { hot: null, ds: null, lastCols: 0 };
+/* Builds the 2D data + per-column config Handsontable renders from. */
+function gsheetHotDataset() {
+  var d = xlPrevDataset('full');
+  var rows = d.rows, cols = d.cols;
+  var data = rows.map(function (lot) {
+    return cols.map(function (f) { return xlPrevCellVal(lot, f); });
+  });
+  var columns = cols.map(function (f) {
+    var kind = xlPrevFieldKind(f);
+    var col = { title: xlPrevColLabel(f), readOnly: !xlPrevEditableField(f) };
+    if (kind === 'money' || kind === 'num') {
+      col.type = 'numeric';
+      if (kind === 'money') col.numericFormat = { pattern: '0,0' };
+    } else {
+      col.type = 'text';
+    }
+    return col;
+  });
+  return { rows: rows, cols: cols, data: data, columns: columns };
+}
+/* Mounts Handsontable in the modal and bridges its changes into the app's
+   sync engine. xlPrevSetValue handles write + recalcRow + touch timestamp +
+   gsheetSchedulePush, so every edit auto-pushes to Google Sheets. */
+function openXlPreviewHot() {
+  var ds = gsheetHotDataset();
+  gsheetHotEditor.ds = ds;
+  gsheetHotEditor.lastCols = ds.cols.length;
+  var root = document.getElementById('modalRoot');
+  root.innerHTML =
+    '<div class="overlay">' +
+      '<div class="modal ultra-wide xlhot-modal">' +
+        '<div class="modal-head">' +
+          '<div class="xlprev-head-title">' +
+            '<h3>Edit Google Sheet</h3>' +
+            '<span class="xlprev-sheetchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg><span id="xlHotSheetTitle">' + escHtml(gsheetSync.sheetTitle || 'Sheet') + '</span></span>' +
+          '</div>' +
+          '<div class="xlprev-head-actions">' +
+            '<button type="button" class="btn gsheet" id="xlHotSheets" title="Open this sheet in Google Sheets (native editor)">↗ Open in Google Sheets</button>' +
+            '<button class="xclose" type="button" aria-label="Close">✕</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-body xlhot-body">' +
+          '<div class="xlhot-hint" id="xlHotHint">Edits sync back to the sheet (~4s). Drag the <b>⌞</b> handle to fill · drag a header edge to resize · click a header to sort · right-click to copy/paste.</div>' +
+          '<div class="xlhot-wrap" id="xlPrevHotRoot"></div>' +
+        '</div>' +
+        '<div class="modal-foot">' +
+          '<span class="xlprev-status" id="xlHotStatus"></span>' +
+          '<span style="flex:1"></span>' +
+          '<button type="button" class="btn" id="xlPrevHotClose">Close</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  var overlay = root.firstElementChild;
+  var container = overlay.querySelector('#xlPrevHotRoot');
+  var statusEl = overlay.querySelector('#xlHotStatus');
+  if (statusEl) statusEl.textContent = ds.rows.length + ' rows × ' + ds.cols.length + ' columns';
+  var close = function () {
+    if (gsheetHotEditor.hot) {
+      try { gsheetHotEditor.hot.destroy(); } catch (e) {}
+      gsheetHotEditor.hot = null;
+    }
+    gsheetHotEditor.ds = null;
+    root.innerHTML = '';
+  };
+  var h = Math.max(320, Math.round((window.innerHeight || 800) * 0.76));
+  var hot = new Handsontable(container, {
+    data: ds.data,
+    columns: ds.columns,
+    colHeaders: true,
+    rowHeaders: true,
+    width: '100%',
+    height: h,
+    licenseKey: 'non-commercial-and-evaluation',
+    themeName: (document.documentElement.getAttribute('data-theme') === 'light') ? 'ht-theme-main' : 'ht-theme-main-dark',
+    fillHandle: true,
+    manualColumnResize: true,
+    columnSorting: true,
+    undo: true,
+    contextMenu: ['copy', 'cut', 'paste', '---------', 'undo', 'redo'],
+    outsideClickDeselects: true,
+    afterChange: function (changes, source) {
+      if (!changes || source === 'loadData' || source === 'recalc') return;
+      var d = gsheetHotEditor.ds;
+      if (!d || !d.rows) return;
+      var affected = {};
+      var any = false;
+      changes.forEach(function (ch) {
+        var c = ch[1];
+        if (c == null || c >= d.cols.length) return;
+        var lot = d.rows[hot.toPhysicalRow(ch[0])];
+        var field = d.cols[c];
+        if (!lot || field == null || !xlPrevEditableField(field)) return;
+        affected[hot.toPhysicalRow(ch[0])] = true;
+        any = true;
+      });
+      if (!any) return;
+      pushHistory();
+      changes.forEach(function (ch) {
+        var field = d.cols[ch[1]];
+        var lot = d.rows[hot.toPhysicalRow(ch[0])];
+        if (!lot || field == null || !xlPrevEditableField(field)) return;
+        xlPrevSetValue(lot, field, ch[3] == null ? '' : ch[3]);
+      });
+      saveState();
+      renderAll();
+      /* Refresh the edited rows (normalized value + recomputed derived cells)
+         without triggering another push-back loop. */
+      Object.keys(affected).forEach(function (pk) {
+        var pr = +pk;
+        var vr = hot.toVisualRow(pr);
+        d.cols.forEach(function (f, c) {
+          hot.setDataAtCell(vr, c, xlPrevCellVal(d.rows[pr], f), 'recalc');
+        });
+      });
+      if (window.gsheetSetSyncStatus) gsheetSetSyncStatus('Local edit saved — pushing to “' + (gsheetSync.sheetTitle || 'the sheet') + '” shortly.', 'ok');
+    }
+  });
+  gsheetHotEditor.hot = hot;
+  overlay.querySelector('.xclose').addEventListener('click', close);
+  overlay.querySelector('#xlPrevHotClose').addEventListener('click', close);
+  overlay.querySelector('#xlHotSheets').addEventListener('click', gsheetOpenTab);
+  overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
+  return { el: overlay, close: close };
+}
+/* Lazy-loads Handsontable from the CDN, then opens the editor. Falls back to
+   the built-in Excel-style grid if the library can't be fetched (e.g. offline). */
+function gsheetOpenHotEditor() {
+  if (window.Handsontable) { openXlPreviewHot(); return; }
+  gsheetSetSyncStatus('Loading the spreadsheet editor…', 'busy');
+  loadCssOnce(HOT_CSS_BASE, 'hot-css-base')
+    .then(function () { return loadCssOnce(HOT_CSS_THEME, 'hot-css-theme'); })
+    .then(function () { return loadScriptOnce(HOT_JS, 'hot-js'); })
+    .then(function () {
+      if (!window.Handsontable) throw new Error('component not available');
+      openXlPreviewHot();
+    })
+    .catch(function (e) {
+      showToast('Spreadsheet component failed to load (' + e.message + ') — opening the built-in grid instead.', 'error');
+      openXlPreview('full');
+    });
+}
+/* Refreshes the open editor from the latest lot data after a sync completes. */
+function gsheetRefreshHotEditor() {
+  var ed = gsheetHotEditor;
+  if (!ed || !ed.hot) return;
+  var ds = gsheetHotDataset();
+  ed.ds = ds;
+  ed.hot.loadData(ds.data);
+  if (ds.cols.length !== ed.lastCols) {
+    ed.hot.updateSettings({ columns: ds.columns });
+    ed.lastCols = ds.cols.length;
+  }
+  var st = document.getElementById('xlHotStatus');
+  if (st) st.textContent = ds.rows.length + ' rows × ' + ds.cols.length + ' columns · synced with “' + (gsheetSync.sheetTitle || 'the sheet') + '”';
 }
 
 /* ---------------- Google Sheet two-way sync ---------------- */
@@ -13120,6 +13304,7 @@ function gsheetSyncOnce(opts) {
       if (!opts.silent) showToast('Google Sheet sync complete (' + lots.length + ' rows)', 'ok');
       gsheetSetSyncStatus(gsheetStatusText(), 'ok');
       if (doPush) gsheetRefreshPreview();
+      gsheetRefreshHotEditor();
       return true;
     })
     .catch(function (e) {
