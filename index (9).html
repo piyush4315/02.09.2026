@@ -3973,6 +3973,57 @@ th.left .th-wrap, th.center .th-wrap {
   color: #1d4ed8;
 }
 
+/* ---- Excel worksheet preview (Outlook-style attachment preview) ---- */
+.xlprev-head-title{display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap}
+.xlprev-head-title h3{margin:0}
+.xlprev-sheetchip{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:var(--cyan);background:rgba(0,245,255,.1);border:1px solid rgba(0,245,255,.25);border-radius:6px;padding:2px 8px;letter-spacing:.04em;white-space:nowrap}
+.xlprev-head-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+.xlprev-head-actions .xclose{margin-left:2px}
+.xlprev-body{display:flex;flex-direction:column;padding:0!important;overflow:hidden!important;gap:0}
+.xlprev-formula{flex:0 0 auto;display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font-family:'JetBrains Mono','Inter',ui-monospace,monospace;font-size:11.5px}
+.xlprev-namebox{min-width:76px;max-width:120px;padding:7px 12px;border-right:1px solid rgba(255,255,255,.1);color:var(--text);font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center}
+.xlprev-fx{width:36px;padding:7px 0;text-align:center;color:var(--dim);font-style:italic;border-right:1px solid rgba(255,255,255,.1);flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+.xlprev-fxval{flex:1;padding:7px 12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center}
+.xlprev-scroll{flex:1 1 auto;overflow:auto;background:#0b0f1e;position:relative}
+.xlprev-grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--text);min-width:100%}
+.xlprev-grid th{font-weight:700}
+.xlprev-grid .xl-c,.xlprev-grid .xl-r{background:#141a30;color:var(--dim);font-weight:700;font-size:10px;text-align:center;user-select:none;-webkit-user-select:none}
+.xlprev-grid .xl-c{position:sticky;top:0;z-index:30;height:24px;min-width:54px;padding:0 8px;border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.12)}
+.xlprev-grid .xl-r{position:sticky;left:0;z-index:25;min-width:40px;padding:0 6px;border-right:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.07)}
+.xlprev-grid .xl-corner{position:sticky;top:0;left:0;z-index:40;height:24px;min-width:40px;background:#141a30;border-right:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}
+.xlprev-grid td.xl-cell{border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);padding:4px 9px;white-space:nowrap;cursor:cell;background:#0b0f1e;text-align:left}
+.xlprev-grid th.xl-label{position:sticky;top:24px;z-index:20;background:#1a2340;color:var(--text);font-weight:800;text-align:left;padding:5px 9px;border-right:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.14);white-space:nowrap}
+.xlprev-grid th.xl-r.xl-labelrow{position:sticky;top:24px;left:0;z-index:35;background:#1a2340;color:var(--dim)}
+.xlprev-grid td.xl-cell.num{text-align:right}
+.xlprev-grid th.xl-label.num{text-align:right}
+.xlprev-grid td.xl-cell.cen,.xlprev-grid th.xl-label.cen{text-align:center}
+.xlprev-grid td.xl-cell.neg{color:#f9a8d4}
+.xlprev-grid td.xl-cell.pos{color:#86efac}
+.xlprev-grid td.xl-cell.tric{color:#7dd3fc;font-weight:700}
+.xlprev-grid td.xl-cell:hover{background:rgba(0,245,255,.055)}
+.xlprev-grid td.xl-cell.xl-sel{outline:2px solid var(--cyan);outline-offset:-2px;background:rgba(0,245,255,.1)}
+.xlprev-grid tr.xl-total td{background:rgba(255,255,255,.045);font-weight:800;border-top:1px solid rgba(255,255,255,.16)}
+.xlprev-grid tr.xl-total th.xl-r{background:#1a2340;border-top:1px solid rgba(255,255,255,.16)}
+.xlprev-status{font-size:11px;color:var(--dim);line-height:1.4}
+
+[data-theme="light"] .xlprev-sheetchip{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
+[data-theme="light"] .xlprev-formula{background:#f8fafc;border-bottom-color:#e2e8f0}
+[data-theme="light"] .xlprev-namebox{border-right-color:#e2e8f0;color:#0f172a}
+[data-theme="light"] .xlprev-fx{border-right-color:#e2e8f0;color:#64748b}
+[data-theme="light"] .xlprev-fxval{color:#0f172a}
+[data-theme="light"] .xlprev-scroll{background:#f8fafc}
+[data-theme="light"] .xlprev-grid .xl-c,[data-theme="light"] .xlprev-grid .xl-r,[data-theme="light"] .xlprev-grid .xl-corner{background:#eef2f7;color:#64748b;border-color:#e2e8f0}
+[data-theme="light"] .xlprev-grid td.xl-cell{background:#ffffff;border-color:#e2e8f0;color:#0f172a}
+[data-theme="light"] .xlprev-grid th.xl-label{background:#e2e8f0;color:#0f172a;border-color:#cbd5e1}
+[data-theme="light"] .xlprev-grid th.xl-r.xl-labelrow{background:#e2e8f0;color:#64748b}
+[data-theme="light"] .xlprev-grid td.xl-cell:hover{background:#f1f5f9}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-sel{outline-color:#2563eb;background:#eff6ff}
+[data-theme="light"] .xlprev-grid tr.xl-total td{background:#f1f5f9;border-top-color:#cbd5e1}
+[data-theme="light"] .xlprev-grid tr.xl-total th.xl-r{background:#e2e8f0;border-top-color:#cbd5e1}
+[data-theme="light"] .xlprev-grid td.xl-cell.tric{color:#1e3a8a}
+[data-theme="light"] .xlprev-grid td.xl-cell.neg{color:#be123c}
+[data-theme="light"] .xlprev-grid td.xl-cell.pos{color:#15803d}
+
 </style>
 </head>
 <body>
@@ -4110,6 +4161,7 @@ th.left .th-wrap, th.center .th-wrap {
               <input type="text" id="detailSearch" placeholder="Search this table..." style="min-width:170px"/>
               <button class="btn" id="resetDetailFiltersBtn" type="button" title="Reset all Lot Details search, column filters, and selections">↺ Reset Filters</button>
               <button class="btn" id="shareAdviceBtnDash" type="button" title="Generate Buyer Payment Advice with MSTC SC @ 2.71%, SD & FP Due" style="color:var(--cyan);border-color:rgba(0,245,255,0.35);background:rgba(0,245,255,0.08)">📋 Payment Advice</button>
+              <button class="btn" id="previewLotExcelBtn" type="button" title="Preview the Lot Details Excel worksheet inside the app (like Outlook's attachment preview) — download the .xlsx whenever you're ready" style="color:var(--cyan);border-color:rgba(0,245,255,0.35);background:rgba(0,245,255,0.08)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Preview Excel</button>
 
               <button class="btn primary" id="addLotBtnDash" type="button">+ Add row</button>
               <button class="btn" id="clearFilterDash" type="button">Clear selection</button>
@@ -11186,6 +11238,200 @@ function doExport(id) {
   }
   closeExportMenu();
 }
+/* ---------------- Excel worksheet preview (Outlook-style) ---------------- */
+/* Opens the Lot Details worksheet as an in-app, Excel-looking grid (column
+   letters, row numbers, frozen header) so the user can inspect the file the
+   same way Outlook previews an attachment — and download the .xlsx later. */
+var xlPrev = { mode: 'full', rows: [], cols: [], selR: null, selC: null };
+function xlPrevDataset(mode) {
+  var d = prepareExportChoice('detail', mode || xlPrev.mode || 'full');
+  exportColumnLabels = Object.assign(exportColumnLabels || {}, d.labels || {});
+  return d;
+}
+function xlPrevCellVal(r, f) {
+  var v = screenExportValue(r, f);
+  return v === null || v === undefined ? '' : v;
+}
+function xlPrevCellDisp(r, f) {
+  var v = xlPrevCellVal(r, f);
+  if (typeof v === 'number' && isFinite(v)) return MONEY_FIELDS.has(f) ? moneyFmt(v) : numFmt(v);
+  return String(v);
+}
+function xlPrevColLabel(f) { return exportColumnLabels[f] || fieldLabel(f) || f; }
+function xlPrevAlignClass(f) {
+  var k = fieldKind(f);
+  if (k === 'left' || k === 'edit-text') return '';
+  if (k === 'status' || k === 'date-edit') return 'cen';
+  return 'num';
+}
+function xlPrevGridHtml(d) {
+  var cols = d.cols, rows = d.rows;
+  var captured = cols.length && String(cols[0]).indexOf('__screen_') === 0;
+  var h = [];
+  /* Column letters (A, B, C, …) */
+  h.push('<tr>');
+  h.push('<th class="xl-corner"></th>');
+  cols.forEach(function (f, ci) { h.push('<th class="xl-c">' + excelColLetter(ci) + '</th>'); });
+  h.push('</tr>');
+  /* Sheet row 1 = field-label header */
+  h.push('<tr>');
+  h.push('<th class="xl-r xl-labelrow">1</th>');
+  cols.forEach(function (f) {
+    h.push('<th class="xl-label ' + xlPrevAlignClass(f) + '">' + escHtml(xlPrevColLabel(f)) + '</th>');
+  });
+  h.push('</tr>');
+  /* Data rows (sheet rows 2 … n+1) */
+  rows.forEach(function (r, ri) {
+    h.push('<tr>');
+    h.push('<th class="xl-r">' + (ri + 2) + '</th>');
+    cols.forEach(function (f, ci) {
+      var v = xlPrevCellVal(r, f);
+      var cls = 'xl-cell ' + xlPrevAlignClass(f);
+      if (typeof v === 'number' && isFinite(v)) {
+        if (f === 'outstanding') cls += v > 1 ? ' neg' : ' pos';
+        else if (f === 'total_received' || f === 'sd_received' || f === 'fp_received') cls += v > 0 ? ' pos' : '';
+        else if (f === 'total_receivables') cls += ' tric';
+      }
+      h.push('<td class="' + cls + '" data-r="' + ri + '" data-c="' + ci + '">' + escHtml(xlPrevCellDisp(r, f)) + '</td>');
+    });
+    h.push('</tr>');
+  });
+  /* Grand-total row (matches the .xlsx) — only for real field columns */
+  if (!captured) {
+    h.push('<tr class="xl-total">');
+    h.push('<th class="xl-r">' + (rows.length + 2) + '</th>');
+    cols.forEach(function (f, ci) {
+      if (ci === 0) {
+        h.push('<td class="xl-cell" data-r="' + rows.length + '" data-c="0">TOTAL (' + rows.length + ' lots)</td>');
+        return;
+      }
+      var meta = FIELD_META[f], custom = customColById(f);
+      if ((meta && meta.sum) || (custom && custom.type === 'number')) {
+        var s = sumField(rows, f);
+        h.push('<td class="xl-cell num" data-r="' + rows.length + '" data-c="' + ci + '">' + escHtml(MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>');
+      } else {
+        h.push('<td class="xl-cell" data-r="' + rows.length + '" data-c="' + ci + '"></td>');
+      }
+    });
+    h.push('</tr>');
+  }
+  return h.join('');
+}
+function xlPrevSetCell(r, c) {
+  xlPrev.selR = r; xlPrev.selC = c;
+  var grid = document.getElementById('xlPrevScroll');
+  var name = document.getElementById('xlPrevName');
+  var val = document.getElementById('xlPrevVal');
+  if (!name || !val) return;
+  if (grid) {
+    grid.querySelectorAll('td.xl-cell.xl-sel').forEach(function (t) { t.classList.remove('xl-sel'); });
+    if (r != null && c != null && grid) {
+      var td = grid.querySelector('td.xl-cell[data-r="' + r + '"][data-c="' + c + '"]');
+      if (td) td.classList.add('xl-sel');
+    }
+  }
+  if (r == null || c == null) {
+    name.textContent = '';
+    val.textContent = 'Click any cell to inspect it, then download the .xlsx when you are ready.';
+    return;
+  }
+  var f = xlPrev.cols[c];
+  name.textContent = excelColLetter(c) + (r + 2);
+  var disp = '';
+  if (r < xlPrev.rows.length) {
+    disp = xlPrevCellDisp(xlPrev.rows[r], f);
+  } else {
+    var meta = FIELD_META[f], custom = customColById(f);
+    if ((meta && meta.sum) || (custom && custom.type === 'number')) {
+      var s = sumField(xlPrev.rows, f);
+      disp = MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s);
+    } else if (c === 0) {
+      disp = 'TOTAL (' + xlPrev.rows.length + ' lots)';
+    }
+  }
+  val.textContent = disp;
+}
+function xlPrevRender() {
+  var d = xlPrevDataset(xlPrev.mode);
+  xlPrev.rows = d.rows; xlPrev.cols = d.cols;
+  var scroll = document.getElementById('xlPrevScroll');
+  if (scroll) scroll.innerHTML = '<table class="xlprev-grid">' + xlPrevGridHtml(d) + '</table>';
+  var status = document.getElementById('xlPrevStatus');
+  if (status) status.textContent = (d.rows.length + ' rows × ' + d.cols.length + ' columns · Sheet1 “' + (d.label || 'Lot Details') + '” · this is exactly what the .xlsx will contain');
+  var title = document.getElementById('xlPrevSheetTitle');
+  if (title) title.textContent = d.label || 'Lot Details';
+  var seg = document.getElementById('xlPrevScope');
+  if (seg) seg.querySelectorAll('.seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.scope === xlPrev.mode); });
+  xlPrevSetCell(null, null);
+}
+function xlPrevDownload() {
+  var d = xlPrevDataset(xlPrev.mode);
+  try {
+    var bytes = buildScreenXlsx(d.rows, d.cols);
+    var name = 'scrap-sale-lot-details_' + (xlPrev.mode === 'filtered' ? 'onscreen_' : 'full_') + stampName() + '.xlsx';
+    downloadBlob(bytes, name, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    showToast('Downloaded ' + d.label + ' (' + d.rows.length + ' rows × ' + d.cols.length + ' columns) as .xlsx', 'ok');
+  } catch (e) {
+    showToast('Preview download failed: ' + e.message, 'error');
+  }
+}
+function openXlPreview(mode) {
+  xlPrev.mode = mode || 'full';
+  var root = document.getElementById('modalRoot');
+  root.innerHTML =
+    '<div class="overlay">' +
+      '<div class="modal ultra-wide xlprev-modal">' +
+        '<div class="modal-head">' +
+          '<div class="xlprev-head-title">' +
+            '<h3>Excel worksheet preview</h3>' +
+            '<span class="xlprev-sheetchip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg><span id="xlPrevSheetTitle">Lot Details</span></span>' +
+          '</div>' +
+          '<div class="xlprev-head-actions">' +
+            '<div class="seg-control" id="xlPrevScope" role="group" aria-label="Preview scope">' +
+              '<button type="button" class="seg-btn" data-scope="full" title="All lots with every detail column (same as the full Excel export)">Full</button>' +
+              '<button type="button" class="seg-btn" data-scope="filtered" title="Exactly the rows and columns currently on screen">On screen</button>' +
+            '</div>' +
+            '<button type="button" class="btn primary" id="xlPrevDownload">⬇ Download .xlsx</button>' +
+            '<button class="xclose" type="button" aria-label="Close">✕</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-body xlprev-body">' +
+          '<div class="xlprev-formula">' +
+            '<span class="xlprev-namebox" id="xlPrevName"></span>' +
+            '<span class="xlprev-fx">fx</span>' +
+            '<span class="xlprev-fxval" id="xlPrevVal"></span>' +
+          '</div>' +
+          '<div class="xlprev-scroll" id="xlPrevScroll"></div>' +
+        '</div>' +
+        '<div class="modal-foot">' +
+          '<span class="xlprev-status" id="xlPrevStatus"></span>' +
+          '<span style="flex:1"></span>' +
+          '<button type="button" class="btn" id="xlPrevClose">Close</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  var overlay = root.firstElementChild;
+  var close = function () { document.removeEventListener('keydown', onEsc); root.innerHTML = ''; };
+  var onEsc = function (e) { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onEsc);
+  overlay.querySelector('.xclose').addEventListener('click', close);
+  overlay.querySelector('#xlPrevClose').addEventListener('click', close);
+  overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
+  overlay.querySelector('#xlPrevDownload').addEventListener('click', xlPrevDownload);
+  overlay.querySelectorAll('#xlPrevScope .seg-btn').forEach(function (b) {
+    b.addEventListener('click', function () { xlPrev.mode = b.dataset.scope; xlPrevRender(); });
+  });
+  var scroll = overlay.querySelector('#xlPrevScroll');
+  scroll.addEventListener('click', function (e) {
+    var td = e.target && e.target.closest ? e.target.closest('td.xl-cell') : null;
+    if (!td) return;
+    var r = td.dataset.r, c = td.dataset.c;
+    if (r === undefined || c === undefined) return;
+    xlPrevSetCell(parseInt(r, 10), parseInt(c, 10));
+  });
+  xlPrevRender();
+  return { el: overlay, close: close };
+}
 /* ---------------- Google Drive ---------------- */
 function loadScriptOnce(src, id) {
   return new Promise(function (resolve, reject) {
@@ -14592,6 +14838,10 @@ var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
     shareAdviceBtn.addEventListener('click', function () {
       openPaymentAdvice(selectedGroup ? selectedGroup.value : (detailRows.length ? detailRows : null));
     });
+  }
+  var previewExcelBtn = document.getElementById('previewLotExcelBtn');
+  if (previewExcelBtn) {
+    previewExcelBtn.addEventListener('click', function () { openXlPreview('full'); });
   }
   
   var gEl = document.getElementById('gdriveClientId');
