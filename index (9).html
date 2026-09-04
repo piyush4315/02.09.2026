@@ -155,6 +155,8 @@ html{scrollbar-width:auto;scrollbar-color:var(--violet) #0d0d1a}
 .gsheet-sync-toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer}
 .gsheet-sync-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gsheet-sync-note{font-size:10.5px;line-height:1.5}
+.sync-ver{display:inline-block;margin-left:4px;font-size:9px;font-weight:800;letter-spacing:.04em;padding:1px 6px;border-radius:99px;background:rgba(0,245,255,.12);border:1px solid rgba(0,245,255,.3);color:var(--cyan);vertical-align:2px}
+[data-theme="light"] .sync-ver{background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.3);color:#2563eb}
 .gsheet-sync-status-ok{color:#34d399}.gsheet-sync-status-err{color:#fb7185}.gsheet-sync-status-busy{color:var(--cyan)}
 [data-theme="light"] .gsheet-sync-status-ok{color:#059669}
 [data-theme="light"] .gsheet-frame-wrap{background:#f6f7fb}
@@ -4523,7 +4525,7 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync</b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v3</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
