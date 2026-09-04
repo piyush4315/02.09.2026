@@ -4020,6 +4020,7 @@ th.left .th-wrap, th.center .th-wrap {
 .xlprev-grid td.xl-cell.neg{color:#f9a8d4}
 .xlprev-grid td.xl-cell.pos{color:#86efac}
 .xlprev-grid td.xl-cell.tric{color:#7dd3fc;font-weight:700}
+.xlprev-grid td.xl-cell.xl-fxcell{font-family:'JetBrains Mono','Inter',ui-monospace,monospace;font-style:italic;color:#7dd3fc;text-align:left!important}
 .xlprev-grid td.xl-cell:hover{background:rgba(0,245,255,.055)}
 .xlprev-grid td.xl-cell.xl-sel{outline:2px solid var(--cyan);outline-offset:-2px;background:rgba(0,245,255,.1)}
 .xlprev-grid tr.xl-total td{background:rgba(255,255,255,.045);font-weight:800;border-top:1px solid rgba(255,255,255,.16)}
@@ -4043,6 +4044,7 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-grid td.xl-cell.tric{color:#1e3a8a}
 [data-theme="light"] .xlprev-grid td.xl-cell.neg{color:#be123c}
 [data-theme="light"] .xlprev-grid td.xl-cell.pos{color:#15803d}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-fxcell{color:#2563eb}
 
 </style>
 </head>
@@ -11262,7 +11264,7 @@ function doExport(id) {
 /* Opens the Lot Details worksheet as an in-app, Excel-looking grid (column
    letters, row numbers, frozen header) so the user can inspect the file the
    same way Outlook previews an attachment — and download the .xlsx later. */
-var xlPrev = { mode: 'full', rows: [], cols: [], selR: null, selC: null };
+var xlPrev = { mode: 'full', rows: [], cols: [], selR: null, selC: null, showFormulas: false };
 function xlPrevDataset(mode) {
   var d = prepareExportChoice('detail', mode || xlPrev.mode || 'full');
   exportColumnLabels = Object.assign(exportColumnLabels || {}, d.labels || {});
@@ -11274,10 +11276,50 @@ function xlPrevCellVal(r, f) {
 }
 function xlPrevCellDisp(r, f) {
   var v = xlPrevCellVal(r, f);
-  if (typeof v === 'number' && isFinite(v)) return MONEY_FIELDS.has(f) ? moneyFmt(v) : numFmt(v);
+  if (typeof v === 'number' && isFinite(v)) return MONEY_FIELDS.has(f) ? inr(v) : numFmt(v);
   return String(v);
 }
 function xlPrevColLabel(f) { return exportColumnLabels[f] || fieldLabel(f) || f; }
+/* A compact, sheet-faithful formula for the preview (e.g. "=ROUND(H2*18%,0)").
+   Mirrors the definitions in XLSX_COLS, but column letters are resolved from the
+   CURRENT column layout (xlPrev.cols) so the formula stays correct in both the
+   full and the "on screen" scope. Returns '' when the field has no formula or a
+   referenced column is not present in the current scope. */
+function xlPrevFormula(rowIdx, f) {
+  if (!f) return '';
+  var cols = xlPrev.cols || [];
+  var r = rowIdx + 2;
+  function L(field) {
+    var i = cols.indexOf(field);
+    return i === -1 ? '' : excelColLetter(i);
+  }
+  var H = L('mat_value'), I = L('gst'), M = L('service_charge_mstc'), N = L('tds194h'),
+      O = L('net_service_charge'), Lc = L('tds194o'), Q = L('gst_tds_rate'), R = L('gst_tds'),
+      S = L('total_receivables'), U = L('sd_received'), X = L('fp_received'), Z = L('late_fee'),
+      AA = L('total_received'), AB = L('outstanding'), AC = L('settlement_status'),
+      AG = L('late_fee_received'), Y = L('fp_date');
+  var fx = '';
+  if (f === 'gst' && H) fx = '=ROUND(' + H + r + '*18%,0)';
+  else if (f === 'mat_value_plus_gst' && H && I) fx = '=ROUND(' + H + r + '+' + I + r + ',0)';
+  else if (f === 'tcs' && H && I) fx = '=ROUND((' + H + r + '+' + I + r + ')*2%,0)';
+  else if (f === 'tds194o' && H) fx = '=ROUND(' + H + r + '*0.1%,0)';
+  else if (f === 'service_charge_mstc' && H) fx = '=ROUND(' + H + r + '*2.25%*118%,0)';
+  else if (f === 'tds194h' && H) fx = '=ROUND(' + H + r + '*2.25%*2%,0)';
+  else if (f === 'net_service_charge' && M && N) fx = '=ROUND(' + M + r + '-' + N + r + ',0)';
+  else if (f === 'service_charge_to_mstc' && O && Lc) fx = '=ROUND(' + O + r + '+' + Lc + r + ',0)';
+  else if (f === 'gst_tds' && H && Q) fx = '=ROUND(' + H + r + '*' + Q + r + ',0)';
+  else if (f === 'total_receivables' && H && R) fx = '=ROUND(' + H + r + '*117.65%-' + R + r + ',0)';
+  else if (f === 'sd_expected' && H) fx = '=ROUND(' + H + r + '*25%,0)';
+  else if (f === 'fp_expected' && H && R) fx = '=ROUND(' + H + r + '*92.65%-' + R + r + ',0)';
+  else if (f === 'total_received' && U && X && AG) fx = '=ROUND(' + U + r + '+' + X + r + '+' + AG + r + ',0)';
+  else if (f === 'outstanding' && S && Z && AA) fx = '=ROUND(' + S + r + '+' + Z + r + '-' + AA + r + ',0)';
+  else if (f === 'settlement_status' && AB) fx = '=IF(' + AB + r + '<=5,"Settled","Unsettled")';
+  else if (f === 'late_fee' && H && Y && AC) {
+    fx = '=IF(' + Y + r + '="", IF(' + AC + r + '="Unsettled", ROUND(' + H + r + '*ROUNDUP((DATE(2026,8,31)-DATE(2026,8,22))/7,0)*0.0118,0), 0), IF(DATE(MID(' + Y + r + ',7,4),MID(' + Y + r + ',4,2),MID(' + Y + r + ',1,2))>DATE(2026,8,24), ROUND(' + H + r + '*ROUNDUP((DATE(MID(' + Y + r + ',7,4),MID(' + Y + r + ',4,2),MID(' + Y + r + ',1,2))-DATE(2026,8,22))/7,0)*0.0118,0), 0))';
+  }
+  else return '';
+  return fx;
+}
 function xlPrevAlignClass(f) {
   var k = fieldKind(f);
   if (k === 'left' || k === 'edit-text') return '';
@@ -11287,6 +11329,7 @@ function xlPrevAlignClass(f) {
 function xlPrevGridHtml(d) {
   var cols = d.cols, rows = d.rows;
   var captured = cols.length && String(cols[0]).indexOf('__screen_') === 0;
+  var showFx = !!xlPrev.showFormulas;
   var h = [];
   /* Column letters (A, B, C, …) */
   h.push('<tr>');
@@ -11306,13 +11349,15 @@ function xlPrevGridHtml(d) {
     h.push('<th class="xl-r">' + (ri + 2) + '</th>');
     cols.forEach(function (f, ci) {
       var v = xlPrevCellVal(r, f);
+      var fx = showFx ? xlPrevFormula(ri, f) : '';
       var cls = 'xl-cell ' + xlPrevAlignClass(f);
       if (typeof v === 'number' && isFinite(v)) {
         if (f === 'outstanding') cls += v > 1 ? ' neg' : ' pos';
         else if (f === 'total_received' || f === 'sd_received' || f === 'fp_received') cls += v > 0 ? ' pos' : '';
         else if (f === 'total_receivables') cls += ' tric';
       }
-      h.push('<td class="' + cls + '" data-r="' + ri + '" data-c="' + ci + '">' + escHtml(xlPrevCellDisp(r, f)) + '</td>');
+      if (fx) cls += ' xl-fxcell';
+      h.push('<td class="' + cls + '" data-r="' + ri + '" data-c="' + ci + '"' + (fx ? ' title="' + escHtml(fx) + '"' : '') + '>' + escHtml(fx || xlPrevCellDisp(r, f)) + '</td>');
     });
     h.push('</tr>');
   });
@@ -11328,7 +11373,8 @@ function xlPrevGridHtml(d) {
       var meta = FIELD_META[f], custom = customColById(f);
       if ((meta && meta.sum) || (custom && custom.type === 'number')) {
         var s = sumField(rows, f);
-        h.push('<td class="xl-cell num" data-r="' + rows.length + '" data-c="' + ci + '">' + escHtml(MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s)) + '</td>');
+        var sfx = showFx ? '=SUM(' + excelColLetter(ci) + '2:' + excelColLetter(ci) + (rows.length + 1) + ')' : '';
+        h.push('<td class="xl-cell num' + (sfx ? ' xl-fxcell' : '') + '" data-r="' + rows.length + '" data-c="' + ci + '"' + (sfx ? ' title="' + escHtml(sfx) + '"' : '') + '>' + escHtml(sfx || (MONEY_FIELDS.has(f) ? inr(s) : numFmt(s))) + '</td>');
       } else {
         h.push('<td class="xl-cell" data-r="' + rows.length + '" data-c="' + ci + '"></td>');
       }
@@ -11357,19 +11403,33 @@ function xlPrevSetCell(r, c) {
   }
   var f = xlPrev.cols[c];
   name.textContent = excelColLetter(c) + (r + 2);
+  var fx = '';
   var disp = '';
   if (r < xlPrev.rows.length) {
+    fx = xlPrevFormula(r, f);
     disp = xlPrevCellDisp(xlPrev.rows[r], f);
   } else {
     var meta = FIELD_META[f], custom = customColById(f);
     if ((meta && meta.sum) || (custom && custom.type === 'number')) {
       var s = sumField(xlPrev.rows, f);
-      disp = MONEY_FIELDS.has(f) ? moneyFmt(s) : numFmt(s);
+      fx = '=SUM(' + excelColLetter(c) + '2:' + excelColLetter(c) + (xlPrev.rows.length + 1) + ')';
+      disp = MONEY_FIELDS.has(f) ? inr(s) : numFmt(s);
     } else if (c === 0) {
       disp = 'TOTAL (' + xlPrev.rows.length + ' lots)';
     }
   }
-  val.textContent = disp;
+  val.textContent = fx ? (fx + ' = ' + disp) : disp;
+}
+/* Toggles formula view, the same way Ctrl+` works in real Excel. */
+function xlPrevToggleFormulas() {
+  xlPrev.showFormulas = !xlPrev.showFormulas;
+  var btn = document.getElementById('xlPrevShowFx');
+  if (btn) {
+    btn.classList.toggle('fx-on', !!xlPrev.showFormulas);
+    btn.textContent = xlPrev.showFormulas ? 'ƒ Showing formulas' : 'ƒ Show formulas';
+    btn.title = xlPrev.showFormulas ? 'Show computed values instead of formulas' : 'Toggle formula view (like Ctrl+` in Excel)';
+  }
+  xlPrevRender();
 }
 function xlPrevRender() {
   var d = xlPrevDataset(xlPrev.mode);
@@ -11411,6 +11471,7 @@ function openXlPreview(mode) {
               '<button type="button" class="seg-btn" data-scope="full" title="All lots with every detail column (same as the full Excel export)">Full</button>' +
               '<button type="button" class="seg-btn" data-scope="filtered" title="Exactly the rows and columns currently on screen">On screen</button>' +
             '</div>' +
+            '<button type="button" class="btn" id="xlPrevShowFx" title="Toggle formula view (like Ctrl+` in Excel)">ƒ Show formulas</button>' +
             '<button type="button" class="btn primary" id="xlPrevDownload">⬇ Download .xlsx</button>' +
             '<button class="xclose" type="button" aria-label="Close">✕</button>' +
           '</div>' +
@@ -11438,6 +11499,11 @@ function openXlPreview(mode) {
   overlay.querySelector('#xlPrevClose').addEventListener('click', close);
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
   overlay.querySelector('#xlPrevDownload').addEventListener('click', xlPrevDownload);
+  overlay.querySelector('#xlPrevShowFx').addEventListener('click', function () {
+    var keepR = xlPrev.selR, keepC = xlPrev.selC;
+    xlPrevToggleFormulas();
+    if (keepR != null && keepC != null) xlPrevSetCell(keepR, keepC);
+  });
   overlay.querySelectorAll('#xlPrevScope .seg-btn').forEach(function (b) {
     b.addEventListener('click', function () { xlPrev.mode = b.dataset.scope; xlPrevRender(); });
   });
