@@ -4519,13 +4519,14 @@ th.left .th-wrap, th.center .th-wrap {
           <div class="gsheet-bar-controls">
             <input type="text" id="gsheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit" style="min-width:320px"/>
             <button class="btn primary" id="gsheetLoadBtn" type="button">Load</button>
+            <button class="btn gsheet" id="gsheetEditBtn" type="button" title="Load this sheet's data into the app's editable Excel grid — your edits sync back to the sheet">✎ Edit</button>
             <button class="btn" id="gsheetOpenBtn" type="button" title="Open this sheet in a new browser tab">↗ Open in tab</button>
           </div>
         </div>
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v5</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v6</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
@@ -12449,6 +12450,39 @@ function gsheetOpenTab() {
   if (!u) { setGsheetStatus('Nothing to open — paste a link first.', 'err'); return; }
   window.open(u, '_blank', 'noopener');
 }
+/* Reload the embedded /preview iframe so it reflects the latest pushed data. */
+function gsheetRefreshPreview() {
+  var frame = document.getElementById('gsheetFrame');
+  if (!frame) return;
+  frame.src = 'about:blank';
+  frame.dataset.loaded = '';
+  setTimeout(function () { ensureGsheetLoaded(); }, 120);
+}
+/* Open the Google Sheet's data in the app's own Excel-style editable grid.
+   Google's own editor cannot be embedded in an iframe (Google blocks it), so
+   the editable experience is the app's grid, backed by the sheet via the
+   two-way sync engine: pull to load, edit in-app, auto-push back. */
+function gsheetDoOpenEditor() {
+  gsheetSetSyncStatus('Loading sheet data into the editable grid…', 'busy');
+  gsheetSyncOnce({ push: false, silent: true }).then(function (ok) {
+    if (!ok) {
+      gsheetSetSyncStatus('Could not load the sheet — check the tab selection and that a "Lot No." column exists.', 'err');
+      return;
+    }
+    openXlPreview('full');
+    showToast('Editing Google Sheet data in-app — changes sync back to “' + (gsheetSync.sheetTitle || 'the sheet') + '”.', 'ok');
+  });
+}
+function gsheetOpenEditor() {
+  var id = gsheetIdFromUrl(gsheetUrl);
+  if (!id) { setGsheetStatus('Paste a Google Sheets link first, then press ✎ Edit.', 'err'); return; }
+  if (!gsheetToken) {
+    gsheetSetSyncStatus('Sign in to edit the sheet inside the app…', 'busy');
+    gsheetConnectIfNeeded(function () { gsheetDoOpenEditor(); });
+    return;
+  }
+  gsheetDoOpenEditor();
+}
 
 /* ---------------- Google Sheet two-way sync ---------------- */
 var GSHEET_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.file';
@@ -12853,6 +12887,7 @@ function gsheetSyncOnce(opts) {
       saveState();
       if (!opts.silent) showToast('Google Sheet sync complete (' + lots.length + ' rows)', 'ok');
       gsheetSetSyncStatus(gsheetStatusText(), 'ok');
+      if (doPush) gsheetRefreshPreview();
       return true;
     })
     .catch(function (e) {
@@ -15891,6 +15926,8 @@ function init() {
   if (gsLoad) gsLoad.addEventListener('click', gsheetLoad);
   var gsOpen = document.getElementById('gsheetOpenBtn');
   if (gsOpen) gsOpen.addEventListener('click', gsheetOpenTab);
+  var gsEdit = document.getElementById('gsheetEditBtn');
+  if (gsEdit) gsEdit.addEventListener('click', gsheetOpenEditor);
   var gsConnect = document.getElementById('gsheetConnectBtn');
   if (gsConnect) gsConnect.addEventListener('click', function () { if (gsheetToken) gsheetDisconnect(); else gsheetConnect(); });
   var gsToggle = document.getElementById('gsheetSyncToggle');
