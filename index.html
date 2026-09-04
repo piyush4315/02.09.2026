@@ -4525,7 +4525,7 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v3</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v4</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
@@ -6920,6 +6920,7 @@ var gsheetSync = {
   lastPullAt: 0,
   lastPushAt: 0,
   sheetTitle: '',
+  sheetFileTitle: '',
   sheetModifiedTime: '',
   snapshot: {},     /* key: lotNo|field -> last-synced string value */
   last: { pulled: 0, pushed: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0, error: '' }
@@ -7606,7 +7607,7 @@ function saveState() {
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
     gsheetUrl: gsheetUrl,
-    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot },
+    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetFileTitle: gsheetSync.sheetFileTitle, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot },
     ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
   }));
   lastSaved = new Date();
@@ -7684,6 +7685,7 @@ function loadState() {
       gsheetSync.lastPullAt = Number(data.gsheetSync.lastPullAt) || 0;
       gsheetSync.lastPushAt = Number(data.gsheetSync.lastPushAt) || 0;
       gsheetSync.sheetTitle = String(data.gsheetSync.sheetTitle || '');
+      gsheetSync.sheetFileTitle = String(data.gsheetSync.sheetFileTitle || '');
       gsheetSync.sheetModifiedTime = String(data.gsheetSync.sheetModifiedTime || '');
       if (data.gsheetSync.snapshot && typeof data.gsheetSync.snapshot === 'object') gsheetSync.snapshot = data.gsheetSync.snapshot;
     }
@@ -12754,8 +12756,16 @@ function gsheetSyncOnce(opts) {
   return gsheetApi({ path: 'spreadsheets/' + id + '?fields=properties.title,sheets(properties(title,index))', token: gsheetToken })
     .then(function (r) {
       if (!r.ok) throw new Error(gsheetApiError(r));
-      var title = (r.j.properties && r.j.properties.title) || 'Sheet1';
+      /* The range reference needs the TAB name (sheets[0].properties.title),
+         NOT the spreadsheet file name (properties.title). A file named
+         "Book1 (1)" may have a tab called "Sheet1", and using the file name in
+         a range fails with "unable to parse range". */
+      var sheets = (r.j && r.j.sheets) || [];
+      var firstTab = (sheets[0] && sheets[0].properties && sheets[0].properties.title);
+      var title = firstTab || 'Sheet1';
       gsheetSync.sheetTitle = title;
+      gsheetSync.sheetFileTitle = (r.j && r.j.properties && r.j.properties.title) || '';
+      gsheetSetSyncStatus('Connected to “' + gsheetSync.sheetFileTitle + '” · tab “' + title + '”…', 'busy');
       return gsheetApi({ path: gsheetValuesPath(id, title, 'A1:ZZ20000'), token: gsheetToken });
     })
     .then(function (r) {
@@ -12795,9 +12805,10 @@ function gsheetSyncOnce(opts) {
       return true;
     })
     .catch(function (e) {
+      var ctx = gsheetSync.sheetTitle ? (' (tab "' + gsheetSync.sheetTitle + '")') : '';
       gsheetSync.last.error = e.message;
-      gsheetSetSyncStatus('Sync failed: ' + e.message, 'err');
-      if (!opts.silent) showToast('Google Sheet sync failed: ' + e.message, 'error');
+      gsheetSetSyncStatus('Sync failed' + ctx + ': ' + e.message, 'err');
+      if (!opts.silent) showToast('Google Sheet sync failed' + ctx + ': ' + e.message, 'error');
       return false;
     })
     .then(function (res) {
