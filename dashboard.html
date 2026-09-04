@@ -4022,6 +4022,12 @@ th.left .th-wrap, th.center .th-wrap {
 .xlprev-grid td.xl-cell.pos{color:#86efac}
 .xlprev-grid td.xl-cell.tric{color:#7dd3fc;font-weight:700}
 .xlprev-grid td.xl-cell.xl-fxcell{font-family:'JetBrains Mono','Inter',ui-monospace,monospace;font-style:italic;color:#7dd3fc;text-align:left!important}
+.xlprev-grid td.xl-cell.xl-edit{cursor:cell}
+.xlprev-grid td.xl-cell.xl-edit:hover{outline:1px dashed rgba(0,245,255,.55);outline-offset:-2px}
+.xlprev-grid td.xl-cell.xl-editing{padding:0!important;background:rgba(0,245,255,.07)!important}
+.xlprev-edit{width:100%;min-width:80px;height:100%;min-height:24px;box-sizing:border-box;background:transparent;border:none;outline:2px solid var(--cyan);outline-offset:-2px;font:inherit;font-variant-numeric:tabular-nums;color:inherit;padding:4px 9px;margin:0;display:block}
+.xlprev-grid td.xl-cell.num .xlprev-edit{text-align:right}
+.xlprev-grid td.xl-cell.cen .xlprev-edit{text-align:center}
 .xlprev-grid td.xl-cell:hover{background:rgba(0,245,255,.055)}
 .xlprev-grid td.xl-cell.xl-sel{outline:2px solid var(--cyan);outline-offset:-2px;background:rgba(0,245,255,.1)}
 .xlprev-grid tr.xl-total td{background:rgba(255,255,255,.045);font-weight:800;border-top:1px solid rgba(255,255,255,.16)}
@@ -4046,6 +4052,9 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-grid td.xl-cell.neg{color:#be123c}
 [data-theme="light"] .xlprev-grid td.xl-cell.pos{color:#15803d}
 [data-theme="light"] .xlprev-grid td.xl-cell.xl-fxcell{color:#2563eb}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-edit:hover{outline-color:#2563eb}
+[data-theme="light"] .xlprev-grid td.xl-cell.xl-editing{background:#eff6ff!important}
+[data-theme="light"] .xlprev-edit{outline-color:#2563eb;background:#ffffff}
 
 </style>
 </head>
@@ -11351,6 +11360,7 @@ function xlPrevGridHtml(d) {
     cols.forEach(function (f, ci) {
       var v = xlPrevCellVal(r, f);
       var fx = showFx ? xlPrevFormula(ri, f) : '';
+      var editable = xlPrevEditableField(f);
       var cls = 'xl-cell ' + xlPrevAlignClass(f);
       if (typeof v === 'number' && isFinite(v)) {
         if (f === 'outstanding') cls += v > 1 ? ' neg' : ' pos';
@@ -11358,7 +11368,9 @@ function xlPrevGridHtml(d) {
         else if (f === 'total_receivables') cls += ' tric';
       }
       if (fx) cls += ' xl-fxcell';
-      h.push('<td class="' + cls + '" data-r="' + ri + '" data-c="' + ci + '"' + (fx ? ' title="' + escHtml(fx) + '"' : '') + '>' + escHtml(fx || xlPrevCellDisp(r, f)) + '</td>');
+      if (editable) cls += ' xl-edit';
+      var ttl = fx ? fx : (editable ? 'Double-click to edit' : (f && String(f).indexOf('__screen_') !== 0 ? 'Auto-calculated' : ''));
+      h.push('<td class="' + cls + '" data-r="' + ri + '" data-c="' + ci + '" data-edit="' + (editable ? '1' : '0') + '"' + (ttl ? ' title="' + escHtml(ttl) + '"' : '') + '>' + escHtml(fx || xlPrevCellDisp(r, f)) + '</td>');
     });
     h.push('</tr>');
   });
@@ -11432,13 +11444,131 @@ function xlPrevToggleFormulas() {
   }
   xlPrevRender();
 }
+/* ---------- Live editing of preview cells ---------- */
+/* Which cells can be typed into. Input/rate/receipt/date/text fields are
+   editable; the pure derived columns are calculated and update live instead. */
+function xlPrevEditableField(f) {
+  if (!f || String(f).indexOf('__screen_') === 0) return false;
+  if (isCustomField(f)) return true;
+  var DERIVED = { gst: 1, mat_value_plus_gst: 1, tcs: 1, tds194o: 1, service_charge_mstc: 1,
+                  tds194h: 1, net_service_charge: 1, service_charge_to_mstc: 1,
+                  total_receivables: 1, total_received: 1, outstanding: 1, settlement_status: 1 };
+  return !DERIVED[f];
+}
+function xlPrevFieldKind(f) {
+  var k = fieldKind(f);
+  if (k === 'date-edit' || k === 'date') return 'date';
+  if (MONEY_FIELDS.has(f) || (isCustomField(f) && customColById(f) && customColById(f).type === 'number')) return 'money';
+  if (k === 'edit' || f === 'qty' || f === 'rate' || f === 'gst_tds_rate' || f === 'lot_no' || f === 'auction') return 'num';
+  return 'text';
+}
+/* Opens an inline editor inside a preview cell, pre-filled with the raw value. */
+function xlPrevBeginEdit(td) {
+  if (xlPrev.showFormulas) { showToast('Turn off "Show formulas" to edit values', 'error'); return; }
+  var r = +td.getAttribute('data-r'), c = +td.getAttribute('data-c');
+  if (isNaN(r) || isNaN(c)) return;
+  if (r >= xlPrev.rows.length) return; /* total row is calculated */
+  var f = xlPrev.cols[c];
+  if (!xlPrevEditableField(f)) {
+    showToast('"' + xlPrevColLabel(f) + '" is calculated automatically — edit its source values');
+    return;
+  }
+  if (td.querySelector('input.xlprev-edit')) return; /* already editing */
+  var row = xlPrev.rows[r];
+  var kind = xlPrevFieldKind(f);
+  var raw = getLotField(row, f);
+  var val = '';
+  if (kind === 'date') val = dottedDate(raw);
+  else val = (raw === null || raw === undefined || raw === '') ? '' : String(raw);
+  td.classList.add('xl-editing');
+  td.setAttribute('data-editing', '1');
+  td.innerHTML = '<input class="xlprev-edit" type="text" inputmode="' +
+    (kind === 'text' ? 'text' : (kind === 'date' ? 'numeric' : 'decimal')) +
+    '" value="' + escHtml(val) + '" spellcheck="false" aria-label="Edit ' + escHtml(xlPrevColLabel(f)) + '" />';
+  var inp = td.querySelector('input');
+  xlPrevSetCell(r, c);
+  if (inp) {
+    inp.focus();
+    if (typeof inp.setSelectionRange === 'function') inp.select();
+    inp.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    inp.addEventListener('click', function (e) { e.stopPropagation(); });
+    inp.addEventListener('keydown', function (e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); xlPrevFinishEdit(inp, true, true); }
+      else if (e.key === 'Tab') { e.preventDefault(); xlPrevFinishEdit(inp, true, false); }
+      else if (e.key === 'Escape') { e.preventDefault(); xlPrevFinishEdit(inp, false, false); }
+    });
+    inp.addEventListener('blur', function () { xlPrevFinishEdit(inp, true, false); });
+  }
+}
+/* Commits (or cancels) an in-progress cell edit. */
+function xlPrevFinishEdit(inp, commit, moveNext) {
+  if (!inp) return;
+  var td = inp.parentElement;
+  if (!td || td.getAttribute('data-editing') !== '1') return;
+  td.setAttribute('data-editing', '0');
+  if (!commit) { xlPrevRender(); return; }
+  var r = +td.getAttribute('data-r'), c = +td.getAttribute('data-c');
+  var f = xlPrev.cols[c];
+  var row = xlPrev.rows[r];
+  var v = inp.value;
+  pushHistory();
+  xlPrevSetValue(row, f, v);
+  saveState();
+  renderAll();
+  xlPrevRender();
+  var ni = xlPrev.rows.indexOf(row);
+  if (ni < 0) { xlPrevSetCell(null, null); }
+  else {
+    xlPrevSetCell(ni, c);
+    if (moveNext) {
+      var next = document.querySelector('#xlPrevScroll td.xl-cell[data-r="' + ni + '"][data-c="' + c + '"]');
+      if (next && typeof next.scrollIntoView === 'function') next.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  showToast('Updated ' + xlPrevColLabel(f), 'ok');
+}
+/* Writes an edited value into the underlying lot and recalculates dependents,
+   mirroring the grid editor (onEditInput/endEdit). */
+function xlPrevSetValue(row, f, v) {
+  if (!row._manual) row._manual = {};
+  if (isCustomField(f)) {
+    var cc = customColById(f);
+    if (cc && cc.type === 'number') setLotField(row, f, v === '' ? '' : Number(cleanNum(v) || 0));
+    else if (cc && cc.type === 'date') setLotField(row, f, fromISODate(v) || v);
+    else setLotField(row, f, v);
+    return;
+  }
+  if (f === 'sd_date' || f === 'fp_date' || f === 'doc_invoice_date' || f === 'late_fee_received_date') {
+    row[f] = v ? dottedDate(maskDotted(v)) : null;
+  } else if (f === 'invoice_no') {
+    var rawInv = String(v || '').trim();
+    if (/^\d{10}$/.test(rawInv)) rawInv = 'DR' + rawInv;
+    row.invoice_no = rawInv;
+  } else if (f === 'sap_document_date') {
+    row[f] = String(v || '').trim();
+  } else if (f === 'lot_name' || f === 'buyer' || f === 'unit') {
+    row[f] = v;
+  } else if (f === 'lot_no' || f === 'auction') {
+    var nv0 = cleanNum(v);
+    row[f] = (nv0 !== '' && !isNaN(Number(nv0))) ? Number(nv0) : v;
+  } else {
+    var nv = cleanNum(v);
+    row[f] = (nv === '' || isNaN(Number(nv))) ? 0 : Number(nv);
+  }
+  if (f === 'sd_expected') row._manual.sd_expected = true;
+  if (f === 'fp_expected') row._manual.fp_expected = true;
+  if (f === 'gst_tds_rate') row._manual.gst_tds = false;
+  if (f === 'gst_tds') row._manual.gst_tds = true;
+  recalcRow(row, [f]);
+}
 function xlPrevRender() {
   var d = xlPrevDataset(xlPrev.mode);
   xlPrev.rows = d.rows; xlPrev.cols = d.cols;
   var scroll = document.getElementById('xlPrevScroll');
   if (scroll) scroll.innerHTML = '<table class="xlprev-grid">' + xlPrevGridHtml(d) + '</table>';
   var status = document.getElementById('xlPrevStatus');
-  if (status) status.textContent = (d.rows.length + ' rows × ' + d.cols.length + ' columns · Sheet1 “' + (d.label || 'Lot Details') + '” · this is exactly what the .xlsx will contain');
+  if (status) status.textContent = (d.rows.length + ' rows × ' + d.cols.length + ' columns · Sheet1 “' + (d.label || 'Lot Details') + '” · double-click a cell to edit · this is exactly what the .xlsx will contain');
   var title = document.getElementById('xlPrevSheetTitle');
   if (title) title.textContent = d.label || 'Lot Details';
   var seg = document.getElementById('xlPrevScope');
@@ -11493,9 +11623,18 @@ function openXlPreview(mode) {
       '</div>' +
     '</div>';
   var overlay = root.firstElementChild;
-  var close = function () { document.removeEventListener('keydown', onEsc); root.innerHTML = ''; };
-  var onEsc = function (e) { if (e.key === 'Escape') close(); };
-  document.addEventListener('keydown', onEsc);
+  var close = function () { document.removeEventListener('keydown', onKey); root.innerHTML = ''; };
+  var onKey = function (e) {
+    if (e.key === 'Escape') { close(); return; }
+    if ((e.key === 'F2' || e.key === 'Enter') && e.target && e.target.tagName !== 'INPUT') {
+      if (xlPrev.selR == null || xlPrev.selC == null) return;
+      var grid = document.getElementById('xlPrevScroll');
+      if (!grid) return;
+      var td = grid.querySelector('td.xl-cell[data-r="' + xlPrev.selR + '"][data-c="' + xlPrev.selC + '"]');
+      if (td) { e.preventDefault(); xlPrevBeginEdit(td); }
+    }
+  };
+  document.addEventListener('keydown', onKey);
   overlay.querySelector('.xclose').addEventListener('click', close);
   overlay.querySelector('#xlPrevClose').addEventListener('click', close);
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
@@ -11510,11 +11649,20 @@ function openXlPreview(mode) {
   });
   var scroll = overlay.querySelector('#xlPrevScroll');
   scroll.addEventListener('click', function (e) {
+    if (e.target && e.target.matches && e.target.matches('input.xlprev-edit')) return;
     var td = e.target && e.target.closest ? e.target.closest('td.xl-cell') : null;
     if (!td) return;
     var r = td.dataset.r, c = td.dataset.c;
     if (r === undefined || c === undefined) return;
-    xlPrevSetCell(parseInt(r, 10), parseInt(c, 10));
+    var ri = parseInt(r, 10), ci = parseInt(c, 10);
+    /* Second tap on the already-selected cell (double-tap / double-click) opens
+       the inline editor. */
+    if (xlPrev.selR === ri && xlPrev.selC === ci && (Date.now() - (xlPrev.lastSelAt || 0)) < 700 && xlPrevEditableField(xlPrev.cols[ci])) {
+      xlPrevBeginEdit(td);
+      return;
+    }
+    xlPrev.lastSelAt = Date.now();
+    xlPrevSetCell(ri, ci);
   });
   xlPrevRender();
   return { el: overlay, close: close };
