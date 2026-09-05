@@ -156,6 +156,9 @@ html{scrollbar-width:auto;scrollbar-color:var(--violet) #0d0d1a}
 .gsheet-sync-note{font-size:10.5px;line-height:1.5}
 .sync-ver{display:inline-block;margin-left:4px;font-size:9px;font-weight:800;letter-spacing:.04em;padding:1px 6px;border-radius:99px;background:rgba(0,245,255,.12);border:1px solid rgba(0,245,255,.3);color:var(--cyan);vertical-align:2px}
 [data-theme="light"] .sync-ver{background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.3);color:#2563eb}
+.gsheet-account{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;margin-top:3px;font-size:11px;font-weight:600;color:var(--cyan);background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.22);padding:2px 8px;border-radius:99px}
+.gsheet-account::before{content:'👤';font-size:10px}
+[data-theme="light"] .gsheet-account{color:#2563eb;background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.25)}
 .gsheet-sync-status-ok{color:#34d399}.gsheet-sync-status-err{color:#fb7185}.gsheet-sync-status-busy{color:var(--cyan)}
 [data-theme="light"] .gsheet-sync-status-ok{color:#059669}
 [data-theme="light"] .gsheet-frame-wrap{background:#f6f7fb}
@@ -4548,8 +4551,9 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v10</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v11</span></b>
               <span class="muted" id="gsheetSyncStatus">Auto-sync on — connecting to Google…</span>
+              <span class="gsheet-account" id="gsheetSyncAccount" hidden title="The Google account this app is connected to"></span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
           </div>
@@ -6950,6 +6954,7 @@ var gsheetSync = {
   tabs: [],           /* list of tab names in the linked sheet */
   sheetModifiedTime: '',
   snapshot: {},     /* key: lotNo|field -> last-synced string value */
+  account: null,    /* { name, email } of the Google account currently connected */
   last: { pulled: 0, pushed: 0, added: 0, updated: 0, conflicts: 0, sheetWins: 0, appWins: 0, error: '' }
 };
 var gsheetTimer = null, gsheetPushTimer = null;
@@ -7634,7 +7639,7 @@ function saveState() {
     dataSyncVersion: dataSyncVersion,
     gdriveClientId: gdriveClientId,
     gsheetUrl: gsheetUrl,
-    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetFileTitle: gsheetSync.sheetFileTitle, sheetTab: gsheetSync.sheetTab, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot },
+    gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetFileTitle: gsheetSync.sheetFileTitle, sheetTab: gsheetSync.sheetTab, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot, account: gsheetSync.account },
     ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
   }));
   lastSaved = new Date();
@@ -7716,6 +7721,7 @@ function loadState() {
       gsheetSync.sheetTab = String(data.gsheetSync.sheetTab || '');
       gsheetSync.sheetModifiedTime = String(data.gsheetSync.sheetModifiedTime || '');
       if (data.gsheetSync.snapshot && typeof data.gsheetSync.snapshot === 'object') gsheetSync.snapshot = data.gsheetSync.snapshot;
+      if (data.gsheetSync.account && typeof data.gsheetSync.account === 'object') gsheetSync.account = data.gsheetSync.account;
     }
     return true;
   } catch (e) { return false; }
@@ -13041,6 +13047,24 @@ function gsheetDriveModifiedTime(id) {
     return res.json().then(function (j) { return Date.parse(j.modifiedTime) || 0; }).catch(function () { return 0; });
   }).catch(function () { return 0; });
 }
+/* Identifies the Google account the app is connected to. Uses the Drive About
+   endpoint (already authorized by the drive.file scope — no extra scopes), so
+   it works with the exact three scopes the app requests. */
+function gsheetFetchAccount(cb) {
+  cb = cb || function () {};
+  if (!gsheetToken) { cb(null); return; }
+  fetch('https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress)', {
+    headers: { Authorization: 'Bearer ' + gsheetToken }
+  }).then(function (res) {
+    if (!res.ok) { cb(null); return; }
+    return res.json().then(function (j) {
+      var u = (j && j.user) || {};
+      gsheetSync.account = { name: u.displayName || '', email: u.emailAddress || '' };
+      gsheetSyncUi();
+      cb(gsheetSync.account);
+    }).catch(function () { cb(null); });
+  }).catch(function () { cb(null); });
+}
 function gsheetSetSyncStatus(msg, cls) {
   var el = document.getElementById('gsheetSyncStatus');
   if (!el) return;
@@ -13063,6 +13087,12 @@ function gsheetSyncUi() {
   if (t) t.checked = !!gsheetSync.enabled;
   var c = document.getElementById('gsheetConnectBtn');
   if (c) c.textContent = gsheetToken ? 'Disconnect sync' : 'Connect & enable sync';
+  var acct = document.getElementById('gsheetSyncAccount');
+  if (acct) {
+    var a = gsheetSync.account;
+    acct.hidden = !a || !a.email;
+    acct.textContent = 'Signed in as ' + ((a && a.name) ? a.name + ' · ' : '') + ((a && a.email) ? a.email : '');
+  }
   var sel = document.getElementById('gsheetTabSelect');
   if (sel && gsheetSync.tabs && gsheetSync.tabs.length) {
     var cur = sel.value || gsheetSync.sheetTab || gsheetSync.tabs[0];
@@ -13087,6 +13117,7 @@ function gsheetGetToken(cb, opts) {
       callback: function (resp) {
         if (resp.error) { cb({ error: resp.error_description || resp.error }); return; }
         gsheetToken = resp.access_token;
+        gsheetFetchAccount();
         cb(null, gsheetToken);
       }
     });
@@ -13370,6 +13401,7 @@ function gsheetConnect() {
 function gsheetDisconnect() {
   gsheetSync.enabled = false;
   gsheetToken = null;
+  gsheetSync.account = null;
   gsheetAutoStop();
   var t = document.getElementById('gsheetSyncToggle');
   if (t) t.checked = false;
