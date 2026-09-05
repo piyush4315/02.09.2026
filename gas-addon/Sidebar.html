@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root { --ink:#202124; --dim:#5f6368; --line:#dadce0; --accent:#1a73e8; --ro:#f1f3f4; }
+    body { margin:0; font: 12px/1.4 Roboto, Arial, sans-serif; color:var(--ink); }
+    .bar { display:flex; gap:6px; padding:8px; border-bottom:1px solid var(--line); align-items:center; position:sticky; top:0; background:#fff; }
+    .bar select { flex:1; min-width:0; padding:5px 6px; border:1px solid var(--line); border-radius:4px; background:#fff; }
+    .bar button { padding:6px 10px; border:1px solid var(--line); border-radius:4px; background:#fff; cursor:pointer; }
+    .bar button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .bar button:disabled { opacity:.5; cursor:default; }
+    .status { padding:6px 8px; font-size:11px; color:var(--dim); }
+    .status.err { color:#d93025; }
+    .status.ok { color:#188038; }
+    .wrap { overflow:auto; }
+    table { border-collapse:collapse; width:100%; table-layout:fixed; }
+    th, td { border-bottom:1px solid var(--line); padding:3px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    th { position:sticky; top:0; background:#f8f9fa; font-weight:600; font-size:10px; text-transform:uppercase; color:var(--dim); text-align:left; z-index:1; }
+    td.key { font-weight:600; color:var(--dim); }
+    td.derived { color:var(--dim); background:var(--ro); }
+    input.cell { width:100%; box-sizing:border-box; border:1px solid transparent; background:transparent; padding:3px 4px; font:inherit; border-radius:3px; }
+    input.cell:hover { border-color:var(--line); }
+    input.cell:focus { border-color:var(--accent); outline:none; background:#fff; }
+    input.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .hint { padding:6px 8px; font-size:10.5px; color:var(--dim); }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <select id="tab" title="Sheet tab to edit"></select>
+    <button id="reload" title="Reload from the sheet">Reload</button>
+    <button id="save" class="primary" title="Write changed cells back to the sheet">Save changes</button>
+  </div>
+  <div id="status" class="status">Loading…</div>
+  <div class="wrap" id="wrap"></div>
+  <div class="hint">Only white cells are editable; grey columns are auto-calculated by the dashboard on its next sync.</div>
+
+  <script>
+    var META = null;
+    var DATA = null;
+
+    function setStatus(msg, cls) {
+      var s = document.getElementById('status');
+      s.textContent = msg || '';
+      s.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function loadMeta() {
+      google.script.run.withSuccessHandler(function (m) {
+        META = m;
+        var sel = document.getElementById('tab');
+        sel.innerHTML = '';
+        (m.tabs || []).forEach(function (t) {
+          var o = document.createElement('option');
+          o.value = t; o.textContent = t;
+          if (t === m.tab) o.selected = true;
+          sel.appendChild(o);
+        });
+        loadData(m.tab);
+      }).withFailureHandler(function (e) { setStatus(String(e), 'err'); }).getMeta();
+    }
+
+    function loadData(tab) {
+      setStatus('Loading tab "' + tab + '"…');
+      google.script.run.withSuccessHandler(function (d) {
+        if (d && d.error) { setStatus(d.error, 'err'); return; }
+        DATA = d;
+        render(d);
+        setStatus(d.rows.length + ' lots loaded from "' + d.tab + '" (header row ' + (d.headerRowIdx + 1) + ').');
+      }).withFailureHandler(function (e) { setStatus(String(e), 'err'); }).getSheetData(tab);
+    }
+
+    function render(d) {
+      var wrap = document.getElementById('wrap');
+      var h = ['<table><thead><tr><th style="width:64px">Lot No.</th>'];
+      d.columns.forEach(function (c) {
+        if (c.field === 'lot_no') return;
+        h.push('<th>' + c.label.replace(/_/g, ' ') + '</th>');
+      });
+      h.push('</tr></thead><tbody>');
+      d.rows.forEach(function (row) {
+        h.push('<tr><td class="key">' + row.lotNo + '</td>');
+        d.columns.forEach(function (c) {
+          if (c.field === 'lot_no') return;
+          var v = row.values[c.field];
+          v = (v === null || v === undefined) ? '' : String(v);
+          if (c.editable) {
+            h.push('<td><input class="cell' + (c.numeric ? ' num' : '') + '" data-lot="' + row.lotNo +
+                   '" data-field="' + c.field + '" inputmode="' + (c.numeric ? 'decimal' : 'text') +
+                   '" value="' + escAttr(v) + '" data-orig="' + escAttr(v) + '"></td>');
+          } else {
+            h.push('<td class="derived">' + escHtml(v) + '</td>');
+          }
+        });
+        h.push('</tr>');
+      });
+      h.push('</tbody></table>');
+      wrap.innerHTML = h.join('');
+    }
+
+    function save() {
+      var changes = [];
+      document.querySelectorAll('input.cell').forEach(function (inp) {
+        if (inp.value !== inp.getAttribute('data-orig')) {
+          changes.push({ lotNo: inp.getAttribute('data-lot'), field: inp.getAttribute('data-field'), value: inp.value });
+        }
+      });
+      if (!changes.length) { setStatus('No changes to save.', ''); return; }
+      var btn = document.getElementById('save');
+      btn.disabled = true;
+      setStatus('Saving ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + '…');
+      google.script.run.withSuccessHandler(function (res) {
+        btn.disabled = false;
+        if (res.errors && res.errors.length) setStatus('Saved ' + res.saved + ' · ' + res.errors.join(' · '), 'err');
+        else setStatus('Saved ' + res.saved + ' cell' + (res.saved === 1 ? '' : 's') + ' to the sheet.', 'ok');
+        if (res.saved > 0) loadData(DATA.tab);
+      }).withFailureHandler(function (e) {
+        btn.disabled = false;
+        setStatus(String(e), 'err');
+      }).saveChanges(DATA.tab, changes);
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function escAttr(s) { return escHtml(s).replace(/"/g, '&quot;'); }
+
+    document.getElementById('tab').addEventListener('change', function () { loadData(this.value); });
+    document.getElementById('reload').addEventListener('click', function () { loadData(DATA ? DATA.tab : META.tab); });
+    document.getElementById('save').addEventListener('click', save);
+    loadMeta();
+  </script>
+</body>
+</html>
