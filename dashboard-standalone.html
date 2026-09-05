@@ -12210,6 +12210,8 @@ function openXlPreview(mode) {
     '</div>';
   var overlay = root.firstElementChild;
   var onDocUp = function () { xlPrev.dragging = false; };
+  /* Dismiss the context menu on a pointer/touch outside it. Works for both
+     right-click (mousedown) and long-press (touchstart) gestures. */
   var onDocDown = function (e) {
     var m = document.getElementById('xlPrevCtx');
     if (m && !m.hidden && m.contains && !m.contains(e.target)) xlPrevHideCtx();
@@ -12256,6 +12258,7 @@ function openXlPreview(mode) {
     document.removeEventListener('keydown', onKey, true);
     document.removeEventListener('mouseup', onDocUp);
     document.removeEventListener('mousedown', onDocDown);
+    document.removeEventListener('touchstart', onDocDown, true);
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
     xlPrev.dragging = false; xlPrev.ctx = null;
@@ -12329,6 +12332,7 @@ function openXlPreview(mode) {
   document.addEventListener('keydown', onKey, true);
   document.addEventListener('mouseup', onDocUp);
   document.addEventListener('mousedown', onDocDown);
+  document.addEventListener('touchstart', onDocDown, true);
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
   overlay.querySelector('.xclose').addEventListener('click', close);
@@ -12432,6 +12436,8 @@ function openXlPreview(mode) {
     if (!xlPrev.sel[xlPrevSelKey(r, c)]) xlPrevSelectSingle(r, c);
     xlPrevShowCtx(e.clientX, e.clientY, td);
   });
+  /* Keep the context menu from floating over scrolled content. */
+  scroll.addEventListener('scroll', function () { xlPrevHideCtx(); }, { passive: true });
   var findBar = overlay.querySelector('#xlPrevFindBar');
   var findInp = overlay.querySelector('#xlPrevFindInput');
   findInp.addEventListener('input', function () { xlPrevFind(findInp.value); });
