@@ -15,6 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23070711'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='%2300f5ff' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;600;800&amp;display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -4147,6 +4148,32 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-grid td.xl-cell.xl-editing{background:#eff6ff!important}
 [data-theme="light"] .xlprev-edit{outline-color:#2563eb;background:#ffffff}
 
+
+/* Separate Univer workspace option */
+.univer-panel { border:1px solid rgba(0,245,255,.2); background:linear-gradient(135deg,rgba(0,245,255,.07),rgba(124,58,237,.08)); }
+.univer-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:16px; }
+.univer-actions .btn { min-height:36px; }
+.univer-badge { display:inline-flex; align-items:center; gap:6px; color:var(--cyan); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.univer-grid { margin-top:18px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.univer-grid div { padding:12px; border:1px solid rgba(255,255,255,.1); border-radius:9px; background:rgba(0,0,0,.12); }
+.univer-editor { margin-top:18px; border:1px solid rgba(0,245,255,.2); border-radius:10px; overflow:hidden; background:var(--panel); }
+.univer-editor-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px; border-bottom:1px solid rgba(255,255,255,.1); }
+.univer-editor-toolbar .muted { margin-left:auto; }
+.univer-sheet-wrap { max-height:62vh; overflow:auto; }
+.univer-sheet { border-collapse:separate; border-spacing:0; min-width:100%; font-size:11px; }
+.univer-sheet th { position:sticky; top:0; z-index:2; background:#18213b; color:var(--text); padding:8px; text-align:left; white-space:nowrap; border-right:1px solid rgba(255,255,255,.1); border-bottom:1px solid rgba(255,255,255,.18); }
+.univer-sheet td { min-width:120px; padding:7px 8px; border-right:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.07); white-space:nowrap; background:rgba(0,0,0,.08); }
+.univer-sheet td[contenteditable="true"] { cursor:text; outline:none; }
+.univer-sheet td[contenteditable="true"]:focus { box-shadow:inset 0 0 0 2px var(--cyan); background:rgba(0,245,255,.08); }
+.univer-sheet .row-num { position:sticky; left:0; z-index:1; min-width:42px; width:42px; text-align:center; color:var(--dim); background:#18213b; }
+[data-theme="light"] .univer-editor { border-color:#bfdbfe; background:#fff; }
+[data-theme="light"] .univer-editor-toolbar { border-color:#e2e8f0; }
+[data-theme="light"] .univer-sheet th,[data-theme="light"] .univer-sheet .row-num { background:#e2e8f0; color:#0f172a; border-color:#cbd5e1; }
+[data-theme="light"] .univer-sheet td { background:#fff; border-color:#e2e8f0; }
+.univer-grid b { display:block; margin-bottom:4px; }
+@media (max-width:700px) { .univer-grid { grid-template-columns:1fr; } }
+[data-theme="light"] .univer-panel { background:linear-gradient(135deg,#effcff,#f5f3ff); border-color:#bae6fd; }
+[data-theme="light"] .univer-grid div { border-color:#dbeafe; background:#fff; }
 </style>
 </head>
 <body>
@@ -4184,6 +4211,10 @@ th.left .th-wrap, th.center .th-wrap {
         <button class="nav-btn" data-view="gsheet">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
           ⬈ Google Sheet
+        </button>
+        <button class="nav-btn" data-view="univer" title="Open the separate Univer workspace">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18M15 3v18M3 15h18"/></svg>
+          ▦ Univer
         </button>
       </div>
       <div class="toolbar-row">
@@ -4589,6 +4620,30 @@ th.left .th-wrap, th.center .th-wrap {
         </div>
         <div class="gsheet-frame-wrap">
           <iframe id="gsheetFrame" title="Google Sheet preview" class="gsheet-frame" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+      </section>
+
+      <!-- ============ UNIVER ============ -->
+      <section id="view-univer" hidden>
+        <div class="panel univer-panel">
+          <span class="univer-badge">▦ Separate option · editable sheet</span>
+          <h2 style="margin-top:8px">Univer spreadsheet workspace</h2>
+          <p class="hint" style="max-width:760px">Edit the live app dataset directly in this spreadsheet-style workspace. Click any cell to edit, then use Save changes to update the dashboard and keep the existing app options available.</p>
+          <div class="univer-actions">
+            <button class="btn primary" id="univerOpenAppBtn" type="button">↗ Open app with existing options</button>
+            <button class="btn" id="univerDashboardBtn" type="button">◈ Open Dashboard</button>
+            <button class="btn" id="univerDownloadBtn" type="button">⬇ Download app</button>
+            <a class="btn" href="https://univer.ai" target="_blank" rel="noopener">↗ Univer website</a>
+          </div>
+          <div class="univer-editor" aria-label="Editable Univer sheet">
+            <div class="univer-editor-toolbar">
+              <button class="btn primary" id="univerSaveBtn" type="button">✓ Save changes</button>
+              <button class="btn" id="univerAddRowBtn" type="button">＋ Add row</button>
+              <button class="btn" id="univerRefreshBtn" type="button">↻ Refresh sheet</button>
+              <span class="muted" id="univerSheetStatus">Click a cell to edit.</span>
+            </div>
+            <div class="univer-sheet-wrap"><table class="univer-sheet" id="univerSheet"><thead></thead><tbody></tbody></table></div>
+          </div>
         </div>
       </section>
     </main>
@@ -8085,6 +8140,43 @@ function exportScopeColumns() {
 }
 
 /* ---------------- rendering ---------------- */
+function univerSheetColumns() {
+  return DETAIL_COLS.slice(0, 12).map(function (c) { return { key: c[0], label: c[1] }; });
+}
+function renderUniverSheet() {
+  var table = document.getElementById('univerSheet');
+  if (!table) return;
+  var cols = univerSheetColumns();
+  table.querySelector('thead').innerHTML = '<tr><th class="row-num">#</th>' + cols.map(function (c) { return '<th>' + escHtml(c.label) + '</th>'; }).join('') + '</tr>';
+  table.querySelector('tbody').innerHTML = lots.map(function (r, i) {
+    return '<tr data-lot-index="' + i + '"><td class="row-num">' + (i + 1) + '</td>' + cols.map(function (c) {
+      return '<td contenteditable="true" spellcheck="false" data-field="' + escHtml(c.key) + '">' + escHtml(getLotField(r, c.key) == null ? '' : getLotField(r, c.key)) + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+  var status = document.getElementById('univerSheetStatus');
+  if (status) status.textContent = lots.length + ' rows · ' + cols.length + ' editable columns';
+}
+function saveUniverSheet() {
+  var table = document.getElementById('univerSheet');
+  if (!table) return;
+  pushHistory();
+  table.querySelectorAll('tbody tr').forEach(function (tr) {
+    var i = +tr.getAttribute('data-lot-index');
+    if (!lots[i]) return;
+    tr.querySelectorAll('td[data-field]').forEach(function (cell) { setLotField(lots[i], cell.getAttribute('data-field'), cell.textContent.trim()); });
+  });
+  saveState();
+  renderAll();
+  renderUniverSheet();
+  showToast('Univer sheet changes saved to the app', 'ok');
+}
+function addUniverRow() {
+  pushHistory();
+  lots.push({ lot_no: lots.length + 1, buyer: '', lot_name: '', auction: '', unit: '', qty: 0, rate: 0 });
+  saveState();
+  renderUniverSheet();
+  showToast('New row added — edit it and save changes', 'ok');
+}
 function setView(v) {
   view = v;
   document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.view === v); });
@@ -8094,11 +8186,14 @@ function setView(v) {
   document.getElementById('view-data').hidden = v !== 'data';
   var viewGsheet = document.getElementById('view-gsheet');
   if (viewGsheet) viewGsheet.hidden = v !== 'gsheet';
+  var viewUniver = document.getElementById('view-univer');
+  if (viewUniver) viewUniver.hidden = v !== 'univer';
   var titles = {
     dashboard: ['Dashboard', 'Buyer Ledger Analytics + lot details on one page · click a row to drill down'],
     analytics: ['Power BI Analytics', 'Exhaustive visual analytics, realization charts, Pareto distributions, and executive KPIs'],
     data: ['Data & Backup', 'Export to Excel / HTML / PDF / CSV / TXT / JSON / Google Drive · import any of them back'],
-    gsheet: ['Google Sheet', 'Live Google Sheets preview embedded in the app · paste any share link above']
+    gsheet: ['Google Sheet', 'Live Google Sheets preview embedded in the app · paste any share link above'],
+    univer: ['Univer', 'Separate spreadsheet workspace · existing app options remain available']
   };
   if (titles[v]) {
     document.getElementById('viewTitle').textContent = titles[v][0];
@@ -8107,6 +8202,7 @@ function setView(v) {
   renderAll();
   if (v === 'analytics') renderAnalyticsCharts();
   if (v === 'gsheet') ensureGsheetLoaded();
+  if (v === 'univer') renderUniverSheet();
 }
 function renderCards() {
   var rows = dashFilteredRows();
@@ -16464,6 +16560,21 @@ function init() {
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.addEventListener('click', function () { setView(b.dataset.view); });
   });
+  var univerOpenApp = document.getElementById('univerOpenAppBtn');
+  if (univerOpenApp) univerOpenApp.addEventListener('click', function () { setView('dashboard'); });
+  var univerDashboard = document.getElementById('univerDashboardBtn');
+  if (univerDashboard) univerDashboard.addEventListener('click', function () { setView('dashboard'); });
+  var univerDownload = document.getElementById('univerDownloadBtn');
+  if (univerDownload) univerDownload.addEventListener('click', function () {
+    var btn = document.getElementById('downloadApp');
+    if (btn) btn.click();
+  });
+  var univerSave = document.getElementById('univerSaveBtn');
+  if (univerSave) univerSave.addEventListener('click', saveUniverSheet);
+  var univerAdd = document.getElementById('univerAddRowBtn');
+  if (univerAdd) univerAdd.addEventListener('click', addUniverRow);
+  var univerRefresh = document.getElementById('univerRefreshBtn');
+  if (univerRefresh) univerRefresh.addEventListener('click', renderUniverSheet);
   var gsInput = document.getElementById('gsheetUrlInput');
   if (gsInput) {
     gsInput.value = gsheetUrl || '';
