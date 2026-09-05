@@ -4149,31 +4149,62 @@ th.left .th-wrap, th.center .th-wrap {
 [data-theme="light"] .xlprev-edit{outline-color:#2563eb;background:#ffffff}
 
 
-/* Separate Univer workspace option */
-.univer-panel { border:1px solid rgba(0,245,255,.2); background:linear-gradient(135deg,rgba(0,245,255,.07),rgba(124,58,237,.08)); }
-.univer-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:16px; }
-.univer-actions .btn { min-height:36px; }
-.univer-badge { display:inline-flex; align-items:center; gap:6px; color:var(--cyan); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
-.univer-grid { margin-top:18px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-.univer-grid div { padding:12px; border:1px solid rgba(255,255,255,.1); border-radius:9px; background:rgba(0,0,0,.12); }
-.univer-editor { margin-top:18px; border:1px solid rgba(0,245,255,.2); border-radius:10px; overflow:hidden; background:var(--panel); }
-.univer-editor-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px; border-bottom:1px solid rgba(255,255,255,.1); }
-.univer-editor-toolbar .muted { margin-left:auto; }
-.univer-sheet-wrap { max-height:62vh; overflow:auto; }
-.univer-sheet { border-collapse:separate; border-spacing:0; min-width:100%; font-size:11px; }
-.univer-sheet th { position:sticky; top:0; z-index:2; background:#18213b; color:var(--text); padding:8px; text-align:left; white-space:nowrap; border-right:1px solid rgba(255,255,255,.1); border-bottom:1px solid rgba(255,255,255,.18); }
-.univer-sheet td { min-width:120px; padding:7px 8px; border-right:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.07); white-space:nowrap; background:rgba(0,0,0,.08); }
-.univer-sheet td[contenteditable="true"] { cursor:text; outline:none; }
-.univer-sheet td[contenteditable="true"]:focus { box-shadow:inset 0 0 0 2px var(--cyan); background:rgba(0,245,255,.08); }
-.univer-sheet .row-num { position:sticky; left:0; z-index:1; min-width:42px; width:42px; text-align:center; color:var(--dim); background:#18213b; }
-[data-theme="light"] .univer-editor { border-color:#bfdbfe; background:#fff; }
-[data-theme="light"] .univer-editor-toolbar { border-color:#e2e8f0; }
-[data-theme="light"] .univer-sheet th,[data-theme="light"] .univer-sheet .row-num { background:#e2e8f0; color:#0f172a; border-color:#cbd5e1; }
-[data-theme="light"] .univer-sheet td { background:#fff; border-color:#e2e8f0; }
-.univer-grid b { display:block; margin-bottom:4px; }
-@media (max-width:700px) { .univer-grid { grid-template-columns:1fr; } }
-[data-theme="light"] .univer-panel { background:linear-gradient(135deg,#effcff,#f5f3ff); border-color:#bae6fd; }
-[data-theme="light"] .univer-grid div { border-color:#dbeafe; background:#fff; }
+/* Full Univer spreadsheet workspace */
+/* Author-level display rules (notably #view-analytics and third-party button styles)
+   must never override HTML's native hidden state. */
+[hidden]{display:none!important}
+.univer-panel{padding:18px;border:1px solid rgba(0,245,255,.22);background:linear-gradient(135deg,rgba(0,245,255,.065),rgba(124,58,237,.075));overflow:visible}
+.univer-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.univer-heading-copy{flex:1 1 480px;min-width:0}
+.univer-heading-copy h2{margin:7px 0 5px}
+.univer-heading-copy .hint{max-width:900px;margin:0}
+.univer-badge{display:inline-flex;align-items:center;gap:7px;color:var(--cyan);font-size:11px;font-weight:850;letter-spacing:.075em;text-transform:uppercase}
+.univer-badge:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
+.univer-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;flex:1 1 480px}
+.univer-actions .btn{min-height:36px;white-space:nowrap}
+.univer-featurebar{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 11px}
+.univer-featurebar span{display:inline-flex;align-items:center;min-height:25px;padding:4px 8px;border:1px solid rgba(0,245,255,.16);border-radius:999px;background:rgba(4,12,28,.32);color:var(--dim);font-size:10px;font-weight:700;letter-spacing:.015em}
+.univer-editor{border:1px solid rgba(0,245,255,.22);border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 18px 46px rgba(0,0,0,.2)}
+.univer-editor-toolbar{display:flex;align-items:center;gap:9px;min-height:43px;padding:8px 11px;border-bottom:1px solid rgba(255,255,255,.1);background:#111a2d;color:#e8edf8}
+.univer-editor-toolbar .univer-status{display:flex;align-items:center;gap:8px;min-width:0;font-size:11px;color:#aab5ca}
+.univer-editor-toolbar .univer-status-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.univer-status-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#64748b;box-shadow:0 0 0 3px rgba(100,116,139,.12)}
+.univer-status-dot.ready{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.univer-status-dot.dirty{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.16)}
+.univer-status-dot.busy{background:#22d3ee;box-shadow:0 0 0 3px rgba(34,211,238,.16);animation:univerPulse 1.1s ease-in-out infinite}
+.univer-status-dot.error{background:#fb7185;box-shadow:0 0 0 3px rgba(251,113,133,.16)}
+@keyframes univerPulse{50%{opacity:.35;transform:scale(.74)}}
+.univer-toolbar-spacer{flex:1}
+.univer-engine-label{font-size:10px;color:#7f8ca6;white-space:nowrap}
+.univer-host-shell{position:relative;width:100%;height:clamp(590px,72vh,880px);min-height:590px;background:#fff;isolation:isolate}
+#univerSheetHost{position:absolute;inset:0;width:100%;height:100%;background:#fff;color:#111827;overflow:hidden}
+.univer-loading{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(145deg,#f8fafc,#eef6ff);color:#0f172a;text-align:center}
+.univer-loading[hidden]{display:none!important}
+.univer-loading-card{width:min(430px,92%);padding:24px;border:1px solid #dbeafe;border-radius:16px;background:rgba(255,255,255,.94);box-shadow:0 16px 44px rgba(15,23,42,.12)}
+.univer-loader-ring{width:34px;height:34px;margin:0 auto 13px;border:3px solid #dbeafe;border-top-color:#0891b2;border-radius:50%;animation:univerSpin .8s linear infinite}
+@keyframes univerSpin{to{transform:rotate(360deg)}}
+.univer-loading-title{font-size:14px;font-weight:800;margin-bottom:5px}
+.univer-loading-copy{font-size:11px;line-height:1.55;color:#64748b}
+.univer-progress{height:4px;margin:14px 0 0;border-radius:99px;overflow:hidden;background:#e2e8f0}
+.univer-progress>i{display:block;width:8%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0891b2,#7c3aed);transition:width .24s ease}
+.univer-sheet-note{display:flex;align-items:flex-start;gap:8px;margin:10px 2px 0;color:var(--dim);font-size:10.5px;line-height:1.45}
+.univer-sheet-note b{color:var(--text)}
+.univer-exit-max{display:none;position:absolute;right:14px;bottom:14px;z-index:2147483000;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:#111827;color:#fff;padding:9px 13px;font:700 12px/1 system-ui,sans-serif;box-shadow:0 8px 26px rgba(0,0,0,.34);cursor:pointer}
+.univer-host-shell.univer-maximized{position:fixed;inset:0;z-index:1000;width:100vw;height:100vh;min-height:0;border-radius:0;background:#fff}
+.univer-host-shell.univer-maximized .univer-exit-max{display:block}
+body.univer-maximized-open{overflow:hidden!important}
+[data-theme="light"] .univer-panel{background:linear-gradient(135deg,#effcff,#f5f3ff);border-color:#bae6fd}
+[data-theme="light"] .univer-featurebar span{background:#fff;border-color:#dbeafe;color:#475569}
+[data-theme="light"] .univer-editor{border-color:#bfdbfe;box-shadow:0 18px 46px rgba(15,23,42,.12)}
+@media(max-width:760px){
+  .univer-panel{padding:11px}
+  .univer-actions{justify-content:flex-start}
+  .univer-actions .btn{flex:1 1 auto}
+  .univer-host-shell{height:70vh;min-height:520px}
+  .univer-engine-label{display:none}
+  .univer-featurebar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .univer-featurebar span{flex:0 0 auto}
+}
 </style>
 </head>
 <body>
@@ -4212,7 +4243,7 @@ th.left .th-wrap, th.center .th-wrap {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
           ⬈ Google Sheet
         </button>
-        <button class="nav-btn" data-view="univer" title="Open the separate Univer workspace">
+        <button class="nav-btn" data-view="univer" title="Open the full embedded Univer spreadsheet workspace">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18M15 3v18M3 15h18"/></svg>
           ▦ Univer
         </button>
@@ -4626,24 +4657,47 @@ th.left .th-wrap, th.center .th-wrap {
       <!-- ============ UNIVER ============ -->
       <section id="view-univer" hidden>
         <div class="panel univer-panel">
-          <span class="univer-badge">▦ Separate option · editable sheet</span>
-          <h2 style="margin-top:8px">Univer spreadsheet workspace</h2>
-          <p class="hint" style="max-width:760px">Edit the live app dataset directly in this spreadsheet-style workspace. Click any cell to edit, then use Save changes to update the dashboard and keep the existing app options available.</p>
-          <div class="univer-actions">
-            <button class="btn primary" id="univerOpenAppBtn" type="button">↗ Open app with existing options</button>
-            <button class="btn" id="univerDashboardBtn" type="button">◈ Open Dashboard</button>
-            <button class="btn" id="univerDownloadBtn" type="button">⬇ Download app</button>
-            <a class="btn" href="https://univer.ai" target="_blank" rel="noopener">↗ Univer website</a>
-          </div>
-          <div class="univer-editor" aria-label="Editable Univer sheet">
-            <div class="univer-editor-toolbar">
-              <button class="btn primary" id="univerSaveBtn" type="button">✓ Save changes</button>
-              <button class="btn" id="univerAddRowBtn" type="button">＋ Add row</button>
-              <button class="btn" id="univerRefreshBtn" type="button">↻ Refresh sheet</button>
-              <span class="muted" id="univerSheetStatus">Click a cell to edit.</span>
+          <div class="univer-heading">
+            <div class="univer-heading-copy">
+              <span class="univer-badge">Real Univer workbook · full ribbon</span>
+              <h2>Univer spreadsheet workspace</h2>
+              <p class="hint">Work with the complete lot dataset in a real Univer sheet: formulas, cell formatting, multi-sheet tabs, fill handle, clipboard, undo/redo, sorting, filtering, validation, comments, drawings, and more are available from the spreadsheet ribbon and context menus. Pro deployments can also enable charts, pivots, shapes, and print.</p>
             </div>
-            <div class="univer-sheet-wrap"><table class="univer-sheet" id="univerSheet"><thead></thead><tbody></tbody></table></div>
+            <div class="univer-actions" aria-label="Univer workbook actions">
+              <button class="btn primary" id="univerSaveBtn" type="button" title="Write the Lot Data sheet back to the dashboard">✓ Save to Dashboard</button>
+              <button class="btn" id="univerAddRowBtn" type="button">＋ Add data row</button>
+              <button class="btn" id="univerRefreshBtn" type="button" title="Discard workbook-only edits and rebuild Lot Data from the dashboard">↻ Reload app data</button>
+              <button class="btn" id="univerFullscreenBtn" type="button">⛶ Maximize sheet</button>
+              <button class="btn" id="univerDashboardBtn" type="button">◈ Dashboard</button>
+            </div>
           </div>
+          <div class="univer-featurebar" aria-label="Enabled spreadsheet features">
+            <span>ƒx formulas</span><span>Formatting</span><span>Freeze &amp; resize</span><span>Sort &amp; filter</span><span>Validation</span><span>Conditional formats</span><span>Find &amp; replace</span><span>Tables</span><span>Links &amp; images</span><span>Notes &amp; comments</span><span>Zen editor</span><span title="Enabled when a Univer Pro license is configured by the deployment">Pro: charts · pivots · print*</span>
+          </div>
+          <div class="univer-editor" aria-label="Full Univer spreadsheet editor">
+            <div class="univer-editor-toolbar">
+              <div class="univer-status" role="status" aria-live="polite">
+                <i class="univer-status-dot busy" id="univerStatusDot"></i>
+                <span class="univer-status-text" id="univerSheetStatus">Open this view to load the spreadsheet engine.</span>
+              </div>
+              <span class="univer-toolbar-spacer"></span>
+              <span class="univer-engine-label">Univer 0.25.1 · workbook autosave</span>
+              <button class="btn" id="univerRetryBtn" type="button" hidden>Retry load</button>
+            </div>
+            <div class="univer-host-shell" id="univerFullscreenTarget">
+              <div id="univerSheetHost" aria-label="Univer workbook canvas"></div>
+              <div class="univer-loading" id="univerLoading">
+                <div class="univer-loading-card">
+                  <div class="univer-loader-ring" aria-hidden="true"></div>
+                  <div class="univer-loading-title" id="univerLoadingTitle">Preparing full spreadsheet workspace…</div>
+                  <div class="univer-loading-copy" id="univerLoadingCopy">The spreadsheet engine is loaded only when this tab is opened, so the dashboard stays fast.</div>
+                  <div class="univer-progress" aria-hidden="true"><i id="univerProgressBar"></i></div>
+                </div>
+              </div>
+              <button class="univer-exit-max" id="univerExitMaxBtn" type="button">✕ Exit maximized view</button>
+            </div>
+          </div>
+          <div class="univer-sheet-note"><span>ⓘ</span><span><b>Lot Data</b> is the dashboard bridge. Spreadsheet edits and workbook structure are autosaved locally; choose <b>Save to Dashboard</b> to apply rows and any new columns to the ScrapSale KPIs. Other sheets remain workbook-only. *Advanced Univer tools are enabled only when the deployment supplies its Univer Pro license and any required server endpoint.</span></div>
         </div>
       </section>
     </main>
@@ -8140,44 +8194,834 @@ function exportScopeColumns() {
 }
 
 /* ---------------- rendering ---------------- */
+/* ---------------- full embedded Univer workbook ---------------- */
+var UNIVER_VERSION = '0.25.1';
+var UNIVER_WORKBOOK_KEY = 'scrapsale_univer_workbook_v2';
+var UNIVER_DATA_SHEET_ID = 'scrapsale-lot-data';
+var UNIVER_GUIDE_SHEET_ID = 'scrapsale-univer-guide';
+var UNIVER_FORMULA_FIELDS = {
+  mat_value:1, gst:1, mat_value_plus_gst:1, tcs:1, tds194o:1,
+  service_charge_mstc:1, tds194h:1, net_service_charge:1,
+  service_charge_to_mstc:1, gst_tds:1, total_receivables:1,
+  sd_expected:1, fp_expected:1, late_fee:1, total_received:1,
+  outstanding:1, settlement_status:1
+};
+var UNIVER_DATE_FIELDS = { sd_date:1, fp_date:1, late_fee_received_date:1, doc_invoice_date:1 };
+var UNIVER_PRESET_PACKS = [
+  { slug:'find-replace', label:'Find & replace', global:'UniverPresetSheetsFindReplace', ctor:'UniverSheetsFindReplacePreset', locale:'UniverPresetSheetsFindReplaceEnUS' },
+  { slug:'sort', label:'Sorting', global:'UniverPresetSheetsSort', ctor:'UniverSheetsSortPreset', locale:'UniverPresetSheetsSortEnUS' },
+  { slug:'filter', label:'Filtering', global:'UniverPresetSheetsFilter', ctor:'UniverSheetsFilterPreset', locale:'UniverPresetSheetsFilterEnUS' },
+  { slug:'conditional-formatting', label:'Conditional formatting', global:'UniverPresetSheetsConditionalFormatting', ctor:'UniverSheetsConditionalFormattingPreset', locale:'UniverPresetSheetsConditionalFormattingEnUS' },
+  { slug:'data-validation', label:'Data validation', global:'UniverPresetSheetsDataValidation', ctor:'UniverSheetsDataValidationPreset', locale:'UniverPresetSheetsDataValidationEnUS' },
+  { slug:'drawing', label:'Images & drawings', global:'UniverPresetSheetsDrawing', ctor:'UniverSheetsDrawingPreset', locale:'UniverPresetSheetsDrawingEnUS' },
+  { slug:'hyper-link', label:'Hyperlinks', global:'UniverPresetSheetsHyperLink', ctor:'UniverSheetsHyperLinkPreset', locale:'UniverPresetSheetsHyperLinkEnUS' },
+  { slug:'note', label:'Notes', global:'UniverPresetSheetsNote', ctor:'UniverSheetsNotePreset', locale:'UniverPresetSheetsNoteEnUS' },
+  { slug:'thread-comment', label:'Thread comments', global:'UniverPresetSheetsThreadComment', ctor:'UniverSheetsThreadCommentPreset', locale:'UniverPresetSheetsThreadCommentEnUS' },
+  { slug:'table', label:'Tables', global:'UniverPresetSheetsTable', ctor:'UniverSheetsTablePreset', locale:'UniverPresetSheetsTableEnUS' },
+  { slug:'advanced', label:'Charts, pivots & print', global:'UniverPresetSheetsAdvanced', ctor:'UniverSheetsAdvancedPreset', locale:'UniverPresetSheetsAdvancedEnUS', advanced:true }
+];
+var UNIVER_EXTRA_PLUGINS = [
+  { slug:'sheets-crosshair-highlight', label:'Crosshair highlight', global:'UniverSheetsCrosshairHighlight', ctor:'UniverSheetsCrosshairHighlightPlugin', locale:'UniverSheetsCrosshairHighlightEnUS', localePath:'lib/umd/locale/en-US.js' },
+  { slug:'sheets-zen-editor', label:'Zen editor', global:'UniverSheetsZenEditor', ctor:'UniverSheetsZenEditorPlugin', locale:'UniverSheetsZenEditorEnUS', localePath:'lib/umd/locale/en-US.js' }
+];
+var univerState = {
+  loading:false, ready:false, failed:false, loadPromise:null, librariesLoaded:false,
+  univer:null, api:null, workbook:null, dirty:false, suppress:true,
+  syncedSignature:'', loadedPacks:[], loadedPlugins:[], missing:[],
+  advancedConfigured:false, advancedFallback:false, generation:0,
+  advancedGuard:null, advancedGuardTimer:null, maxPlaceholder:null,
+  persistTimer:null, commandDisposable:null, valueDisposable:null
+};
+/* Univer's charts, pivots, shapes, print, and exchange modules are Pro features.
+   A deployment may opt in without placing a key in this source file:
+   window.SCRAPSALE_UNIVER_ADVANCED = { license:'...', universerEndpoint:'https://...' }.
+   Without a license we intentionally keep the complete open-source feature set and do not
+   instantiate the Pro preset, which otherwise emits dependency errors during its lifecycle. */
+function univerAdvancedOptions() {
+  var raw = window.SCRAPSALE_UNIVER_ADVANCED;
+  if (!raw || typeof raw !== 'object' || !String(raw.license || '').trim()) return null;
+  var out = { license:String(raw.license).trim(), useWorker:false };
+  ['universerEndpoint','exchangeClientOptions','formula','print','pivot'].forEach(function (key) {
+    if (raw[key] !== undefined) out[key] = raw[key];
+  });
+  return out;
+}
+
 function univerSheetColumns() {
-  return DETAIL_COLS.slice(0, 12).map(function (c) { return { key: c[0], label: c[1] }; });
+  var out = DEFAULT_DETAIL_KEYS.map(function (key) {
+    return { key:key, label:fieldLabel(key).replace(/\u00ad/g, ''), type:UNIVER_DATE_FIELDS[key] ? 'date' : (NUM_FIELDS.indexOf(key) !== -1 ? 'number' : 'text') };
+  });
+  customCols.forEach(function (c) { out.push({ key:c.id, label:c.name, type:c.type || 'text', custom:true }); });
+  return out;
+}
+function univerAppSignature() {
+  var cols = univerSheetColumns();
+  var body = lots.map(function (r) { return cols.map(function (c) {
+    var v = getLotField(r, c.key);
+    return v === undefined ? null : v;
+  }); });
+  var str = JSON.stringify([cols.map(function (c) { return [c.key,c.label,c.type]; }), body]);
+  var h = 2166136261;
+  for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36) + '-' + str.length;
+}
+function univerSetStatus(message, kind) {
+  var text = document.getElementById('univerSheetStatus');
+  var dot = document.getElementById('univerStatusDot');
+  if (text) text.textContent = message;
+  if (dot) dot.className = 'univer-status-dot ' + (kind || 'ready');
+}
+function univerSetLoadProgress(title, copy, percent) {
+  var t = document.getElementById('univerLoadingTitle');
+  var c = document.getElementById('univerLoadingCopy');
+  var b = document.getElementById('univerProgressBar');
+  if (t && title) t.textContent = title;
+  if (c && copy) c.textContent = copy;
+  if (b && percent != null) b.style.width = Math.max(5, Math.min(100, percent)) + '%';
+}
+function univerShowLoading(show) {
+  var el = document.getElementById('univerLoading');
+  if (el) el.hidden = !show;
+}
+function univerCdnUrls(path) {
+  return [
+    'https://cdn.jsdelivr.net/npm/' + path,
+    'https://unpkg.com/' + path
+  ];
+}
+function univerLoadTag(kind, path, id) {
+  var urls = univerCdnUrls(path);
+  function attempt(n) {
+    if (n >= urls.length) return Promise.reject(new Error('Could not download ' + path));
+    return new Promise(function (resolve, reject) {
+      var tagId = id + '-' + n;
+      var old = document.getElementById(tagId);
+      if (old && old.getAttribute('data-loaded') === '1') { resolve(); return; }
+      if (old) old.remove();
+      var el;
+      if (kind === 'css') {
+        el = document.createElement('link'); el.rel = 'stylesheet'; el.href = urls[n];
+      } else {
+        el = document.createElement('script'); el.src = urls[n]; el.async = false;
+      }
+      el.id = tagId;
+      el.crossOrigin = 'anonymous';
+      el.setAttribute('data-univer-asset', '1');
+      el.onload = function () { el.setAttribute('data-loaded', '1'); resolve(); };
+      el.onerror = function () { try { el.remove(); } catch (ignore) {} reject(new Error('Could not load ' + urls[n])); };
+      document.head.appendChild(el);
+    }).catch(function () { return attempt(n + 1); });
+  }
+  return attempt(0);
+}
+function univerLoadScript(path, id) { return univerLoadTag('script', path, id); }
+function univerLoadCss(path, id) { return univerLoadTag('css', path, id); }
+function univerPackagePath(name, tail) { return '@univerjs/' + name + '@' + UNIVER_VERSION + '/' + tail; }
+function univerLoadLibraries() {
+  if (univerState.librariesLoaded && window.UniverPresets && window.UniverPresetSheetsCore && window.UniverPresetSheetsCoreEnUS) return Promise.resolve();
+  univerState.librariesLoaded = false;
+  univerState.loadedPacks = [];
+  univerState.loadedPlugins = [];
+  univerState.missing = [];
+  var advancedOptions = univerAdvancedOptions();
+  univerState.advancedConfigured = !!advancedOptions;
+  var enabledPacks = UNIVER_PRESET_PACKS.filter(function (p) { return !p.advanced || !!advancedOptions; });
+  var cssNames = ['core'].concat(enabledPacks.map(function (p) { return p.slug; }));
+  var cssLoads = cssNames.map(function (slug) {
+    return univerLoadCss(univerPackagePath('preset-sheets-' + slug, 'lib/index.css'), 'univer-css-' + slug).catch(function () {
+      univerState.missing.push('styles for ' + slug);
+    });
+  });
+  UNIVER_EXTRA_PLUGINS.forEach(function (p) {
+    cssLoads.push(univerLoadCss(univerPackagePath(p.slug, 'lib/index.css'), 'univer-css-' + p.slug).catch(function () {
+      univerState.missing.push('styles for ' + p.label);
+    }));
+  });
+  var chain = Promise.resolve();
+  var foundations = [
+    ['react@18.3.1/umd/react.production.min.js','react'],
+    ['react-dom@18.3.1/umd/react-dom.production.min.js','react-dom'],
+    ['rxjs@7.8.2/dist/bundles/rxjs.umd.min.js','rxjs'],
+    ['vue@3.5.21/dist/vue.global.prod.js','vue'],
+    ['echarts@5.6.0/dist/echarts.min.js','echarts'],
+    [univerPackagePath('presets','lib/umd/index.js'),'presets'],
+    [univerPackagePath('preset-sheets-core','lib/umd/index.js'),'core'],
+    [univerPackagePath('preset-sheets-core','lib/umd/locales/en-US.js'),'core-locale']
+  ];
+  foundations.forEach(function (item, i) {
+    chain = chain.then(function () {
+      univerSetLoadProgress('Loading Univer spreadsheet engine…', 'Core component ' + (i + 1) + ' of ' + foundations.length, 8 + Math.round((i / foundations.length) * 32));
+      return univerLoadScript(item[0], 'univer-js-' + item[1]);
+    });
+  });
+  chain = chain.then(function () {
+    if (!window.UniverPresets || !window.UniverCore || !window.UniverPresetSheetsCore) throw new Error('Univer core did not initialize');
+  });
+  enabledPacks.forEach(function (pack, i) {
+    chain = chain.then(function () {
+      univerSetLoadProgress('Enabling full spreadsheet tools…', pack.label + ' (' + (i + 1) + ' of ' + enabledPacks.length + ')', 42 + Math.round((i / enabledPacks.length) * 43));
+      var base = 'preset-sheets-' + pack.slug;
+      return univerLoadScript(univerPackagePath(base, 'lib/umd/index.js'), 'univer-js-' + pack.slug)
+        .then(function () { return univerLoadScript(univerPackagePath(base, 'lib/umd/locales/en-US.js'), 'univer-js-' + pack.slug + '-locale'); })
+        .then(function () {
+          if (!window[pack.global] || typeof window[pack.global][pack.ctor] !== 'function') throw new Error(pack.label + ' did not register');
+          univerState.loadedPacks.push(pack);
+        })
+        .catch(function (e) { univerState.missing.push(pack.label); });
+    });
+  });
+  UNIVER_EXTRA_PLUGINS.forEach(function (pack, i) {
+    chain = chain.then(function () {
+      univerSetLoadProgress('Enabling editor enhancements…', pack.label, 87 + i * 4);
+      return univerLoadScript(univerPackagePath(pack.slug, 'lib/umd/index.js'), 'univer-js-' + pack.slug)
+        .then(function () { return univerLoadScript(univerPackagePath(pack.slug, pack.localePath), 'univer-js-' + pack.slug + '-locale'); })
+        .then(function () {
+          if (!window[pack.global] || !window[pack.global][pack.ctor]) throw new Error(pack.label + ' did not register');
+          univerState.loadedPlugins.push(pack);
+        })
+        .catch(function () { univerState.missing.push(pack.label); });
+    });
+  });
+  return chain.then(function () { return Promise.all(cssLoads); }).then(function () {
+    univerState.librariesLoaded = true;
+  });
+}
+function univerDateToSerial(value) {
+  if (value === null || value === undefined || value === '' || value === '0') return '';
+  if (typeof value === 'number' && isFinite(value)) return value;
+  var iso = toISODate(value);
+  if (!iso) return '';
+  var m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  return Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000);
+}
+function univerSerialToDate(value) {
+  if (value === null || value === undefined || value === '' || value === 0 || value === '0') return null;
+  if (typeof value === 'number' && isFinite(value) && value > 0) {
+    var d = new Date(Date.UTC(1899, 11, 30) + Math.round(value) * 86400000);
+    return String(d.getUTCDate()).padStart(2, '0') + '.' + String(d.getUTCMonth() + 1).padStart(2, '0') + '.' + d.getUTCFullYear();
+  }
+  return dottedDate(value) || null;
+}
+function univerFormulaFor(field, sheetRow, colMap) {
+  function ref(key) { return colLetter(colMap[key]) + sheetRow; }
+  var q = ref('qty'), rate = ref('rate'), mv = ref('mat_value'), gst = ref('gst');
+  var plus = ref('mat_value_plus_gst'), tdsO = ref('tds194o'), sc = ref('service_charge_mstc');
+  var tdsH = ref('tds194h'), net = ref('net_service_charge'), gstRate = ref('gst_tds_rate');
+  var gstTds = ref('gst_tds'), tric = ref('total_receivables'), sdRec = ref('sd_received');
+  var fpRec = ref('fp_received'), fpDate = ref('fp_date'), late = ref('late_fee');
+  var lateRec = ref('late_fee_received'), total = ref('total_received'), outstanding = ref('outstanding');
+  if (field === 'mat_value') return '=ROUND(' + q + '*' + rate + ',2)';
+  if (field === 'gst') return '=ROUND(' + mv + '*18%,0)';
+  if (field === 'mat_value_plus_gst') return '=ROUND(' + mv + '+' + gst + ',0)';
+  if (field === 'tcs') return '=ROUND(' + plus + '*2%,0)';
+  if (field === 'tds194o') return '=ROUND(' + mv + '*0.1%,0)';
+  if (field === 'service_charge_mstc') return '=ROUND(' + mv + '*2.25%*118%,0)';
+  if (field === 'tds194h') return '=ROUND(' + mv + '*2.25%*2%,0)';
+  if (field === 'net_service_charge') return '=ROUND(' + sc + '-' + tdsH + ',0)';
+  if (field === 'service_charge_to_mstc') return '=ROUND(' + net + '+' + tdsO + ',0)';
+  if (field === 'gst_tds') return '=ROUND(' + mv + '*' + gstRate + ',0)';
+  if (field === 'total_receivables') return '=ROUND(' + mv + '*117.65%-' + gstTds + ',0)';
+  if (field === 'sd_expected') return '=ROUND(' + mv + '*25%,0)';
+  if (field === 'fp_expected') return '=ROUND(' + mv + '*92.65%-' + gstTds + ',0)';
+  if (field === 'late_fee') {
+    var paid = 'IF(ISBLANK(' + fpDate + '),IF(' + sdRec + '+' + fpRec + '+' + lateRec + '>=' + tric + ',DATE(2026,8,24),DATE(2026,8,31)),' + fpDate + ')';
+    return '=IF(' + paid + '<=DATE(2026,8,24),0,ROUND(' + mv + '*CEILING((' + paid + '-DATE(2026,8,22))/7,1)*1.18%,0))';
+  }
+  if (field === 'total_received') return '=ROUND(' + sdRec + '+' + fpRec + '+' + lateRec + ',0)';
+  if (field === 'outstanding') return '=ROUND(' + tric + '+' + late + '-' + total + ',0)';
+  if (field === 'settlement_status') return '=IF(' + outstanding + '<=5,"Settled","Unsettled")';
+  return '';
+}
+function univerStyleForColumn(c, formula) {
+  if (c.key === 'gst_tds_rate') return formula ? 'computedPercent' : 'percent';
+  if (c.type === 'date') return formula ? 'computedDate' : 'date';
+  if (MONEY_FIELDS.has(c.key)) return formula ? 'computedMoney' : 'money';
+  if (c.type === 'number') return formula ? 'computedNumber' : 'number';
+  if (formula) return 'computedText';
+  return 'text';
+}
+function univerCellForLot(lot, c, rowIndex, colMap) {
+  var value = getLotField(lot, c.key);
+  if (c.key === 'gst_tds_rate') value = numOr(value) / 100;
+  else if (c.type === 'date') value = univerDateToSerial(value);
+  else if (c.type === 'number') value = (value === '' || value === null || value === undefined) ? '' : numOr(value);
+  else value = value === null || value === undefined ? '' : String(value);
+  var formula = UNIVER_FORMULA_FIELDS[c.key] ? univerFormulaFor(c.key, rowIndex + 1, colMap) : '';
+  var cell = { v:value, t:typeof value === 'number' ? 2 : 1, s:univerStyleForColumn(c, !!formula) };
+  if (formula) cell.f = formula;
+  return cell;
+}
+function univerBuildFreshWorkbook() {
+  var cols = univerSheetColumns();
+  var colMap = {};
+  cols.forEach(function (c, i) { colMap[c.key] = i; });
+  var cellData = { 0:{} }, columnData = {}, rowData = { 0:{ h:42 } };
+  cols.forEach(function (c, i) {
+    cellData[0][i] = { v:c.label, t:1, s:'header', custom:{ scrapsaleField:c.key } };
+    var width = 128;
+    if (c.key === 'lot_name') width = 330;
+    else if (c.key === 'buyer') width = 245;
+    else if (c.type === 'date') width = 122;
+    else if (c.key === 'invoice_no' || c.key === 'sap_document_date') width = 155;
+    else if (c.key === 'settlement_status') width = 138;
+    else if (c.key === 'unit') width = 74;
+    else if (c.key === 'qty' || c.key === 'auction' || c.key === 'lot_no') width = 96;
+    columnData[i] = { w:width, hd:0 };
+  });
+  lots.forEach(function (lot, r) {
+    var rr = r + 1;
+    cellData[rr] = {};
+    rowData[rr] = { h:28 };
+    cols.forEach(function (c, ci) { cellData[rr][ci] = univerCellForLot(lot, c, rr, colMap); });
+  });
+  var guideRows = [
+    ['ScrapSale Pro × Univer', 'Full spreadsheet workspace'],
+    ['', ''],
+    ['Workbook guide', 'Use the Lot Data tab for dashboard-connected records. Add any other sheet for analysis, scratch work, pivots or charts.'],
+    ['Save to Dashboard', 'Applies Lot Data rows and newly added columns to KPIs, Buyer Ledger Analytics, exports and app storage.'],
+    ['Workbook autosave', 'Values, formatting, comments, drawings and extra sheets are stored locally in this browser.'],
+    ['Formula columns', 'Blue-tinted cells contain the live receivables formulas; overwrite a formula only when you intentionally want a manual result.'],
+    ['Keyboard & menus', 'Use Univer shortcuts, the full ribbon, sheet tabs and right-click context menus exactly as in a spreadsheet app.'],
+    ['Advanced tools', 'Charts, pivot tables, shapes, print and workbook exchange follow Univer Pro license/server limits.'],
+    ['', ''],
+    ['Enabled features', 'Formatting · formulas · number formats · freeze panes · clipboard · fill handle · sort · filter · validation · conditional formatting · tables · links · images · notes · comments · find/replace · zen editor']
+  ];
+  var guideCellData = {};
+  guideRows.forEach(function (row, r) {
+    guideCellData[r] = {};
+    row.forEach(function (v, c) { guideCellData[r][c] = { v:v, t:1, s:r === 0 ? 'guideTitle' : (c === 0 && v ? 'guideLabel' : 'guideText') }; });
+  });
+  return {
+    id:'scrapsale-univer-workbook', name:'ScrapSale Pro — Univer Workbook', appVersion:UNIVER_VERSION, locale:'enUS',
+    styles:{
+      header:{ bg:{rgb:'#0f766e'}, cl:{rgb:'#ffffff'}, bl:1, fs:10, ht:2, vt:2, tb:1 },
+      text:{ vt:2 }, number:{ n:{pattern:'#,##0.00'}, ht:3, vt:2 },
+      money:{ n:{pattern:'"₹"#,##0;[Red]-"₹"#,##0'}, ht:3, vt:2 },
+      percent:{ n:{pattern:'0.00%'}, ht:3, vt:2 }, date:{ n:{pattern:'dd.mm.yyyy'}, ht:2, vt:2 },
+      computedText:{ bg:{rgb:'#eaf6ff'}, cl:{rgb:'#0f172a'}, vt:2 },
+      computedNumber:{ bg:{rgb:'#eaf6ff'}, cl:{rgb:'#0f172a'}, n:{pattern:'#,##0.00'}, ht:3, vt:2 },
+      computedMoney:{ bg:{rgb:'#eaf6ff'}, cl:{rgb:'#0f172a'}, n:{pattern:'"₹"#,##0;[Red]-"₹"#,##0'}, ht:3, vt:2 },
+      computedPercent:{ bg:{rgb:'#eaf6ff'}, cl:{rgb:'#0f172a'}, n:{pattern:'0.00%'}, ht:3, vt:2 },
+      computedDate:{ bg:{rgb:'#eaf6ff'}, cl:{rgb:'#0f172a'}, n:{pattern:'dd.mm.yyyy'}, ht:2, vt:2 },
+      guideTitle:{ bg:{rgb:'#0f766e'}, cl:{rgb:'#ffffff'}, bl:1, fs:15, vt:2 },
+      guideLabel:{ bg:{rgb:'#ecfeff'}, cl:{rgb:'#155e75'}, bl:1, vt:2 },
+      guideText:{ cl:{rgb:'#334155'}, tb:1, vt:2 }
+    },
+    sheetOrder:[UNIVER_DATA_SHEET_ID, UNIVER_GUIDE_SHEET_ID],
+    sheets:(function () {
+      var s = {};
+      s[UNIVER_DATA_SHEET_ID] = {
+        id:UNIVER_DATA_SHEET_ID, name:'Lot Data', tabColor:'#06b6d4', hidden:0,
+        rowCount:Math.max(250, lots.length + 100), columnCount:Math.max(50, cols.length + 10), zoomRatio:.9,
+        freeze:{ startRow:1, startColumn:0, ySplit:1, xSplit:0 }, scrollTop:0, scrollLeft:0,
+        defaultColumnWidth:110, defaultRowHeight:26, mergeData:[], cellData:cellData,
+        rowData:rowData, columnData:columnData, showGridlines:1,
+        rowHeader:{width:46,hidden:0}, columnHeader:{height:24,hidden:0}, rightToLeft:0
+      };
+      s[UNIVER_GUIDE_SHEET_ID] = {
+        id:UNIVER_GUIDE_SHEET_ID, name:'Workbook Guide', tabColor:'#7c3aed', hidden:0,
+        rowCount:60, columnCount:12, zoomRatio:1,
+        freeze:{ startRow:1, startColumn:0, ySplit:1, xSplit:0 }, scrollTop:0, scrollLeft:0,
+        defaultColumnWidth:110, defaultRowHeight:30, mergeData:[], cellData:guideCellData,
+        rowData:{0:{h:48}}, columnData:{0:{w:175,hd:0},1:{w:720,hd:0}}, showGridlines:1,
+        rowHeader:{width:46,hidden:0}, columnHeader:{height:24,hidden:0}, rightToLeft:0
+      };
+      return s;
+    })(), resources:[]
+  };
+}
+function univerReadSavedWorkbook() {
+  try {
+    var raw = storage.get(UNIVER_WORKBOOK_KEY);
+    if (!raw) return null;
+    var saved = JSON.parse(raw);
+    if (!saved || saved.version !== 2 || !saved.snapshot || saved.baseSignature !== univerAppSignature()) return null;
+    return saved;
+  } catch (e) { return null; }
+}
+function univerPersistWorkbook() {
+  if (!univerState.ready || !univerState.workbook) return;
+  try {
+    var snapshot = univerState.workbook.save();
+    var payload = JSON.stringify({
+      version:2, sdk:UNIVER_VERSION, savedAt:Date.now(), dirty:!!univerState.dirty,
+      baseSignature:univerState.syncedSignature || univerAppSignature(), snapshot:snapshot
+    });
+    if (payload.length > 4500000) {
+      univerSetStatus('Workbook is open, but its local snapshot is too large for browser storage.', univerState.dirty ? 'dirty' : 'ready');
+      return;
+    }
+    window.localStorage.setItem(UNIVER_WORKBOOK_KEY, payload);
+  } catch (e) {
+    /* Browser storage can be unavailable in sandboxed previews; the live workbook still works. */
+  }
+}
+function univerSchedulePersist() {
+  if (univerState.persistTimer) clearTimeout(univerState.persistTimer);
+  univerState.persistTimer = setTimeout(function () { univerState.persistTimer = null; univerPersistWorkbook(); }, 1200);
+}
+function univerMarkDirty(message) {
+  if (univerState.suppress) return;
+  univerState.dirty = true;
+  univerSetStatus(message || 'Workbook changed · Save to Dashboard to update the app.', 'dirty');
+  univerSchedulePersist();
+}
+function univerDataSheet() {
+  if (!univerState.workbook) return null;
+  var sheets = univerState.workbook.getSheets ? univerState.workbook.getSheets() : [];
+  for (var i = 0; i < sheets.length; i++) if (sheets[i].getSheetId && sheets[i].getSheetId() === UNIVER_DATA_SHEET_ID) return sheets[i];
+  for (var j = 0; j < sheets.length; j++) if (sheets[j].getSheetName && sheets[j].getSheetName() === 'Lot Data') return sheets[j];
+  return null;
+}
+function univerRegisterChangeBridge() {
+  var api = univerState.api, wb = univerState.workbook;
+  if (!api || !wb) return;
+  try {
+    univerState.valueDisposable = api.addEvent(api.Event.SheetValueChanged, function () { univerMarkDirty('Cell values changed · Save to Dashboard to update the app.'); });
+  } catch (ignore) {}
+  try {
+    univerState.commandDisposable = wb.onCommandExecuted(function (command) {
+      if (univerState.suppress) return;
+      var id = String(command && command.id || '');
+      if (/selection|scroll|pointer|hover|focus|activate|formula-calculation|render/i.test(id)) return;
+      univerMarkDirty('Workbook changed · Save to Dashboard to update the app.');
+    });
+  } catch (ignore2) {}
+}
+function univerPresetInstances(excludeAdvanced) {
+  var presets = [];
+  presets.push(window.UniverPresetSheetsCore.UniverSheetsCorePreset({
+    container:'univerSheetHost', header:true, toolbar:true, ribbonType:'classic', formulaBar:true,
+    statusBarStatistic:true,
+    footer:{ sheetBar:true, statisticBar:true, menus:true, zoomSlider:true, addSheetButtonConfig:{show:true,defaultRowCount:1000,defaultColumnCount:26} },
+    contextMenu:true,
+    menu:{ 'sheet.command.smart-toggle-filter':{hidden:false} },
+    sheets:{ autoHeightForMergedCells:true, protectedRangeShadow:'non-editable' }
+  }));
+  univerState.loadedPacks.forEach(function (pack) {
+    if (excludeAdvanced && pack.advanced) return;
+    var ctor = window[pack.global] && window[pack.global][pack.ctor];
+    if (!ctor) return;
+    if (pack.advanced) {
+      var options = univerAdvancedOptions();
+      if (options) presets.push(ctor(options));
+    } else presets.push(ctor());
+  });
+  return presets;
+}
+function univerLocalePacks() {
+  var packs = [window.UniverPresetSheetsCoreEnUS];
+  univerState.loadedPacks.forEach(function (pack) { if (window[pack.locale]) packs.push(window[pack.locale]); });
+  univerState.loadedPlugins.forEach(function (pack) { if (window[pack.locale]) packs.push(window[pack.locale]); });
+  return packs.filter(Boolean);
+}
+function univerPluginInstances() {
+  var plugins = [];
+  univerState.loadedPlugins.forEach(function (pack) {
+    var plugin = window[pack.global] && window[pack.global][pack.ctor];
+    if (plugin) plugins.push(plugin);
+  });
+  return plugins;
+}
+function univerStopAdvancedGuard() {
+  if (univerState.advancedGuardTimer) clearTimeout(univerState.advancedGuardTimer);
+  univerState.advancedGuardTimer = null;
+  var guard = univerState.advancedGuard;
+  if (guard) {
+    try { window.removeEventListener('error', guard.error); } catch (ignore) {}
+    try { window.removeEventListener('unhandledrejection', guard.rejection); } catch (ignore2) {}
+  }
+  univerState.advancedGuard = null;
+}
+function univerInitialize() {
+  var core = window.UniverCore;
+  var locale = core.LocaleType.EN_US;
+  var saved = univerReadSavedWorkbook();
+  var workbookData = saved ? saved.snapshot : univerBuildFreshWorkbook();
+  var hasAdvanced = univerState.loadedPacks.some(function (p) { return !!p.advanced; });
+  var generation = ++univerState.generation;
+  var advancedIssues = [];
+  if (hasAdvanced) {
+    var rememberAdvancedIssue = function (event) {
+      var reason = event && (event.error || event.reason || event.message);
+      var message = String(reason && (reason.stack || reason.message) || reason || '');
+      if (!/\[redi\]|DependencyNotFound|QuantityCheck|registered by any injector|dependency item\(s\)/i.test(message)) return;
+      advancedIssues.push(message);
+      if (event && event.preventDefault) event.preventDefault();
+    };
+    univerState.advancedGuard = { error:rememberAdvancedIssue, rejection:rememberAdvancedIssue };
+    window.addEventListener('error', rememberAdvancedIssue);
+    window.addEventListener('unhandledrejection', rememberAdvancedIssue);
+  }
+  function start(excludeAdvanced) {
+    var localePacks = univerLocalePacks();
+    var merged = core.mergeLocales.apply(null, localePacks);
+    var locales = {}; locales[locale] = merged;
+    var created = null;
+    try {
+      created = window.UniverPresets.createUniver({
+        locale:locale, locales:locales,
+        darkMode:document.documentElement.getAttribute('data-theme') !== 'light',
+        presets:univerPresetInstances(excludeAdvanced), plugins:univerPluginInstances()
+      });
+      var workbook = created.univerAPI.createWorkbook(workbookData);
+      if (!workbook && created.univerAPI.getActiveWorkbook) workbook = created.univerAPI.getActiveWorkbook();
+      if (!workbook) throw new Error('Univer did not create a workbook');
+      return { created:created, workbook:workbook };
+    } catch (e) {
+      try { if (created && created.univerAPI && created.univerAPI.dispose) created.univerAPI.dispose(); } catch (ignore) {}
+      try { if (created && created.univer && created.univer.dispose) created.univer.dispose(); } catch (ignore2) {}
+      var host = document.getElementById('univerSheetHost');
+      if (host) host.innerHTML = '';
+      throw e;
+    }
+  }
+  var runtime;
+  try {
+    runtime = start(false);
+  } catch (initialError) {
+    if (!hasAdvanced) throw initialError;
+    /* A missing/invalid Pro service must not take the standard editor down with it. */
+    univerStopAdvancedGuard();
+    univerState.advancedFallback = true;
+    univerState.loadedPacks = univerState.loadedPacks.filter(function (p) { return !p.advanced; });
+    univerState.missing.push('Pro charts, pivots & print (initialization failed)');
+    runtime = start(true);
+  }
+  var created = runtime.created;
+  univerState.univer = created.univer;
+  univerState.api = created.univerAPI;
+  window.univer = created.univer;
+  window.univerAPI = created.univerAPI;
+  univerState.workbook = runtime.workbook;
+  univerState.syncedSignature = saved ? saved.baseSignature : univerAppSignature();
+  univerState.dirty = !!(saved && saved.dirty);
+  univerState.ready = true;
+  univerState.loading = false;
+  univerState.failed = false;
+  univerState.suppress = true;
+  univerShowLoading(false);
+  var retry = document.getElementById('univerRetryBtn');
+  if (retry) retry.hidden = true;
+  var featureCount = 1 + univerState.loadedPacks.length + univerState.loadedPlugins.length;
+  var suffix = univerState.missing.length ? ' · ' + univerState.missing.length + ' optional component(s) unavailable' : '';
+  univerSetStatus((saved ? 'Workbook restored' : 'Workbook ready') + ' · ' + lots.length + ' rows · ' + univerSheetColumns().length + ' columns · ' + featureCount + ' feature modules' + suffix, univerState.dirty ? 'dirty' : 'ready');
+  univerRegisterChangeBridge();
+  if (hasAdvanced && !univerState.advancedFallback) {
+    /* Some Pro failures are raised asynchronously by Univer lifecycle hooks instead of
+       being thrown by createUniver(). Detect those briefly, then rebuild with the stable
+       open-source suite so a bad license/server setup can never strand the worksheet. */
+    univerState.advancedGuardTimer = setTimeout(function () {
+      if (generation !== univerState.generation) return;
+      if (!advancedIssues.length) { univerStopAdvancedGuard(); return; }
+      univerStopAdvancedGuard();
+      /* A disposed Pro runtime can still have one queued RxJS error. Silence only the
+         recognized dependency error while that stale task drains. */
+      var staleAdvancedGuard = function (event) {
+        var reason = event && (event.error || event.reason || event.message);
+        var message = String(reason && (reason.stack || reason.message) || reason || '');
+        if (/\[redi\]|DependencyNotFound|QuantityCheck|registered by any injector|dependency item\(s\)/i.test(message) && event && event.preventDefault) event.preventDefault();
+      };
+      window.addEventListener('error', staleAdvancedGuard);
+      window.addEventListener('unhandledrejection', staleAdvancedGuard);
+      setTimeout(function () {
+        window.removeEventListener('error', staleAdvancedGuard);
+        window.removeEventListener('unhandledrejection', staleAdvancedGuard);
+      }, 2500);
+      univerDisposeWorkbook();
+      univerState.advancedFallback = true;
+      univerState.loadedPacks = univerState.loadedPacks.filter(function (p) { return !p.advanced; });
+      univerState.missing.push('Pro charts, pivots & print (configuration unavailable)');
+      univerShowLoading(true);
+      univerSetLoadProgress('Opening the standard spreadsheet suite…', 'The optional Pro configuration was unavailable; all standard tools remain enabled.', 96);
+      univerSetStatus('Pro add-on unavailable · reopening the standard workbook…', 'busy');
+      ensureUniverSheet().catch(function () {});
+    }, 900);
+  }
+  setTimeout(function () {
+    if (generation !== univerState.generation || !univerState.ready) return;
+    univerState.suppress = false;
+    univerPersistWorkbook();
+    try { window.dispatchEvent(new Event('resize')); } catch (ignore) {}
+    var sheet = univerDataSheet();
+    try { if (sheet && sheet.refreshCanvas) sheet.refreshCanvas(); } catch (ignore2) {}
+  }, 1500);
+  return created.univerAPI;
+}
+function ensureUniverSheet() {
+  if (univerState.ready) return Promise.resolve(univerState.api);
+  if (univerState.loadPromise) return univerState.loadPromise;
+  univerState.loading = true;
+  univerState.failed = false;
+  univerShowLoading(true);
+  univerSetStatus('Loading the full Univer spreadsheet engine…', 'busy');
+  univerSetLoadProgress('Preparing full spreadsheet workspace…', 'Downloading the pinned Univer engine and feature modules.', 6);
+  univerState.loadPromise = univerLoadLibraries().then(function () {
+    univerSetLoadProgress('Creating your workbook…', 'Loading ' + lots.length + ' lots with live formulas and formatting.', 96);
+    return new Promise(function (resolve) {
+      requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+    });
+  }).then(function () {
+    var api = univerInitialize();
+    univerSetLoadProgress('Workbook ready', 'The full spreadsheet ribbon is available.', 100);
+    return api;
+  }).catch(function (e) {
+    univerState.loading = false;
+    univerState.failed = true;
+    univerState.loadPromise = null;
+    univerShowLoading(true);
+    univerSetLoadProgress('Spreadsheet could not load', (e && e.message ? e.message : String(e)) + '. Check the connection and retry.', 100);
+    univerSetStatus('Univer failed to load: ' + (e && e.message ? e.message : e), 'error');
+    var retry = document.getElementById('univerRetryBtn');
+    if (retry) retry.hidden = false;
+    throw e;
+  });
+  return univerState.loadPromise;
 }
 function renderUniverSheet() {
-  var table = document.getElementById('univerSheet');
-  if (!table) return;
-  var cols = univerSheetColumns();
-  table.querySelector('thead').innerHTML = '<tr><th class="row-num">#</th>' + cols.map(function (c) { return '<th>' + escHtml(c.label) + '</th>'; }).join('') + '</tr>';
-  table.querySelector('tbody').innerHTML = lots.map(function (r, i) {
-    return '<tr data-lot-index="' + i + '"><td class="row-num">' + (i + 1) + '</td>' + cols.map(function (c) {
-      return '<td contenteditable="true" spellcheck="false" data-field="' + escHtml(c.key) + '">' + escHtml(getLotField(r, c.key) == null ? '' : getLotField(r, c.key)) + '</td>';
-    }).join('') + '</tr>';
-  }).join('');
-  var status = document.getElementById('univerSheetStatus');
-  if (status) status.textContent = lots.length + ' rows · ' + cols.length + ' editable columns';
+  if (!document.getElementById('univerSheetHost')) return;
+  if (!univerState.ready) {
+    ensureUniverSheet().catch(function () {});
+    return;
+  }
+  var appSig = univerAppSignature();
+  if (appSig !== univerState.syncedSignature) {
+    univerSetStatus(univerState.dirty ? 'Dashboard and workbook both changed · save or reload carefully.' : 'Dashboard data changed · Reload app data to refresh this workbook.', 'dirty');
+  } else {
+    var featureCount = 1 + univerState.loadedPacks.length + univerState.loadedPlugins.length;
+    univerSetStatus((univerState.dirty ? 'Workbook has changes' : 'Workbook ready') + ' · ' + lots.length + ' app rows · ' + featureCount + ' feature modules', univerState.dirty ? 'dirty' : 'ready');
+  }
+  setTimeout(function () {
+    try { window.dispatchEvent(new Event('resize')); } catch (ignore) {}
+    var sheet = univerState.workbook && univerState.workbook.getActiveSheet ? univerState.workbook.getActiveSheet() : null;
+    try { if (sheet && sheet.refreshCanvas) sheet.refreshCanvas(); } catch (ignore2) {}
+  }, 80);
 }
-function saveUniverSheet() {
-  var table = document.getElementById('univerSheet');
-  if (!table) return;
-  pushHistory();
-  table.querySelectorAll('tbody tr').forEach(function (tr) {
-    var i = +tr.getAttribute('data-lot-index');
-    if (!lots[i]) return;
-    tr.querySelectorAll('td[data-field]').forEach(function (cell) { setLotField(lots[i], cell.getAttribute('data-field'), cell.textContent.trim()); });
+function univerNormalizeHeader(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/\u00ad/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function univerHeaderAliases() {
+  var map = {};
+  univerSheetColumns().forEach(function (c) {
+    map[univerNormalizeHeader(c.label)] = c.key;
+    map[univerNormalizeHeader(c.key)] = c.key;
   });
-  saveState();
-  renderAll();
-  renderUniverSheet();
-  showToast('Univer sheet changes saved to the app', 'ok');
+  DETAIL_COLS.forEach(function (c) { map[univerNormalizeHeader(c[1])] = c[0]; });
+  map['quantity'] = 'qty'; map['bid sheet'] = 'auction'; map['lot number'] = 'lot_no';
+  map['lot no'] = 'lot_no'; map['tric'] = 'total_receivables'; map['short excess payment'] = 'outstanding';
+  return map;
+}
+function univerKnownField(key) {
+  return DEFAULT_DETAIL_KEYS.indexOf(key) !== -1 || !!customColById(key);
+}
+function univerHeaderField(value, data, aliases) {
+  var meta = data && data.custom && data.custom.scrapsaleField;
+  if (meta && univerKnownField(meta)) return meta;
+  return aliases[univerNormalizeHeader(value)] || null;
+}
+function univerReadDataMatrix() {
+  var sheet = univerDataSheet();
+  if (!sheet) throw new Error('The Lot Data sheet was deleted. Use Reload app data to recreate it.');
+  var used = sheet.getDataRange();
+  var bounds = used.getRange();
+  var maxRow = Math.max(0, bounds.endRow);
+  var maxCol = Math.max(0, bounds.endColumn);
+  var range = sheet.getRange(0, 0, maxRow + 1, maxCol + 1);
+  return { sheet:sheet, values:range.getValues(), cells:range.getCellDatas ? range.getCellDatas() : [], maxRow:maxRow, maxCol:maxCol };
+}
+function univerFindHeaderRow(matrix, aliases) {
+  var best = { row:0, score:-1 };
+  var limit = Math.min(matrix.values.length, 25);
+  for (var r = 0; r < limit; r++) {
+    var score = 0;
+    for (var c = 0; c < matrix.values[r].length; c++) {
+      if (univerHeaderField(matrix.values[r][c], matrix.cells[r] && matrix.cells[r][c], aliases)) score++;
+    }
+    if (score > best.score) best = {row:r,score:score};
+  }
+  if (best.score < 4) throw new Error('Could not find the Lot Data header row. Keep at least four original column headers.');
+  return best.row;
+}
+function univerIsFormulaError(v) { return typeof v === 'string' && /^#(REF|VALUE|NAME|DIV\/0|N\/A|NUM|NULL|SPILL|CALC|ERROR)[!?]?/i.test(v.trim()); }
+function saveUniverSheet() {
+  if (!univerState.ready) {
+    ensureUniverSheet().then(saveUniverSheet).catch(function () {});
+    return;
+  }
+  univerSetStatus('Reading Lot Data and recalculating the dashboard…', 'busy');
+  try {
+    var matrix = univerReadDataMatrix();
+    var aliases = univerHeaderAliases();
+    var headerRow = univerFindHeaderRow(matrix, aliases);
+    var headers = matrix.values[headerRow] || [];
+    var headerCells = matrix.cells[headerRow] || [];
+    var mapping = [], unknownNames = [], knownSeen = {};
+    headers.forEach(function (h, c) {
+      var key = univerHeaderField(h, headerCells[c], aliases);
+      var name = String(h === null || h === undefined ? '' : h).replace(/\u00ad/g, '').trim();
+      if (key && !knownSeen[key]) { mapping[c] = {key:key}; knownSeen[key] = true; }
+      else if (name) {
+        var existing = customCols.filter(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })[0];
+        if (existing) mapping[c] = {key:existing.id};
+        else mapping[c] = {unknown:name};
+      }
+    });
+    var parsed = [];
+    for (var r = headerRow + 1; r < matrix.values.length; r++) {
+      var row = matrix.values[r] || [];
+      var raw = { _extra:{} }, hasIdentity = false, hasAnything = false, rowError = '';
+      mapping.forEach(function (m, c) {
+        if (!m) return;
+        var v = row[c];
+        if (univerIsFormulaError(v) && m.key && UNIVER_FORMULA_FIELDS[m.key]) rowError = String(v);
+        var nonblank = !(v === null || v === undefined || v === '');
+        if (nonblank) hasAnything = true;
+        if (m.key) {
+          if (UNIVER_DATE_FIELDS[m.key]) v = univerSerialToDate(v);
+          else if (m.key === 'gst_tds_rate' && typeof v === 'number' && Math.abs(v) <= 1) v = v * 100;
+          setLotField(raw, m.key, v === null || v === undefined ? '' : v);
+          if (['lot_no','buyer','lot_name','auction','qty','rate'].indexOf(m.key) !== -1 && nonblank && String(v) !== '0') hasIdentity = true;
+        } else if (m.unknown) {
+          raw._extra[m.unknown] = v === null || v === undefined ? '' : v;
+          if (nonblank && unknownNames.indexOf(m.unknown) === -1) unknownNames.push(m.unknown);
+        }
+      });
+      if (!hasIdentity && !hasAnything) continue;
+      if (!hasIdentity) continue; /* Ignore totals, notes, and empty formula-only rows. */
+      if (rowError) throw new Error('Formula error ' + rowError + ' on sheet row ' + (r + 1) + '. Fix it before saving.');
+      var lot = normalizeLot(raw);
+      if (raw.mat_value === undefined || raw.mat_value === null || raw.mat_value === '') recalcRow(lot, ['qty','rate','unit','gst_tds_rate']);
+      parsed.push(lot);
+    }
+    if (!parsed.length) throw new Error('No lot rows were found below the header.');
+    pushHistory();
+    adoptCustomColsFromLots(parsed, unknownNames);
+    /* Give newly adopted columns the same stable identity metadata as built-in headers,
+       so users can rename or move them in Univer without breaking the dashboard bridge. */
+    mapping.forEach(function (m, c) {
+      if (!m || !m.unknown) return;
+      var adopted = customCols.filter(function (x) { return x.name.toLowerCase() === m.unknown.toLowerCase(); })[0];
+      if (!adopted) return;
+      try {
+        var headerRange = matrix.sheet.getRange(headerRow, c);
+        if (headerRange && headerRange.setCustomMetaData) headerRange.setCustomMetaData({ scrapsaleField:adopted.id });
+      } catch (ignore) {}
+      parsed.forEach(function (row) {
+        if (row._extra && Object.prototype.hasOwnProperty.call(row._extra, m.unknown)) delete row._extra[m.unknown];
+      });
+    });
+    lots = parsed;
+    selectedGroup = null;
+    saveState();
+    renderAll();
+    univerState.syncedSignature = univerAppSignature();
+    univerState.dirty = false;
+    univerPersistWorkbook();
+    univerSetStatus('Saved to Dashboard · ' + lots.length + ' rows · ' + univerSheetColumns().length + ' columns', 'ready');
+    showToast('Univer Lot Data saved to the dashboard (' + lots.length + ' rows)', 'ok');
+  } catch (e) {
+    univerSetStatus('Save failed: ' + (e.message || e), 'error');
+    showToast('Could not save Univer data: ' + (e.message || e), 'error');
+  }
 }
 function addUniverRow() {
-  pushHistory();
-  lots.push({ lot_no: lots.length + 1, buyer: '', lot_name: '', auction: '', unit: '', qty: 0, rate: 0 });
-  saveState();
-  renderUniverSheet();
-  showToast('New row added — edit it and save changes', 'ok');
+  ensureUniverSheet().then(function () {
+    var matrix = univerReadDataMatrix();
+    var aliases = univerHeaderAliases();
+    var headerRow = univerFindHeaderRow(matrix, aliases);
+    var headers = matrix.values[headerRow] || [];
+    var headerCells = matrix.cells[headerRow] || [];
+    var colMap = {}, fieldAt = {};
+    headers.forEach(function (h, c) {
+      var key = univerHeaderField(h, headerCells[c], aliases);
+      if (key && colMap[key] === undefined) { colMap[key] = c; fieldAt[c] = key; }
+    });
+    DEFAULT_DETAIL_KEYS.forEach(function (k) { if (colMap[k] === undefined) throw new Error('Required column missing: ' + fieldLabel(k)); });
+    var targetRow = matrix.maxRow + 1;
+    var values = [];
+    for (var c = 0; c <= matrix.maxCol; c++) {
+      var key = fieldAt[c];
+      if (!key) { values[c] = ''; continue; }
+      var formula = UNIVER_FORMULA_FIELDS[key] ? univerFormulaFor(key, targetRow + 1, colMap) : '';
+      if (formula) values[c] = { f:formula };
+      else if (key === 'unit') values[c] = 'NO';
+      else if (key === 'gst_tds_rate') values[c] = 0;
+      else values[c] = '';
+    }
+    matrix.sheet.getRange(targetRow, 0, 1, values.length).setValues([values]);
+    try { matrix.sheet.getRange(targetRow, colMap.qty).activate(); } catch (ignore) {}
+    univerMarkDirty('New data row added · enter values, then Save to Dashboard.');
+    showToast('New Univer data row added', 'ok');
+  }).catch(function (e) { showToast('Could not add row: ' + (e.message || e), 'error'); });
 }
+function univerDisposeWorkbook() {
+  var maximized = document.getElementById('univerFullscreenTarget');
+  if (maximized && maximized.classList.contains('univer-maximized')) toggleUniverMaximize(false);
+  univerStopAdvancedGuard();
+  univerState.generation++;
+  if (univerState.persistTimer) clearTimeout(univerState.persistTimer);
+  univerState.persistTimer = null;
+  try { if (univerState.valueDisposable) univerState.valueDisposable.dispose(); } catch (ignore) {}
+  try { if (univerState.commandDisposable) univerState.commandDisposable.dispose(); } catch (ignore2) {}
+  try { if (univerState.api && univerState.api.dispose) univerState.api.dispose(); } catch (ignore3) {}
+  try { if (univerState.univer && univerState.univer.dispose) univerState.univer.dispose(); } catch (ignore4) {}
+  var host = document.getElementById('univerSheetHost');
+  if (host) host.innerHTML = '';
+  univerState.univer = null; univerState.api = null; univerState.workbook = null;
+  univerState.ready = false; univerState.loading = false; univerState.failed = false;
+  univerState.loadPromise = null; univerState.dirty = false; univerState.suppress = true;
+  univerState.valueDisposable = null; univerState.commandDisposable = null;
+}
+function reloadUniverSheetFromApp(force) {
+  if (!force && univerState.dirty && !window.confirm('Discard workbook-only changes and rebuild Lot Data from the dashboard?')) return;
+  try { window.localStorage.removeItem(UNIVER_WORKBOOK_KEY); } catch (ignore) {}
+  univerDisposeWorkbook();
+  univerShowLoading(true);
+  univerSetStatus('Rebuilding workbook from current dashboard data…', 'busy');
+  ensureUniverSheet().then(function () { showToast('Univer workbook reloaded from the dashboard', 'ok'); }).catch(function () {});
+}
+function retryUniverLoad() {
+  document.querySelectorAll('[data-univer-asset]:not([data-loaded="1"])').forEach(function (el) { try { el.remove(); } catch (ignore) {} });
+  univerState.loadPromise = null; univerState.failed = false;
+  ensureUniverSheet().catch(function () {});
+}
+function toggleUniverMaximize(force) {
+  var shell = document.getElementById('univerFullscreenTarget');
+  if (!shell) return;
+  var on = force === undefined ? !shell.classList.contains('univer-maximized') : !!force;
+  if (on && !shell.classList.contains('univer-maximized')) {
+    /* backdrop-filter/transform on an ancestor makes CSS fixed positioning relative to
+       that panel. Temporarily portal the shell to <body> so maximize is truly viewport-wide. */
+    var marker = document.createComment('univer-maximize-placeholder');
+    if (shell.parentNode) shell.parentNode.insertBefore(marker, shell);
+    univerState.maxPlaceholder = marker;
+    document.body.appendChild(shell);
+  }
+  shell.classList.toggle('univer-maximized', on);
+  document.body.classList.toggle('univer-maximized-open', on);
+  if (!on && univerState.maxPlaceholder) {
+    var placeholder = univerState.maxPlaceholder;
+    if (placeholder.parentNode) placeholder.parentNode.insertBefore(shell, placeholder);
+    try { placeholder.remove(); } catch (ignore0) {}
+    univerState.maxPlaceholder = null;
+  }
+  var btn = document.getElementById('univerFullscreenBtn');
+  if (btn) btn.textContent = on ? '↙ Restore sheet' : '⛶ Maximize sheet';
+  setTimeout(function () {
+    try { window.dispatchEvent(new Event('resize')); } catch (ignore) {}
+    var sheet = univerState.workbook && univerState.workbook.getActiveSheet ? univerState.workbook.getActiveSheet() : null;
+    try { if (sheet && sheet.refreshCanvas) sheet.refreshCanvas(); } catch (ignore2) {}
+  }, 80);
+}
+window.addEventListener('beforeunload', function () { if (univerState.ready) univerPersistWorkbook(); });
+window.scrapSaleUniver = { state:univerState, ensure:ensureUniverSheet, save:saveUniverSheet, reload:reloadUniverSheetFromApp };
+
 function setView(v) {
+  if (v !== 'univer') {
+    var maximizedSheet = document.getElementById('univerFullscreenTarget');
+    if (maximizedSheet && maximizedSheet.classList.contains('univer-maximized')) toggleUniverMaximize(false);
+  }
   view = v;
   document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.view === v); });
   document.getElementById('view-dashboard').hidden = v !== 'dashboard';
@@ -8193,7 +9037,7 @@ function setView(v) {
     analytics: ['Power BI Analytics', 'Exhaustive visual analytics, realization charts, Pareto distributions, and executive KPIs'],
     data: ['Data & Backup', 'Export to Excel / HTML / PDF / CSV / TXT / JSON / Google Drive · import any of them back'],
     gsheet: ['Google Sheet', 'Live Google Sheets preview embedded in the app · paste any share link above'],
-    univer: ['Univer', 'Separate spreadsheet workspace · existing app options remain available']
+    univer: ['Univer Spreadsheet', 'Full embedded workbook · formulas, formatting, data tools, comments, drawings, and optional Pro extensions']
   };
   if (titles[v]) {
     document.getElementById('viewTitle').textContent = titles[v][0];
@@ -16371,6 +17215,10 @@ function applyTheme(theme, animate) {
     if (text) text.textContent = 'Light';
     if (themeBtn) themeBtn.setAttribute('title', 'Switch to Light Theme');
   }
+  /* Keep the embedded Univer canvas in lockstep with the app theme. */
+  if (typeof univerState !== 'undefined' && univerState.api && typeof univerState.api.toggleDarkMode === 'function') {
+    try { univerState.api.toggleDarkMode(t !== 'light'); } catch (ignore) {}
+  }
 }
 
 
@@ -16560,21 +17408,20 @@ function init() {
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.addEventListener('click', function () { setView(b.dataset.view); });
   });
-  var univerOpenApp = document.getElementById('univerOpenAppBtn');
-  if (univerOpenApp) univerOpenApp.addEventListener('click', function () { setView('dashboard'); });
   var univerDashboard = document.getElementById('univerDashboardBtn');
   if (univerDashboard) univerDashboard.addEventListener('click', function () { setView('dashboard'); });
-  var univerDownload = document.getElementById('univerDownloadBtn');
-  if (univerDownload) univerDownload.addEventListener('click', function () {
-    var btn = document.getElementById('downloadApp');
-    if (btn) btn.click();
-  });
   var univerSave = document.getElementById('univerSaveBtn');
   if (univerSave) univerSave.addEventListener('click', saveUniverSheet);
   var univerAdd = document.getElementById('univerAddRowBtn');
   if (univerAdd) univerAdd.addEventListener('click', addUniverRow);
   var univerRefresh = document.getElementById('univerRefreshBtn');
-  if (univerRefresh) univerRefresh.addEventListener('click', renderUniverSheet);
+  if (univerRefresh) univerRefresh.addEventListener('click', function () { reloadUniverSheetFromApp(false); });
+  var univerRetry = document.getElementById('univerRetryBtn');
+  if (univerRetry) univerRetry.addEventListener('click', retryUniverLoad);
+  var univerFullscreen = document.getElementById('univerFullscreenBtn');
+  if (univerFullscreen) univerFullscreen.addEventListener('click', function () { toggleUniverMaximize(); });
+  var univerExitMax = document.getElementById('univerExitMaxBtn');
+  if (univerExitMax) univerExitMax.addEventListener('click', function () { toggleUniverMaximize(false); });
   var gsInput = document.getElementById('gsheetUrlInput');
   if (gsInput) {
     gsInput.value = gsheetUrl || '';
@@ -18007,6 +18854,7 @@ function showHeaderContextMenu(x, y, th) {
     }
   });
   document.addEventListener('keydown', function (e) {
+    if (view === 'univer') return;
     if (e.key === 'Shift') {
       gridSel.shiftDown = true;
       return;
@@ -18094,6 +18942,7 @@ function showHeaderContextMenu(x, y, th) {
 
   // Excel-style Arrow Key & Ctrl + Arrow Key Navigation & Shift + Arrow Multi-Cell Range Selection
   document.addEventListener('keydown', function (e) {
+    if (view === 'univer') return;
     var isSearchInput = e.target && e.target.matches && e.target.matches('input[type="search"], input#dashSearch, input#detailSearch, input#gdriveClientId, .filter-search input');
     if (isSearchInput) return;
 
@@ -18186,6 +19035,7 @@ function showHeaderContextMenu(x, y, th) {
   });
 
   document.addEventListener('keydown', function (e) {
+    if (view === 'univer') return;
     var mod = e.ctrlKey || e.metaKey;
     if (!mod) return;
     var k = e.key.toLowerCase();
@@ -18449,6 +19299,7 @@ function initHandPanEngine() {
 
   // Keyboard shortcut: 'H' toggles hand mode; holding 'Space' temporarily activates it
   document.addEventListener('keydown', function (e) {
+    if (view === 'univer') return;
     var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     var isInput = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
     if (isInput) return;
