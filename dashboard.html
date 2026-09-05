@@ -4512,7 +4512,7 @@ th.left .th-wrap, th.center .th-wrap {
           <div class="workspace-row">
             <span class="grow">
               <b>Google Drive</b>
-              <span class="muted"> Optional OAuth Client ID for direct upload (type: Web application). Authorized JavaScript origin must match this page. Leave blank to use Download + Open Drive.</span>
+              <span class="muted"> Preconfigured Google OAuth Client ID for direct upload (Web application). Authorized JavaScript origin must match this page.</span>
             </span>
             <input type="text" id="gdriveClientId" placeholder="xxxx.apps.googleusercontent.com" style="min-width:260px"/>
           </div>
@@ -4549,7 +4549,7 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v8</span></b>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v9</span></b>
               <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
@@ -6935,7 +6935,7 @@ var detailLayoutVersion = 0;
 var buyerViewVersion = 0;
 var dataSyncVersion = 0;
 var customCols = []; /* [{id, name, type: 'text'|'number'|'date'}] */
-var gdriveClientId = '';
+var gdriveClientId = '648980578638-6rgg8ho0alk6nlebf4v8an6ackmh7dlo.apps.googleusercontent.com';
 var gdriveToken = null;
 var gsheetUrl = 'https://docs.google.com/spreadsheets/d/1ihLs7bScvTLYB-Ez-Rr5rokJebSAZyRFNsbRt7jid2Q/edit?usp=drivesdk';
 var gsheetToken = null;
