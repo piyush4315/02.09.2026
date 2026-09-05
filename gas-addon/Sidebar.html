@@ -30,11 +30,14 @@
   <div class="bar">
     <select id="tab" title="Sheet tab to edit"></select>
     <button id="reload" title="Reload from the sheet">Reload</button>
-    <button id="save" class="primary" title="Write changed cells back to the sheet">Save changes</button>
+    <button id="save" class="primary" title="Write changed cells back, recompute derived columns and the TOTAL row">Save changes</button>
+  </div>
+  <div class="bar" style="border-bottom:none; padding-top:0">
+    <button id="recalc" title="Recompute all derived columns + TOTAL row without editing">Recalculate all</button>
   </div>
   <div id="status" class="status">Loading…</div>
   <div class="wrap" id="wrap"></div>
-  <div class="hint">Only white cells are editable; grey columns are auto-calculated by the dashboard on its next sync.</div>
+  <div class="hint">White cells are editable. Grey columns (GST · TCS · TRIC · SD/FP · Outstanding…) and the TOTAL row are auto-calculated here on every save, using the same formulas as the dashboard.</div>
 
   <script>
     var META = null;
@@ -113,12 +116,21 @@
       google.script.run.withSuccessHandler(function (res) {
         btn.disabled = false;
         if (res.errors && res.errors.length) setStatus('Saved ' + res.saved + ' · ' + res.errors.join(' · '), 'err');
-        else setStatus('Saved ' + res.saved + ' cell' + (res.saved === 1 ? '' : 's') + ' to the sheet.', 'ok');
+        else setStatus('Saved ' + res.saved + ' cell' + (res.saved === 1 ? '' : 's') + ' · recalculated ' + res.recalculated + ' lots · TOTAL row updated.', 'ok');
         if (res.saved > 0) loadData(DATA.tab);
       }).withFailureHandler(function (e) {
         btn.disabled = false;
         setStatus(String(e), 'err');
       }).saveChanges(DATA.tab, changes);
+    }
+
+    function recalcAll() {
+      setStatus('Recalculating derived columns + TOTAL row…');
+      google.script.run.withSuccessHandler(function (res) {
+        if (res && res.error) { setStatus(res.error, 'err'); return; }
+        setStatus('Recalculated ' + res.recalculated + ' lots · TOTAL row updated.', 'ok');
+        loadData(DATA.tab);
+      }).withFailureHandler(function (e) { setStatus(String(e), 'err'); }).recalculateAll();
     }
 
     function escHtml(s) {
@@ -129,6 +141,7 @@
     document.getElementById('tab').addEventListener('change', function () { loadData(this.value); });
     document.getElementById('reload').addEventListener('click', function () { loadData(DATA ? DATA.tab : META.tab); });
     document.getElementById('save').addEventListener('click', save);
+    document.getElementById('recalc').addEventListener('click', recalcAll);
     loadMeta();
   </script>
 </body>
