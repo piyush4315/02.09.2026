@@ -71,7 +71,7 @@ use it (they authorize once on first use).
 
 Requires: a Google Cloud project, Marketplace SDK config, the add-on listing,
 and OAuth verification for the spreadsheet scope (sensitive). Not needed for
-personal/team use.
+personal/team use. Full plan → [`PUBLISH.md`](PUBLISH.md).
 
 ## Current limitations & follow-ups
 
@@ -97,7 +97,10 @@ personal/team use.
 
 ## Files
 
-- `Code.gs` — server logic: menu, sidebar, header detection, aliases, read/write.
+- `Code.gs` — server logic: menu, sidebar, header detection, aliases, read/write,
+  and the ported `recalcLot()` (derived columns + TOTAL row).
 - `Sidebar.html` — the client editor grid (vanilla JS + `google.script.run`).
 - `appsscript.json` — manifest (scopes: `spreadsheets.currentonly` +
   `script.container.ui`; runtime V8).
+- `INSTALL.md` — step-by-step install & test walkthrough.
+- `PUBLISH.md` — Google Workspace Marketplace publishing plan.
