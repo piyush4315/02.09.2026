@@ -4549,8 +4549,8 @@ th.left .th-wrap, th.center .th-wrap {
         <div class="gsheet-sync panel">
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
-              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v9</span></b>
-              <span class="muted" id="gsheetSyncStatus">Not connected — sign in to keep this sheet and the app in sync.</span>
+              <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v10</span></b>
+              <span class="muted" id="gsheetSyncStatus">Auto-sync on — connecting to Google…</span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
           </div>
@@ -6940,7 +6940,7 @@ var gdriveToken = null;
 var gsheetUrl = 'https://docs.google.com/spreadsheets/d/1ihLs7bScvTLYB-Ez-Rr5rokJebSAZyRFNsbRt7jid2Q/edit?usp=drivesdk';
 var gsheetToken = null;
 var gsheetSync = {
-  enabled: false,
+  enabled: true,     /* auto-sync is ON by default — the app connects & syncs on open */
   applying: false,
   lastSyncAt: 0,
   lastPullAt: 0,
@@ -13073,7 +13073,8 @@ function gsheetSyncUi() {
     if (!gsheetSync.tabs.some(function (n) { return n === cur; })) sel.value = gsheetSync.tabs[0];
   }
 }
-function gsheetGetToken(cb) {
+function gsheetGetToken(cb, opts) {
+  opts = opts || {};
   if (!gdriveClientId) {
     showToast('Add a Google OAuth Client ID in Data & Backup → Workspace first, then connect.', 'error');
     cb({ error: 'No Google OAuth Client ID configured.' });
@@ -13090,7 +13091,9 @@ function gsheetGetToken(cb) {
         cb(null, gsheetToken);
       }
     });
-    client.requestAccessToken({ prompt: gsheetToken ? '' : 'consent' });
+    /* silent: reuse the existing grant without any popup (used for the
+       automatic connect-on-open); otherwise ask for consent interactively. */
+    client.requestAccessToken({ prompt: opts.silent ? '' : (gsheetToken ? '' : 'consent') });
   }).catch(function (e) { cb({ error: e.message }); });
 }
 function gsheetConnectIfNeeded(done) {
@@ -13325,6 +13328,33 @@ function gsheetSyncOnce(opts) {
       gsheetSyncUi();
       return res;
     });
+}
+/* Startup auto-connect: brings the app into an enabled + synced state on open
+   with zero clicks. Tries a silent re-auth first (reuses the existing Google
+   grant, so no popup); if that isn't possible yet (fresh browser/consent),
+   auto-sync stays ON and one tap on "Connect & enable sync" finishes sign-in. */
+function gsheetAutoConnect() {
+  if (!gsheetSync.enabled) return;
+  var id = gsheetIdFromUrl(gsheetUrl);
+  if (!id) { gsheetSetSyncStatus('Auto-sync on — paste a Google Sheets link to start syncing.', ''); return; }
+  if (!gdriveClientId) { gsheetSetSyncStatus('Auto-sync on — add a Google OAuth Client ID to connect.', ''); return; }
+  if (gsheetToken) {
+    gsheetSyncUi();
+    gsheetSyncOnce({ silent: true }).then(function () { gsheetAutoStart(); });
+    return;
+  }
+  gsheetSetSyncStatus('Connecting to Google…', 'busy');
+  gsheetGetToken(function (err) {
+    if (err) {
+      gsheetSyncUi();
+      gsheetSetSyncStatus('Auto-sync is on — tap “Connect & enable sync” to finish signing in.', '');
+      return;
+    }
+    gsheetSync.enabled = true;
+    saveState();
+    gsheetSyncUi();
+    gsheetSyncOnce({ silent: true }).then(function () { gsheetAutoStart(); });
+  }, { silent: true });
 }
 function gsheetConnect() {
   gsheetSetSyncStatus('Connecting to Google…', 'busy');
@@ -16375,7 +16405,12 @@ function init() {
     if (gsheetToken && gsheetSync.enabled) gsheetSyncOnce({});
   });
   gsheetSyncUi();
-  if (gsheetSync.enabled && !gsheetToken) gsheetSetSyncStatus('Auto-sync is on but you are not signed in — reconnect to continue.', '');
+  /* The app starts in an enabled + synced state by itself: force auto-sync on
+     and connect automatically (no manual "enable / connect" step needed). */
+  gsheetSync.enabled = true;
+  saveState();
+  gsheetSyncUi();
+  gsheetAutoConnect();
   document.getElementById('groupBy').addEventListener('change', function (e) {
     ui.groupBy = e.target.value; selectedGroup = null;
     sortState = { table: 'pivot', key: null, dir: -1 };
