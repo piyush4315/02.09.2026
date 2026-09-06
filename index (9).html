@@ -4681,7 +4681,7 @@ body.univer-maximized-open{overflow:hidden!important}
                 <span class="univer-status-text" id="univerSheetStatus">Open this view to load the spreadsheet engine.</span>
               </div>
               <span class="univer-toolbar-spacer"></span>
-              <span class="univer-engine-label">Univer 0.25.1 · workbook autosave</span>
+              <span class="univer-engine-label">Univer 0.25.1 · IndexedDB autosave</span>
               <button class="btn" id="univerRetryBtn" type="button" hidden>Retry load</button>
             </div>
             <div class="univer-host-shell" id="univerFullscreenTarget">
@@ -4697,7 +4697,7 @@ body.univer-maximized-open{overflow:hidden!important}
               <button class="univer-exit-max" id="univerExitMaxBtn" type="button">✕ Exit maximized view</button>
             </div>
           </div>
-          <div class="univer-sheet-note"><span>ⓘ</span><span><b>Lot Data</b> is the dashboard bridge. Spreadsheet edits and workbook structure are autosaved locally; choose <b>Save to Dashboard</b> to apply rows and any new columns to the ScrapSale KPIs. Other sheets remain workbook-only. *Advanced Univer tools are enabled only when the deployment supplies its Univer Pro license and any required server endpoint.</span></div>
+          <div class="univer-sheet-note"><span>ⓘ</span><span><b>Lot Data</b> is the dashboard bridge. Spreadsheet edits and workbook structure are autosaved locally in IndexedDB; choose <b>Save to Dashboard</b> to apply rows and any new columns to the ScrapSale KPIs. Other sheets remain workbook-only. *Advanced Univer tools are enabled only when the deployment supplies its Univer Pro license and any required server endpoint.</span></div>
         </div>
       </section>
     </main>
@@ -7014,6 +7014,10 @@ if (typeof module !== 'undefined' && module.exports) {
     if (href.indexOf('reset') !== -1 || href.indexOf('clear=1') !== -1 || href.indexOf('purge=1') !== -1) {
       localStorage.clear();
       sessionStorage.clear();
+      /* The Univer workbook lives in IndexedDB; URL hard-reset must clear it too. */
+      if (window.indexedDB) {
+        try { window.indexedDB.deleteDatabase('scrapsale_univer_v1'); } catch (ignore) {}
+      }
       if ('caches' in window) {
         caches.keys().then(function(names) { names.forEach(function(n) { caches.delete(n); }); });
       }
@@ -8197,6 +8201,10 @@ function exportScopeColumns() {
 /* ---------------- full embedded Univer workbook ---------------- */
 var UNIVER_VERSION = '0.25.1';
 var UNIVER_WORKBOOK_KEY = 'scrapsale_univer_workbook_v2';
+var UNIVER_DB_NAME = 'scrapsale_univer_v1';
+var UNIVER_DB_VERSION = 1;
+var UNIVER_DB_STORE = 'workbooks';
+var univerDbPromise = null;
 var UNIVER_DATA_SHEET_ID = 'scrapsale-lot-data';
 var UNIVER_GUIDE_SHEET_ID = 'scrapsale-univer-guide';
 var UNIVER_FORMULA_FIELDS = {
@@ -8230,7 +8238,10 @@ var univerState = {
   syncedSignature:'', loadedPacks:[], loadedPlugins:[], missing:[],
   advancedConfigured:false, advancedFallback:false, generation:0,
   advancedGuard:null, advancedGuardTimer:null, maxPlaceholder:null,
-  persistTimer:null, commandDisposable:null, valueDisposable:null
+  persistTimer:null, persistQueue:Promise.resolve(), lastPersistRequest:0,
+  persistenceAvailable:!!window.indexedDB, persistenceError:'', migratedStorage:false,
+  persistenceRequested:false, persistentStorage:false, skipSavedWorkbookOnce:false,
+  commandDisposable:null, valueDisposable:null
 };
 /* Univer's charts, pivots, shapes, print, and exchange modules are Pro features.
    A deployment may opt in without placing a key in this source file:
@@ -8270,6 +8281,10 @@ function univerSetStatus(message, kind) {
   var dot = document.getElementById('univerStatusDot');
   if (text) text.textContent = message;
   if (dot) dot.className = 'univer-status-dot ' + (kind || 'ready');
+}
+function univerStorageStatusSuffix() {
+  if (!univerState.persistenceAvailable) return ' · IndexedDB autosave unavailable';
+  return univerState.migratedStorage ? ' · storage upgraded to IndexedDB' : ' · IndexedDB autosave';
 }
 function univerSetLoadProgress(title, copy, percent) {
   var t = document.getElementById('univerLoadingTitle');
@@ -8480,7 +8495,7 @@ function univerBuildFreshWorkbook() {
     ['', ''],
     ['Workbook guide', 'Use the Lot Data tab for dashboard-connected records. Add any other sheet for analysis, scratch work, pivots or charts.'],
     ['Save to Dashboard', 'Applies Lot Data rows and newly added columns to KPIs, Buyer Ledger Analytics, exports and app storage.'],
-    ['Workbook autosave', 'Values, formatting, comments, drawings and extra sheets are stored locally in this browser.'],
+    ['Workbook autosave', 'Values, formatting, comments, drawings and extra sheets are stored in this browser\'s IndexedDB database.'],
     ['Formula columns', 'Blue-tinted cells contain the live receivables formulas; overwrite a formula only when you intentionally want a manual result.'],
     ['Keyboard & menus', 'Use Univer shortcuts, the full ribbon, sheet tabs and right-click context menus exactly as in a spreadsheet app.'],
     ['Advanced tools', 'Charts, pivot tables, shapes, print and workbook exchange follow Univer Pro license/server limits.'],
@@ -8531,31 +8546,185 @@ function univerBuildFreshWorkbook() {
     })(), resources:[]
   };
 }
-function univerReadSavedWorkbook() {
+function univerWorkbookDb() {
+  if (univerDbPromise) return univerDbPromise;
+  if (!window.indexedDB) return Promise.reject(new Error('IndexedDB is not available in this browser.'));
+  univerDbPromise = new Promise(function (resolve, reject) {
+    var settled = false;
+    var req;
+    try { req = window.indexedDB.open(UNIVER_DB_NAME, UNIVER_DB_VERSION); }
+    catch (e) { reject(e); return; }
+    req.onupgradeneeded = function () {
+      var db = req.result;
+      if (!db.objectStoreNames.contains(UNIVER_DB_STORE)) db.createObjectStore(UNIVER_DB_STORE);
+    };
+    req.onsuccess = function () {
+      if (settled) { try { req.result.close(); } catch (ignore) {} return; }
+      settled = true;
+      var db = req.result;
+      db.onversionchange = function () {
+        try { db.close(); } catch (ignore) {}
+        univerDbPromise = null;
+      };
+      resolve(db);
+    };
+    req.onerror = function () {
+      if (settled) return;
+      settled = true;
+      reject(req.error || new Error('Could not open IndexedDB.'));
+    };
+    req.onblocked = function () {
+      if (settled) return;
+      settled = true;
+      reject(new Error('IndexedDB upgrade is blocked by another open ScrapSale tab.'));
+    };
+  }).catch(function (e) {
+    univerDbPromise = null;
+    throw e;
+  });
+  return univerDbPromise;
+}
+function univerIdbGet(key) {
+  return univerWorkbookDb().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var value = null, settled = false;
+      var tx;
+      try { tx = db.transaction(UNIVER_DB_STORE, 'readonly'); }
+      catch (e) { reject(e); return; }
+      var req = tx.objectStore(UNIVER_DB_STORE).get(String(key));
+      req.onsuccess = function () { value = req.result === undefined ? null : req.result; };
+      req.onerror = function () { if (!settled) { settled = true; reject(req.error); } };
+      tx.oncomplete = function () { if (!settled) { settled = true; resolve(value); } };
+      tx.onerror = function () { if (!settled) { settled = true; reject(tx.error); } };
+      tx.onabort = function () { if (!settled) { settled = true; reject(tx.error || new Error('IndexedDB read was aborted.')); } };
+    });
+  });
+}
+function univerIdbPut(key, value) {
+  return univerWorkbookDb().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var settled = false, tx;
+      try { tx = db.transaction(UNIVER_DB_STORE, 'readwrite'); }
+      catch (e) { reject(e); return; }
+      try { tx.objectStore(UNIVER_DB_STORE).put(value, String(key)); }
+      catch (e2) { reject(e2); return; }
+      tx.oncomplete = function () { if (!settled) { settled = true; resolve(); } };
+      tx.onerror = function () { if (!settled) { settled = true; reject(tx.error); } };
+      tx.onabort = function () { if (!settled) { settled = true; reject(tx.error || new Error('IndexedDB write was aborted.')); } };
+    });
+  });
+}
+function univerIdbDelete(key) {
+  return univerWorkbookDb().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var settled = false, tx;
+      try { tx = db.transaction(UNIVER_DB_STORE, 'readwrite'); }
+      catch (e) { reject(e); return; }
+      tx.objectStore(UNIVER_DB_STORE).delete(String(key));
+      tx.oncomplete = function () { if (!settled) { settled = true; resolve(); } };
+      tx.onerror = function () { if (!settled) { settled = true; reject(tx.error); } };
+      tx.onabort = function () { if (!settled) { settled = true; reject(tx.error || new Error('IndexedDB delete was aborted.')); } };
+    });
+  });
+}
+function univerRequestPersistentStorage() {
+  if (univerState.persistenceRequested || !navigator.storage || !navigator.storage.persist) return;
+  univerState.persistenceRequested = true;
+  var check = navigator.storage.persisted ? navigator.storage.persisted() : Promise.resolve(false);
+  check.then(function (alreadyPersistent) {
+    return alreadyPersistent ? true : navigator.storage.persist();
+  }).then(function (granted) {
+    univerState.persistentStorage = !!granted;
+  }).catch(function () {});
+}
+function univerLegacyWorkbookRaw() {
+  try { return window.localStorage.getItem(UNIVER_WORKBOOK_KEY); }
+  catch (e) { return null; }
+}
+function univerRemoveLegacyWorkbook() {
+  try { window.localStorage.removeItem(UNIVER_WORKBOOK_KEY); } catch (ignore) {}
+}
+function univerParseSavedWorkbook(raw) {
   try {
-    var raw = storage.get(UNIVER_WORKBOOK_KEY);
-    if (!raw) return null;
-    var saved = JSON.parse(raw);
+    var saved = typeof raw === 'string' ? JSON.parse(raw) : raw;
     if (!saved || saved.version !== 2 || !saved.snapshot || saved.baseSignature !== univerAppSignature()) return null;
     return saved;
   } catch (e) { return null; }
 }
-function univerPersistWorkbook() {
-  if (!univerState.ready || !univerState.workbook) return;
-  try {
-    var snapshot = univerState.workbook.save();
-    var payload = JSON.stringify({
-      version:2, sdk:UNIVER_VERSION, savedAt:Date.now(), dirty:!!univerState.dirty,
-      baseSignature:univerState.syncedSignature || univerAppSignature(), snapshot:snapshot
-    });
-    if (payload.length > 4500000) {
-      univerSetStatus('Workbook is open, but its local snapshot is too large for browser storage.', univerState.dirty ? 'dirty' : 'ready');
-      return;
-    }
-    window.localStorage.setItem(UNIVER_WORKBOOK_KEY, payload);
-  } catch (e) {
-    /* Browser storage can be unavailable in sandboxed previews; the live workbook still works. */
+function univerReadSavedWorkbook() {
+  if (univerState.skipSavedWorkbookOnce) {
+    univerState.skipSavedWorkbookOnce = false;
+    return Promise.resolve(null);
   }
+  var legacyRaw = univerLegacyWorkbookRaw();
+  return univerIdbGet(UNIVER_WORKBOOK_KEY).then(function (raw) {
+    univerState.persistenceAvailable = true;
+    univerState.persistenceError = '';
+    univerRequestPersistentStorage();
+    var saved = univerParseSavedWorkbook(raw);
+    if (saved || raw) return saved;
+    var legacySaved = univerParseSavedWorkbook(legacyRaw);
+    if (!legacySaved) return null;
+    return univerIdbPut(UNIVER_WORKBOOK_KEY, legacySaved).then(function () {
+      univerRemoveLegacyWorkbook();
+      univerState.migratedStorage = true;
+      return legacySaved;
+    }).catch(function (e) {
+      /* Keep the legacy copy until an IndexedDB write completes successfully. */
+      univerState.persistenceAvailable = false;
+      univerState.persistenceError = e && e.message ? e.message : String(e);
+      return legacySaved;
+    });
+  }).catch(function (e) {
+    /* A legacy snapshot may still be opened, but all new writes target IndexedDB only. */
+    univerState.persistenceAvailable = false;
+    univerState.persistenceError = e && e.message ? e.message : String(e);
+    return univerParseSavedWorkbook(legacyRaw);
+  });
+}
+function univerPersistWorkbook() {
+  if (!univerState.ready || !univerState.workbook) return Promise.resolve(false);
+  var payload;
+  try {
+    /* Serialize before queueing so each write is an immutable point-in-time snapshot. */
+    payload = JSON.stringify({
+      version:2, sdk:UNIVER_VERSION, savedAt:Date.now(), dirty:!!univerState.dirty,
+      baseSignature:univerState.syncedSignature || univerAppSignature(),
+      snapshot:univerState.workbook.save()
+    });
+  } catch (e) {
+    return Promise.resolve(false);
+  }
+  univerState.lastPersistRequest = Date.now();
+  var previous = univerState.persistQueue || Promise.resolve();
+  var operation = previous.catch(function () {}).then(function () {
+    return univerIdbPut(UNIVER_WORKBOOK_KEY, payload);
+  });
+  /* Keep writes ordered so an older, slower snapshot can never replace a newer one. */
+  univerState.persistQueue = operation.catch(function () {});
+  return operation.then(function () {
+    univerState.persistenceAvailable = true;
+    univerState.persistenceError = '';
+    univerRemoveLegacyWorkbook();
+    univerRequestPersistentStorage();
+    return true;
+  }).catch(function (e) {
+    univerState.persistenceAvailable = false;
+    univerState.persistenceError = e && e.message ? e.message : String(e);
+    if (univerState.ready) {
+      univerSetStatus('Workbook is open, but IndexedDB autosave is unavailable: ' + univerState.persistenceError, 'error');
+    }
+    return false;
+  });
+}
+function univerClearSavedWorkbook() {
+  univerRemoveLegacyWorkbook();
+  var previous = univerState.persistQueue || Promise.resolve();
+  var operation = previous.catch(function () {}).then(function () {
+    return univerIdbDelete(UNIVER_WORKBOOK_KEY);
+  });
+  univerState.persistQueue = operation.catch(function () {});
+  return operation;
 }
 function univerSchedulePersist() {
   if (univerState.persistTimer) clearTimeout(univerState.persistTimer);
@@ -8634,10 +8803,9 @@ function univerStopAdvancedGuard() {
   }
   univerState.advancedGuard = null;
 }
-function univerInitialize() {
+function univerInitialize(saved) {
   var core = window.UniverCore;
   var locale = core.LocaleType.EN_US;
-  var saved = univerReadSavedWorkbook();
   var workbookData = saved ? saved.snapshot : univerBuildFreshWorkbook();
   var hasAdvanced = univerState.loadedPacks.some(function (p) { return !!p.advanced; });
   var generation = ++univerState.generation;
@@ -8706,7 +8874,8 @@ function univerInitialize() {
   if (retry) retry.hidden = true;
   var featureCount = 1 + univerState.loadedPacks.length + univerState.loadedPlugins.length;
   var suffix = univerState.missing.length ? ' · ' + univerState.missing.length + ' optional component(s) unavailable' : '';
-  univerSetStatus((saved ? 'Workbook restored' : 'Workbook ready') + ' · ' + lots.length + ' rows · ' + univerSheetColumns().length + ' columns · ' + featureCount + ' feature modules' + suffix, univerState.dirty ? 'dirty' : 'ready');
+  var storageSuffix = univerStorageStatusSuffix();
+  univerSetStatus((saved ? 'Workbook restored' : 'Workbook ready') + ' · ' + lots.length + ' rows · ' + univerSheetColumns().length + ' columns · ' + featureCount + ' feature modules' + storageSuffix + suffix, !univerState.persistenceAvailable ? 'error' : (univerState.dirty ? 'dirty' : 'ready'));
   univerRegisterChangeBridge();
   if (hasAdvanced && !univerState.advancedFallback) {
     /* Some Pro failures are raised asynchronously by Univer lifecycle hooks instead of
@@ -8757,13 +8926,15 @@ function ensureUniverSheet() {
   univerShowLoading(true);
   univerSetStatus('Loading the full Univer spreadsheet engine…', 'busy');
   univerSetLoadProgress('Preparing full spreadsheet workspace…', 'Downloading the pinned Univer engine and feature modules.', 6);
-  univerState.loadPromise = univerLoadLibraries().then(function () {
+  /* Load the editor assets and the IndexedDB snapshot in parallel. */
+  univerState.loadPromise = Promise.all([univerLoadLibraries(), univerReadSavedWorkbook()]).then(function (results) {
+    var saved = results[1];
     univerSetLoadProgress('Creating your workbook…', 'Loading ' + lots.length + ' lots with live formulas and formatting.', 96);
     return new Promise(function (resolve) {
-      requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+      requestAnimationFrame(function () { requestAnimationFrame(function () { resolve(saved); }); });
     });
-  }).then(function () {
-    var api = univerInitialize();
+  }).then(function (saved) {
+    var api = univerInitialize(saved);
     univerSetLoadProgress('Workbook ready', 'The full spreadsheet ribbon is available.', 100);
     return api;
   }).catch(function (e) {
@@ -8787,10 +8958,10 @@ function renderUniverSheet() {
   }
   var appSig = univerAppSignature();
   if (appSig !== univerState.syncedSignature) {
-    univerSetStatus(univerState.dirty ? 'Dashboard and workbook both changed · save or reload carefully.' : 'Dashboard data changed · Reload app data to refresh this workbook.', 'dirty');
+    univerSetStatus((univerState.dirty ? 'Dashboard and workbook both changed · save or reload carefully.' : 'Dashboard data changed · Reload app data to refresh this workbook.') + univerStorageStatusSuffix(), univerState.persistenceAvailable ? 'dirty' : 'error');
   } else {
     var featureCount = 1 + univerState.loadedPacks.length + univerState.loadedPlugins.length;
-    univerSetStatus((univerState.dirty ? 'Workbook has changes' : 'Workbook ready') + ' · ' + lots.length + ' app rows · ' + featureCount + ' feature modules', univerState.dirty ? 'dirty' : 'ready');
+    univerSetStatus((univerState.dirty ? 'Workbook has changes' : 'Workbook ready') + ' · ' + lots.length + ' app rows · ' + featureCount + ' feature modules' + univerStorageStatusSuffix(), !univerState.persistenceAvailable ? 'error' : (univerState.dirty ? 'dirty' : 'ready'));
   }
   setTimeout(function () {
     try { window.dispatchEvent(new Event('resize')); } catch (ignore) {}
@@ -8975,11 +9146,21 @@ function univerDisposeWorkbook() {
 }
 function reloadUniverSheetFromApp(force) {
   if (!force && univerState.dirty && !window.confirm('Discard workbook-only changes and rebuild Lot Data from the dashboard?')) return;
-  try { window.localStorage.removeItem(UNIVER_WORKBOOK_KEY); } catch (ignore) {}
+  /* Skip any stale record even when IndexedDB is temporarily unavailable; the fresh
+     workbook will replace it as soon as storage becomes writable again. */
+  univerState.skipSavedWorkbookOnce = true;
   univerDisposeWorkbook();
   univerShowLoading(true);
+  univerSetLoadProgress('Rebuilding workbook…', 'Clearing the saved IndexedDB snapshot.', 12);
   univerSetStatus('Rebuilding workbook from current dashboard data…', 'busy');
-  ensureUniverSheet().then(function () { showToast('Univer workbook reloaded from the dashboard', 'ok'); }).catch(function () {});
+  univerClearSavedWorkbook().catch(function (e) {
+    univerState.persistenceAvailable = false;
+    univerState.persistenceError = e && e.message ? e.message : String(e);
+  }).then(function () {
+    return ensureUniverSheet();
+  }).then(function () {
+    showToast('Univer workbook reloaded from the dashboard', 'ok');
+  }).catch(function () {});
 }
 function retryUniverLoad() {
   document.querySelectorAll('[data-univer-asset]:not([data-loaded="1"])').forEach(function (el) { try { el.remove(); } catch (ignore) {} });
@@ -9014,8 +9195,25 @@ function toggleUniverMaximize(force) {
     try { if (sheet && sheet.refreshCanvas) sheet.refreshCanvas(); } catch (ignore2) {}
   }, 80);
 }
-window.addEventListener('beforeunload', function () { if (univerState.ready) univerPersistWorkbook(); });
-window.scrapSaleUniver = { state:univerState, ensure:ensureUniverSheet, save:saveUniverSheet, reload:reloadUniverSheetFromApp };
+function univerFlushWorkbookPersistence() {
+  if (!univerState.ready || !univerState.workbook) return;
+  var hadPendingTimer = !!univerState.persistTimer;
+  if (univerState.persistTimer) clearTimeout(univerState.persistTimer);
+  univerState.persistTimer = null;
+  /* visibilitychange, pagehide, and beforeunload can fire together. Persist once unless
+     a newer edit was still waiting in the debounce timer. */
+  if (hadPendingTimer || Date.now() - univerState.lastPersistRequest > 250) univerPersistWorkbook();
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') univerFlushWorkbookPersistence();
+});
+window.addEventListener('pagehide', univerFlushWorkbookPersistence);
+window.addEventListener('beforeunload', univerFlushWorkbookPersistence);
+window.scrapSaleUniver = {
+  state:univerState, ensure:ensureUniverSheet, save:saveUniverSheet,
+  reload:reloadUniverSheetFromApp, persist:univerPersistWorkbook,
+  storage:{ get:univerIdbGet, put:univerIdbPut, remove:univerIdbDelete }
+};
 
 function setView(v) {
   if (v !== 'univer') {
