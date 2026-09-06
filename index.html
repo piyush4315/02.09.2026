@@ -4205,6 +4205,121 @@ body.univer-maximized-open{overflow:hidden!important}
   .univer-featurebar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
   .univer-featurebar span{flex:0 0 auto}
 }
+
+
+/* ── BUYER DETAILS: VERTICAL FIELD / VALUE LEDGER ───────────────────── */
+.modal.buyer-details-modal{
+  width:calc(100vw - 36px);max-width:1120px;max-height:94vh;overflow:hidden;
+  display:flex;flex-direction:column
+}
+.buyer-details-modal .modal-head{flex:0 0 auto}
+.buyer-details-modal .modal-body{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:16px 20px 22px}
+.buyer-details-modal .modal-foot{flex:0 0 auto}
+.buyer-v-wrap{display:flex;flex-direction:column;gap:14px;min-width:0}
+.buyer-v-picker{
+  display:grid;grid-template-columns:minmax(260px,1fr) minmax(240px,1fr);gap:14px;
+  align-items:end;padding:12px 14px;border:1px solid rgba(0,245,255,.2);
+  border-radius:11px;background:rgba(0,245,255,.045)
+}
+.buyer-v-picker label{display:flex;flex-direction:column;gap:5px;color:var(--dim);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.buyer-v-picker select{width:100%;min-height:38px;padding:8px 10px;color:var(--text);background:#10102a;border:1px solid rgba(255,255,255,.16);border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;line-height:1.3}
+.buyer-v-picker select:focus{outline:2px solid var(--cyan);outline-offset:2px;border-color:var(--cyan)}
+.buyer-v-picker-note{font-size:11.5px;line-height:1.55;color:var(--muted);padding-bottom:2px}
+.buyer-v-picker-note strong{color:var(--text)}
+.buyer-v-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.buyer-v-actions .btn{min-height:42px;display:flex;align-items:center;justify-content:flex-start;text-align:left;gap:8px;white-space:normal;line-height:1.25;padding:7px 10px}
+.buyer-v-action-no{display:inline-flex;align-items:center;justify-content:center;flex:0 0 23px;width:23px;height:23px;border-radius:50%;background:rgba(0,245,255,.12);color:var(--cyan);border:1px solid rgba(0,245,255,.28);font-size:10px;font-weight:900}
+.buyer-v-actions .primary .buyer-v-action-no{background:rgba(0,0,0,.2);color:inherit;border-color:rgba(255,255,255,.25)}
+.buyer-v-summary{border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.025)}
+.buyer-v-summary-head{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(90deg,rgba(0,245,255,.09),rgba(124,58,237,.08));
+  cursor:pointer;user-select:none
+}
+.buyer-v-summary-head:focus-visible,.buyer-v-lot-heading:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
+.buyer-v-summary-title{min-width:0}
+.buyer-v-summary-title strong{display:block;color:var(--text);font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.buyer-v-summary-title span{display:block;color:var(--dim);font-size:10.5px;margin-top:3px}
+.buyer-v-summary-chips{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.buyer-v-chip{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.13);background:rgba(0,0,0,.2);color:var(--muted);font-size:10px;font-weight:750;white-space:nowrap}
+.buyer-v-table{width:100%;min-width:0!important;border-collapse:collapse;table-layout:fixed;font-size:11.5px}
+.buyer-v-table thead th{padding:7px 12px;background:rgba(0,0,0,.24);border-bottom:1px solid rgba(255,255,255,.1);color:var(--dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left}
+.buyer-v-table thead th:first-child{width:38%}
+.buyer-v-table tbody th,.buyer-v-table tbody td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.055);vertical-align:top;line-height:1.4;overflow-wrap:anywhere;word-break:normal}
+.buyer-v-table tbody tr:last-child th,.buyer-v-table tbody tr:last-child td{border-bottom:0}
+.buyer-v-table tbody th{color:var(--dim);font-weight:650;text-align:left}
+.buyer-v-table tbody td{color:var(--text);font-weight:650;text-align:left;font-variant-numeric:tabular-nums}
+.buyer-v-table tbody tr:nth-child(even):not(.buyer-v-section-row){background:rgba(255,255,255,.014)}
+.buyer-v-table .buyer-v-section-row th{width:auto;padding:7px 12px;background:rgba(0,245,255,.045);color:var(--cyan);font-size:9.5px;font-weight:850;text-transform:uppercase;letter-spacing:.055em;border-top:1px solid rgba(0,245,255,.13);border-bottom:1px solid rgba(0,245,255,.1)}
+.buyer-v-table .buyer-v-money,.buyer-v-table .buyer-v-strong{font-weight:800}
+.buyer-v-table .buyer-v-money,.buyer-v-table .buyer-v-number{text-align:right}
+.buyer-v-table .buyer-v-highlight{color:var(--cyan)}
+.buyer-v-table .buyer-v-success{color:#69d791}
+.buyer-v-table .buyer-v-danger{color:#ff7b9c}
+.buyer-v-lots{display:flex;flex-direction:column;gap:9px}
+.buyer-v-lots[hidden]{display:none!important}
+.buyer-v-lots-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:2px 1px}
+.buyer-v-lots-head h4{margin:0;color:var(--text);font-size:13px}
+.buyer-v-lots-head p{margin:2px 0 0;color:var(--dim);font-size:10.5px;line-height:1.4}
+.buyer-v-lot-list{display:flex;flex-direction:column;gap:10px}
+.buyer-v-lot{border:1px solid rgba(255,255,255,.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.02)}
+.buyer-v-lot-head{display:flex;align-items:stretch;background:rgba(255,255,255,.035);border-bottom:1px solid rgba(255,255,255,.075)}
+.buyer-v-lot.collapsed .buyer-v-lot-head{border-bottom:0}
+.buyer-v-lot-heading{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;cursor:pointer;user-select:none}
+.buyer-v-lot-title{min-width:0}
+.buyer-v-lot-title strong{display:block;color:var(--text);font-size:12.5px;overflow-wrap:anywhere}
+.buyer-v-lot-title span{display:block;color:var(--dim);font-size:10.5px;margin-top:2px;overflow-wrap:anywhere}
+.buyer-v-lot-meta{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;text-align:right}
+.buyer-v-lot-amount{color:var(--text);font-size:10.5px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.buyer-v-card-toggle{flex:0 0 auto;min-width:78px;border:0;border-left:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.12);color:var(--cyan);font-family:inherit;font-size:10.5px;font-weight:750;line-height:1;cursor:pointer;padding:8px}
+.buyer-v-card-toggle:hover{background:rgba(0,245,255,.09)}
+.buyer-v-card-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
+.buyer-v-lot-body[hidden]{display:none!important}
+.buyer-v-lot-foot{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;padding:9px 11px;border-top:1px solid rgba(255,255,255,.07);background:rgba(0,0,0,.1)}
+.buyer-v-empty{padding:28px 16px;text-align:center;border:1px dashed rgba(255,255,255,.14);border-radius:10px;color:var(--dim)}
+.buyer-v-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+[data-theme="light"] .buyer-v-picker{background:#f0f9ff;border-color:#bae6fd}
+[data-theme="light"] .buyer-v-picker select{background:#fff;border-color:#cbd5e1;color:#0f172a}
+[data-theme="light"] .buyer-v-summary,[data-theme="light"] .buyer-v-lot{background:#fff;border-color:#dbe3ee}
+[data-theme="light"] .buyer-v-summary-head{background:linear-gradient(90deg,#ecfeff,#f5f3ff);border-bottom-color:#dbe3ee}
+[data-theme="light"] .buyer-v-chip{background:#fff;border-color:#cbd5e1;color:#475569}
+[data-theme="light"] .buyer-v-table thead th{background:#f1f5f9;border-bottom-color:#dbe3ee;color:#64748b}
+[data-theme="light"] .buyer-v-table tbody th,[data-theme="light"] .buyer-v-table tbody td{border-bottom-color:#e7edf4}
+[data-theme="light"] .buyer-v-table tbody th{color:#64748b}
+[data-theme="light"] .buyer-v-table tbody td{color:#0f172a}
+[data-theme="light"] .buyer-v-table tbody tr:nth-child(even):not(.buyer-v-section-row){background:#fbfdff}
+[data-theme="light"] .buyer-v-table .buyer-v-section-row th{background:#ecfeff;color:#0e7490;border-color:#bae6fd}
+[data-theme="light"] .buyer-v-table .buyer-v-highlight{color:#0369a1}
+[data-theme="light"] .buyer-v-table .buyer-v-success{color:#15803d}
+[data-theme="light"] .buyer-v-table .buyer-v-danger{color:#be123c}
+[data-theme="light"] .buyer-v-lot-head{background:#f8fafc;border-bottom-color:#e2e8f0}
+[data-theme="light"] .buyer-v-card-toggle{background:#f1f5f9;border-left-color:#dbe3ee;color:#0369a1}
+[data-theme="light"] .buyer-v-card-toggle:hover{background:#e0f2fe}
+[data-theme="light"] .buyer-v-lot-foot{background:#f8fafc;border-top-color:#e2e8f0}
+
+@media (max-width:768px), (orientation:portrait){
+  .buyer-details-modal .modal-body{padding:11px 12px 18px!important}
+  .buyer-v-wrap{gap:11px}
+  .buyer-v-picker{grid-template-columns:1fr;gap:8px;padding:10px 11px}
+  .buyer-v-actions{grid-template-columns:1fr}
+  .buyer-v-actions .btn{min-height:40px}
+  .buyer-v-summary-head{align-items:flex-start;flex-direction:column;padding:10px 11px}
+  .buyer-v-summary-chips{justify-content:flex-start}
+  .buyer-v-table{font-size:11px}
+  .buyer-v-table thead th:first-child{width:43%}
+  .buyer-v-table thead th,.buyer-v-table tbody th,.buyer-v-table tbody td{padding:7px 9px}
+  .buyer-v-lots-head{align-items:flex-start;flex-direction:column}
+  .buyer-v-lot-heading{align-items:flex-start;flex-direction:column;gap:7px;padding:9px 10px}
+  .buyer-v-lot-meta{justify-content:flex-start;text-align:left}
+  .buyer-v-card-toggle{min-width:68px;padding:7px 5px}
+  .buyer-v-lot-foot{justify-content:stretch}
+  .buyer-v-lot-foot .btn{flex:1 1 calc(50% - 4px);justify-content:center;min-height:36px}
+}
+[data-view-mode="mobile"] .buyer-v-picker{grid-template-columns:1fr;gap:8px}
+[data-view-mode="mobile"] .buyer-v-actions{grid-template-columns:1fr}
+[data-view-mode="mobile"] .buyer-v-summary-head,[data-view-mode="mobile"] .buyer-v-lot-heading{align-items:flex-start;flex-direction:column}
+
 </style>
 </head>
 <body>
@@ -4284,6 +4399,7 @@ body.univer-maximized-open{overflow:hidden!important}
           <div class="detail-header" style="margin-bottom:10px">
             <h2>Buyer Ledger Analytics</h2>
             <div class="toolbar-right">
+              <button class="btn primary" id="buyerDetailsBtn" type="button" aria-haspopup="dialog" title="Select any buyer and view the complete buyer ledger and every lot as vertical Field / Value rows">↕ Buyer Details</button>
               <button class="btn" id="hideSelPivotColsBtn" type="button" style="display:none;color:#ff6b6b;font-weight:700;border-color:rgba(255,107,107,.3)">⊗ Hide 0 columns</button>
             </div>
           </div>
@@ -16685,6 +16801,473 @@ window.jumpRowToStart = jumpRowToStart;
 
 
 
+
+/* ---------------- Buyer Details: vertical Field / Value ledger ---------------- */
+function buyerDetailsLabel(key) {
+  return fieldLabel(key).replace(/\u00ad/g, '').replace(/\s+/g, ' ').trim();
+}
+function buyerDetailsBuyerLabel(name) {
+  return strOr(name) || '(Buyer not specified)';
+}
+function buyerDetailsSum(rows, key) {
+  return rows.reduce(function (total, row) { return total + numOr(getLotField(row, key)); }, 0);
+}
+function buyerDetailsUnique(rows, key, formatter) {
+  var values = [];
+  rows.forEach(function (row) {
+    var raw = getLotField(row, key);
+    var value = formatter ? formatter(raw, row) : strOr(raw);
+    value = strOr(value);
+    if (value && values.indexOf(value) === -1) values.push(value);
+  });
+  return values;
+}
+function buyerDetailsJoined(rows, key, formatter) {
+  var values = buyerDetailsUnique(rows, key, formatter);
+  return values.length ? values.join(', ') : '—';
+}
+function buyerDetailsSummaryRows(rows, buyer) {
+  var out = [];
+  function section(label) { out.push({ section: label }); }
+  function add(label, value, cls, html) {
+    out.push({ label: label, value: value === null || value === undefined || value === '' ? '—' : String(value), cls: cls || '', html: html || '' });
+  }
+  function money(key, label, cls) {
+    add(label || buyerDetailsLabel(key), '₹ ' + moneyFmt(buyerDetailsSum(rows, key)), 'buyer-v-money ' + (cls || ''));
+  }
+
+  var settled = rows.filter(function (row) { return settlementStatus(row) === 'Settled'; }).length;
+  var unsettled = rows.length - settled;
+  var settlementText = unsettled === 0 ? 'Settled' : (settled === 0 ? 'Unsettled' : 'Mixed — ' + settled + ' settled / ' + unsettled + ' unsettled');
+  var settlementHtml = unsettled === 0
+    ? '<span class="lbl-settled">Settled</span>'
+    : (settled === 0
+      ? '<span class="lbl-unsettled">Unsettled</span>'
+      : '<span class="lbl-settled">' + settled + ' Settled</span> <span class="lbl-unsettled">' + unsettled + ' Unsettled</span>');
+  var qtyByUnit = Object.create(null);
+  rows.forEach(function (row) {
+    var unit = strOr(row.unit) || 'Unspecified';
+    qtyByUnit[unit] = numOr(qtyByUnit[unit]) + numOr(row.qty);
+  });
+  var qtyText = Object.keys(qtyByUnit).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }); })
+    .map(function (unit) { return unit + ': ' + numFmt(qtyByUnit[unit]); }).join(', ') || '—';
+  var rates = rows.map(function (row) { return Number(row.rate); }).filter(function (value) { return isFinite(value); });
+  var rateText = '—';
+  if (rates.length) {
+    var minRate = Math.min.apply(null, rates), maxRate = Math.max.apply(null, rates);
+    rateText = minRate === maxRate ? '₹ ' + moneyFmt(minRate) : '₹ ' + moneyFmt(minRate) + ' – ₹ ' + moneyFmt(maxRate);
+  }
+  var tric = buyerDetailsSum(rows, 'total_receivables');
+  var received = buyerDetailsSum(rows, 'total_received');
+  var collection = tric ? (received / tric * 100) : 0;
+  var attached = rows.filter(function (row) { return !!row._invDoc || !!strOr(row.invoice_link); }).length;
+
+  section('Buyer & lots');
+  add('Buyer', buyerDetailsBuyerLabel(buyer), 'buyer-v-strong');
+  add('Total lots', rows.length, 'buyer-v-strong buyer-v-number');
+  add('Lot numbers', buyerDetailsJoined(rows, 'lot_no'));
+  add('Bid sheets / auctions', buyerDetailsJoined(rows, 'auction'));
+  add('Material types', buyerDetailsJoined(rows, 'lot_name'));
+  add('Units', buyerDetailsJoined(rows, 'unit'));
+  add('Quantity by unit', qtyText);
+  add('Rate range', rateText);
+
+  section('Valuation, taxes & charges');
+  money('mat_value');
+  money('gst');
+  money('mat_value_plus_gst');
+  money('tcs');
+  money('tds194o');
+  money('service_charge_mstc');
+  money('tds194h');
+  money('net_service_charge');
+  money('service_charge_to_mstc');
+  add('GST TDS rate(s)', buyerDetailsJoined(rows, 'gst_tds_rate', function (value) {
+    return (value === '' || value === null || value === undefined) ? '' : numFmt(numOr(value)) + '%';
+  }));
+  money('gst_tds');
+  money('total_receivables', 'TRIC', 'buyer-v-highlight');
+
+  section('Receipts & settlement');
+  money('sd_expected');
+  money('sd_received', null, 'buyer-v-success');
+  add('SD receipt date(s)', buyerDetailsJoined(rows, 'sd_date', function (value) { return dottedDate(value) || ''; }));
+  money('fp_expected');
+  money('fp_received', null, 'buyer-v-success');
+  add('FP receipt date(s)', buyerDetailsJoined(rows, 'fp_date', function (value) { return dottedDate(value) || ''; }));
+  money('late_fee');
+  money('late_fee_received', null, 'buyer-v-success');
+  add('Late fee receipt date(s)', buyerDetailsJoined(rows, 'late_fee_received_date', function (value) { return dottedDate(value) || ''; }));
+  money('total_received', null, 'buyer-v-success');
+  add('Collection against TRIC', inr(collection, 2) + '%', 'buyer-v-strong buyer-v-number');
+  money('outstanding', null, buyerDetailsSum(rows, 'outstanding') > SETTLEMENT_TOLERANCE ? 'buyer-v-danger' : 'buyer-v-success');
+  add('Settlement', settlementText, 'buyer-v-strong', settlementHtml);
+  add('Settled lots', settled, 'buyer-v-number');
+  add('Unsettled lots', unsettled, 'buyer-v-number');
+
+  section('Invoices & documents');
+  add('Invoice numbers', buyerDetailsJoined(rows, 'invoice_no'));
+  add('SAP document numbers', buyerDetailsJoined(rows, 'sap_document_date'));
+  add('Document / invoice dates', buyerDetailsJoined(rows, 'doc_invoice_date', function (value) { return dottedDate(value) || ''; }));
+  add('Attached / linked invoice documents', attached + ' of ' + rows.length);
+
+  if (customCols.length) {
+    section('Custom fields');
+    customCols.forEach(function (column) {
+      if (column.type === 'number') {
+        add(column.name + ' (total)', numFmt(buyerDetailsSum(rows, column.id)), 'buyer-v-number');
+      } else if (column.type === 'date') {
+        add(column.name, buyerDetailsJoined(rows, column.id, function (value) { return dottedDate(value) || ''; }));
+      } else {
+        add(column.name, buyerDetailsJoined(rows, column.id));
+      }
+    });
+  }
+  return out;
+}
+function buyerDetailsRowsHtml(rows) {
+  return rows.map(function (row) {
+    if (row.section) {
+      return '<tr class="buyer-v-section-row"><th colspan="2" scope="colgroup">' + escHtml(row.section) + '</th></tr>';
+    }
+    return '<tr><th scope="row">' + escHtml(row.label) + '</th><td class="' + escHtml(row.cls || '') + '">' + (row.html || escHtml(row.value)) + '</td></tr>';
+  }).join('');
+}
+function buyerDetailsLotValue(row, key) {
+  var value = getLotField(row, key);
+  var cls = '';
+  if (key === 'settlement_status') return { html: settlementLabelHtml(row), text: settlementStatus(row), cls: 'buyer-v-strong' };
+  if (key === 'invoice_link') {
+    if (value !== '' && value !== null && value !== undefined) return { text: normalizeInvoiceUrl(value) || String(value), cls: '' };
+    return { text: row._invDoc ? 'Local PDF attached' : '—', cls: row._invDoc ? 'buyer-v-success' : '' };
+  }
+  if (value === '' || value === null || value === undefined) return { text: '—', cls: '' };
+  if (fieldKind(key).indexOf('date') !== -1) return { text: dottedDate(value) || String(value), cls: '' };
+  if (key === 'gst_tds_rate') return { text: numFmt(numOr(value)) + '%', cls: 'buyer-v-number' };
+  if (MONEY_FIELDS.has(key) || key === 'rate') {
+    cls = 'buyer-v-money';
+    if (key === 'total_receivables') cls += ' buyer-v-highlight';
+    if (key === 'sd_received' || key === 'fp_received' || key === 'late_fee_received' || key === 'total_received') cls += ' buyer-v-success';
+    if (key === 'outstanding') cls += numOr(value) > SETTLEMENT_TOLERANCE ? ' buyer-v-danger' : ' buyer-v-success';
+    return { text: (key === 'tds194h' ? '- ₹ ' : '₹ ') + moneyFmt(numOr(value)), cls: cls };
+  }
+  if (key === 'qty') return { text: numFmt(numOr(value)), cls: 'buyer-v-number' };
+  var custom = customColById(key);
+  if (custom && custom.type === 'number') return { text: numFmt(numOr(value)), cls: 'buyer-v-number' };
+  return { text: String(value), cls: '' };
+}
+function buyerDetailsLotTableHtml(row) {
+  var keys = DEFAULT_DETAIL_KEYS.slice();
+  if (keys.indexOf('invoice_link') === -1) keys.push('invoice_link');
+  customCols.forEach(function (column) { if (keys.indexOf(column.id) === -1) keys.push(column.id); });
+  var body = keys.map(function (key) {
+    var display = buyerDetailsLotValue(row, key);
+    return '<tr><th scope="row">' + escHtml(buyerDetailsLabel(key)) + '</th><td class="' + escHtml(display.cls || '') + '">' + (display.html || escHtml(display.text)) + '</td></tr>';
+  }).join('');
+  return '<table class="buyer-v-table"><caption class="buyer-v-sr">All fields for lot ' + escHtml(row.lot_no || 'not specified') + '</caption>' +
+    '<thead><tr><th scope="col">Field</th><th scope="col">Value</th></tr></thead><tbody>' + body + '</tbody></table>';
+}
+function buyerDetailsSortedRows(buyer) {
+  return lots.filter(function (row) { return String(row.buyer === null || row.buyer === undefined ? '' : row.buyer) === String(buyer); })
+    .slice().sort(function (a, b) { return String(a.lot_no).localeCompare(String(b.lot_no), undefined, { numeric: true, sensitivity: 'base' }); });
+}
+function buyerDetailsAllCardsCollapsed(state, rows) {
+  return !!rows.length && rows.every(function (row) { return !!state.collapsed[lots.indexOf(row)]; });
+}
+function renderBuyerDetails(state) {
+  var host = document.getElementById('buyerDetailsContent');
+  if (!host) return;
+  var rows = buyerDetailsSortedRows(state.buyer);
+  if (!rows.length) {
+    host.innerHTML = '<div class="buyer-v-empty">No lots are stored for this buyer.</div>';
+    return;
+  }
+  var settled = rows.filter(function (row) { return settlementStatus(row) === 'Settled'; }).length;
+  var unsettled = rows.length - settled;
+  var allCollapsed = buyerDetailsAllCardsCollapsed(state, rows);
+  var summaryRows = buyerDetailsSummaryRows(rows, state.buyer);
+  var cards = rows.map(function (row) {
+    var globalIndex = lots.indexOf(row);
+    var collapsed = !!state.collapsed[globalIndex];
+    var status = settlementStatus(row);
+    var material = strOr(row.lot_name) || 'Material not specified';
+    var auction = strOr(row.auction) || '—';
+    var bodyId = 'buyerDetailsLotBody' + globalIndex;
+    var hasDocument = !!row._invDoc || !!strOr(row.invoice_link);
+    return '<article class="buyer-v-lot' + (collapsed ? ' collapsed' : '') + '" data-buyer-lot-card="' + globalIndex + '">' +
+      '<header class="buyer-v-lot-head">' +
+        '<div class="buyer-v-lot-heading" data-buyer-lot-heading="' + globalIndex + '" role="button" tabindex="0" aria-expanded="' + (!collapsed) + '" aria-controls="' + bodyId + '" title="Double-click to ' + (collapsed ? 'expand' : 'collapse') + ' this lot">' +
+          '<div class="buyer-v-lot-title"><strong>Lot ' + escHtml(row.lot_no || '—') + ' · ' + escHtml(material) + '</strong><span>Bid sheet / auction ' + escHtml(auction) + ' · Double-click this heading to ' + (collapsed ? 'expand' : 'collapse') + '</span></div>' +
+          '<div class="buyer-v-lot-meta"><span class="' + (status === 'Settled' ? 'lbl-settled' : 'lbl-unsettled') + '">' + status + '</span><span class="buyer-v-lot-amount">Outstanding ₹ ' + moneyFmt(numOr(row.outstanding)) + '</span></div>' +
+        '</div>' +
+        '<button type="button" class="buyer-v-card-toggle" data-buyer-card-toggle="' + globalIndex + '" aria-expanded="' + (!collapsed) + '" aria-controls="' + bodyId + '" aria-label="' + (collapsed ? 'Expand' : 'Collapse') + ' lot ' + escHtml(row.lot_no || 'not specified') + '">' + (collapsed ? 'Expand ▾' : 'Collapse ▴') + '</button>' +
+      '</header>' +
+      '<div class="buyer-v-lot-body" id="' + bodyId + '"' + (collapsed ? ' hidden' : '') + '>' +
+        buyerDetailsLotTableHtml(row) +
+        '<div class="buyer-v-lot-foot">' +
+          (hasDocument ? '<button type="button" class="btn small" data-buyer-open-invoice="' + globalIndex + '">📄 Open invoice</button>' : '') +
+          '<button type="button" class="btn small" data-buyer-view-lot="' + globalIndex + '">View full lot</button>' +
+          '<button type="button" class="btn small" data-buyer-edit-lot="' + globalIndex + '">✎ Edit row</button>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+
+  host.innerHTML =
+    '<div class="buyer-v-actions" role="group" aria-label="Buyer detail operations">' +
+      '<button type="button" class="btn" id="buyerDetailsToggleSection" aria-expanded="' + (!state.lotsHidden) + '" aria-controls="buyerDetailsLots"><span class="buyer-v-action-no">1</span><span>' + (state.lotsHidden ? 'Show all lot details' : 'Hide all lot details') + '</span></button>' +
+      '<button type="button" class="btn primary" id="buyerDetailsOpenTable" aria-controls="dashDetailPanel"><span class="buyer-v-action-no">2</span><span>Open filtered Lot Details table</span></button>' +
+      '<button type="button" class="btn" id="buyerDetailsToggleCards" aria-controls="buyerDetailsLots"><span class="buyer-v-action-no">3</span><span>' + (allCollapsed ? 'Expand all individual lot cards' : 'Collapse all individual lot cards') + '</span></button>' +
+    '</div>' +
+    '<section class="buyer-v-summary" aria-labelledby="buyerDetailsSummaryName">' +
+      '<div class="buyer-v-summary-head" id="buyerDetailsSummaryToggle" role="button" tabindex="0" aria-expanded="' + (!state.lotsHidden) + '" aria-controls="buyerDetailsLots" title="Double-click to ' + (state.lotsHidden ? 'show' : 'hide') + ' all lot details">' +
+        '<div class="buyer-v-summary-title"><strong id="buyerDetailsSummaryName">' + escHtml(buyerDetailsBuyerLabel(state.buyer)) + '</strong><span>Complete buyer ledger · Field / Value view · Double-click this heading to ' + (state.lotsHidden ? 'show' : 'hide') + ' all lots</span></div>' +
+        '<div class="buyer-v-summary-chips"><span class="buyer-v-chip">' + rows.length + ' lot' + (rows.length === 1 ? '' : 's') + '</span><span class="buyer-v-chip">' + settled + ' settled</span><span class="buyer-v-chip">' + unsettled + ' unsettled</span></div>' +
+      '</div>' +
+      '<table class="buyer-v-table"><caption class="buyer-v-sr">Buyer summary information for ' + escHtml(buyerDetailsBuyerLabel(state.buyer)) + '</caption><thead><tr><th scope="col">Field</th><th scope="col">Value</th></tr></thead><tbody>' + buyerDetailsRowsHtml(summaryRows) + '</tbody></table>' +
+    '</section>' +
+    '<section class="buyer-v-lots" id="buyerDetailsLots" aria-labelledby="buyerDetailsLotsTitle"' + (state.lotsHidden ? ' hidden' : '') + '>' +
+      '<div class="buyer-v-lots-head"><div><h4 id="buyerDetailsLotsTitle">Vertical lot details (' + rows.length + ')</h4><p>Every stored lot field is listed below. Double-click an individual lot heading, press Enter / Space on it, or use its Expand / Collapse button.</p></div></div>' +
+      '<div class="buyer-v-lot-list">' + cards + '</div>' +
+    '</section>';
+}
+function buyerDetailsAnnounce(message) {
+  var live = document.getElementById('buyerDetailsLive');
+  if (!live) return;
+  live.textContent = '';
+  window.setTimeout(function () { if (live) live.textContent = message; }, 10);
+}
+function buyerDetailsRefocus(selector) {
+  var element = document.querySelector(selector);
+  if (element && typeof element.focus === 'function') element.focus();
+}
+function buyerDetailsOpenFilteredTable(buyer, modal) {
+  var count = buyerDetailsSortedRows(buyer).length;
+  ui.auction = 'all';
+  ui.settlement = 'all';
+  ui.dashSearch = '';
+  ui.detailSearch = '';
+  ui.colFilters = {};
+  ui.detailGroupBy = 'default';
+  ui.detailDefaultView = 'flat';
+  detailCollapsedGroups = {};
+  selectedGroup = { groupKey: 'buyer', value: String(buyer) };
+  var auction = document.getElementById('auctionFilter');
+  var search = document.getElementById('search');
+  var detailSearch = document.getElementById('detailSearch');
+  var detailGroup = document.getElementById('detailGroupBy');
+  if (auction) auction.value = 'all';
+  if (search) search.value = '';
+  if (detailSearch) detailSearch.value = '';
+  if (detailGroup) detailGroup.value = 'default';
+  if (typeof clearGridSelection === 'function') clearGridSelection();
+  if (modal) modal.close();
+  renderAll();
+  saveState();
+  showToast('Lot Details filtered to ' + buyerDetailsBuyerLabel(buyer) + ' (' + count + ' lot' + (count === 1 ? '' : 's') + ').', 'ok');
+  window.setTimeout(function () {
+    var panel = document.getElementById('dashDetailPanel');
+    if (!panel) return;
+    var topbar = document.getElementById('topbar');
+    var offset = (topbar ? topbar.offsetHeight : 0) + 10;
+    var y = panel.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop) - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    panel.setAttribute('tabindex', '-1');
+    try { panel.focus({ preventScroll: true }); } catch (ignore) { panel.focus(); }
+  }, 60);
+}
+function openBuyerDetails() {
+  var names = [];
+  lots.forEach(function (row) {
+    var name = String(row.buyer === null || row.buyer === undefined ? '' : row.buyer);
+    if (names.indexOf(name) === -1) names.push(name);
+  });
+  names.sort(function (a, b) {
+    if (!a) return 1;
+    if (!b) return -1;
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  });
+  if (!names.length) {
+    openModal({
+      title: 'Buyer Details',
+      body: '<div class="buyer-v-empty">No buyers are available. Add or import a lot first.</div>',
+      actions: [{ label: 'Close', cls: 'primary', onClick: function () {} }]
+    });
+    return;
+  }
+  var preferred = selectedGroup && selectedGroup.groupKey === 'buyer' ? String(selectedGroup.value) : '';
+  var selectedIndex = names.indexOf(preferred);
+  if (selectedIndex < 0) selectedIndex = 0;
+  var state = { buyer: names[selectedIndex], lotsHidden: false, collapsed: {}, modal: null };
+  var options = names.map(function (name, index) {
+    var count = buyerDetailsSortedRows(name).length;
+    return '<option value="' + index + '"' + (index === selectedIndex ? ' selected' : '') + '>' + escHtml(buyerDetailsBuyerLabel(name)) + ' — ' + count + ' lot' + (count === 1 ? '' : 's') + '</option>';
+  }).join('');
+  var modal = openModal({
+    title: 'Buyer Details — vertical Field / Value view',
+    wide: true,
+    cls: 'buyer-details-modal',
+    body: '<div class="buyer-v-wrap">' +
+      '<div class="buyer-v-picker"><label for="buyerDetailsSelect">Select buyer<select id="buyerDetailsSelect">' + options + '</select></label><div class="buyer-v-picker-note"><strong>Complete ledger scope:</strong> this view includes every stored lot for the selected buyer, independent of current Analytics filters. Use option 2 to open those same lots in the existing Lot Details table.</div></div>' +
+      '<div id="buyerDetailsContent"></div>' +
+      '<div class="buyer-v-sr" id="buyerDetailsLive" role="status" aria-live="polite" aria-atomic="true"></div>' +
+    '</div>',
+    actions: [{ label: 'Close', cls: 'primary', onClick: function () {} }]
+  });
+  state.modal = modal;
+  var dialog = modal.el.querySelector('.modal');
+  var title = modal.el.querySelector('.modal-head h3');
+  if (dialog && title) {
+    title.id = 'buyerDetailsDialogTitle';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', title.id);
+  }
+  var select = document.getElementById('buyerDetailsSelect');
+  var content = document.getElementById('buyerDetailsContent');
+  renderBuyerDetails(state);
+  if (select) {
+    select.addEventListener('change', function () {
+      var index = Number(select.value);
+      state.buyer = names[index] === undefined ? names[0] : names[index];
+      state.lotsHidden = false;
+      state.collapsed = {};
+      renderBuyerDetails(state);
+      buyerDetailsAnnounce('Showing ' + buyerDetailsBuyerLabel(state.buyer) + '.');
+      var body = modal.el.querySelector('.modal-body');
+      if (body) body.scrollTop = 0;
+    });
+  }
+  if (content) {
+    content.addEventListener('click', function (event) {
+      var target = event.target;
+      var toggleSection = target.closest && target.closest('#buyerDetailsToggleSection');
+      if (toggleSection) {
+        state.lotsHidden = !state.lotsHidden;
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('#buyerDetailsToggleSection');
+        buyerDetailsAnnounce(state.lotsHidden ? 'All lot details hidden.' : 'All lot details shown.');
+        return;
+      }
+      var openTable = target.closest && target.closest('#buyerDetailsOpenTable');
+      if (openTable) {
+        buyerDetailsOpenFilteredTable(state.buyer, modal);
+        return;
+      }
+      var toggleCards = target.closest && target.closest('#buyerDetailsToggleCards');
+      if (toggleCards) {
+        var rows = buyerDetailsSortedRows(state.buyer);
+        var collapse = !buyerDetailsAllCardsCollapsed(state, rows);
+        rows.forEach(function (row) { state.collapsed[lots.indexOf(row)] = collapse; });
+        state.lotsHidden = false;
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('#buyerDetailsToggleCards');
+        buyerDetailsAnnounce((collapse ? 'Collapsed ' : 'Expanded ') + rows.length + ' individual lot cards.');
+        return;
+      }
+      var cardToggle = target.closest && target.closest('[data-buyer-card-toggle]');
+      if (cardToggle) {
+        var cardIndex = Number(cardToggle.getAttribute('data-buyer-card-toggle'));
+        state.collapsed[cardIndex] = !state.collapsed[cardIndex];
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('[data-buyer-card-toggle="' + cardIndex + '"]');
+        buyerDetailsAnnounce((state.collapsed[cardIndex] ? 'Collapsed' : 'Expanded') + ' lot ' + buyerDetailsBuyerLabel(lots[cardIndex] && lots[cardIndex].lot_no) + '.');
+        return;
+      }
+      var viewLot = target.closest && target.closest('[data-buyer-view-lot]');
+      if (viewLot) {
+        var viewIndex = Number(viewLot.getAttribute('data-buyer-view-lot'));
+        modal.close();
+        openLotDetails(viewIndex);
+        return;
+      }
+      var editLot = target.closest && target.closest('[data-buyer-edit-lot]');
+      if (editLot) {
+        var editIndex = Number(editLot.getAttribute('data-buyer-edit-lot'));
+        modal.close();
+        openLotForm(editIndex);
+        return;
+      }
+      var invoice = target.closest && target.closest('[data-buyer-open-invoice]');
+      if (invoice) openInvoiceForLot(lots[Number(invoice.getAttribute('data-buyer-open-invoice'))]);
+    });
+    content.addEventListener('dblclick', function (event) {
+      if (event.target.closest && event.target.closest('button')) return;
+      var summary = event.target.closest && event.target.closest('#buyerDetailsSummaryToggle');
+      if (summary) {
+        state.lotsHidden = !state.lotsHidden;
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('#buyerDetailsSummaryToggle');
+        buyerDetailsAnnounce(state.lotsHidden ? 'All lot details hidden.' : 'All lot details shown.');
+        return;
+      }
+      var heading = event.target.closest && event.target.closest('[data-buyer-lot-heading]');
+      if (heading) {
+        var index = Number(heading.getAttribute('data-buyer-lot-heading'));
+        state.collapsed[index] = !state.collapsed[index];
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('[data-buyer-lot-heading="' + index + '"]');
+        buyerDetailsAnnounce((state.collapsed[index] ? 'Collapsed' : 'Expanded') + ' lot ' + buyerDetailsBuyerLabel(lots[index] && lots[index].lot_no) + '.');
+      }
+    });
+    content.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var summary = event.target.closest && event.target.closest('#buyerDetailsSummaryToggle');
+      if (summary && event.target === summary) {
+        event.preventDefault();
+        state.lotsHidden = !state.lotsHidden;
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('#buyerDetailsSummaryToggle');
+        buyerDetailsAnnounce(state.lotsHidden ? 'All lot details hidden.' : 'All lot details shown.');
+        return;
+      }
+      var heading = event.target.closest && event.target.closest('[data-buyer-lot-heading]');
+      if (heading && event.target === heading) {
+        event.preventDefault();
+        var index = Number(heading.getAttribute('data-buyer-lot-heading'));
+        state.collapsed[index] = !state.collapsed[index];
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('[data-buyer-lot-heading="' + index + '"]');
+        buyerDetailsAnnounce((state.collapsed[index] ? 'Collapsed' : 'Expanded') + ' lot ' + buyerDetailsBuyerLabel(lots[index] && lots[index].lot_no) + '.');
+      }
+    });
+  }
+  var restoreBuyerDetailsFocus = function () {
+    var opener = document.getElementById('buyerDetailsBtn');
+    if (opener) opener.focus();
+  };
+  modal.el.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      modal.close();
+      restoreBuyerDetailsFocus();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    var focusable = Array.prototype.slice.call(modal.el.querySelectorAll('button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex="0"]'))
+      .filter(function (element) { return !element.hidden && element.offsetParent !== null; });
+    if (!focusable.length) return;
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
+  });
+  var closeButton = modal.el.querySelector('.xclose');
+  var footerClose = modal.el.querySelector('.modal-foot .btn');
+  if (closeButton) {
+    closeButton.setAttribute('aria-label', 'Close Buyer Details');
+    closeButton.addEventListener('click', restoreBuyerDetailsFocus);
+  }
+  if (footerClose) footerClose.addEventListener('click', restoreBuyerDetailsFocus);
+  modal.el.addEventListener('mousedown', function (event) {
+    if (event.target === modal.el) window.setTimeout(restoreBuyerDetailsFocus, 0);
+  });
+  if (select) select.focus();
+}
+window.openBuyerDetails = openBuyerDetails;
+
 function openLotDetails(idx) {
   var lotIdx = (typeof idx === 'number' && idx >= 0) ? idx : -1;
   var r = lotIdx >= 0 ? lots[lotIdx] : null;
@@ -17872,7 +18455,11 @@ function init() {
   }
   window.paintPivotGroupControls = paintPivotGroupControls;
 
-var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
+  var buyerDetailsBtn = document.getElementById('buyerDetailsBtn');
+  if (buyerDetailsBtn) {
+    buyerDetailsBtn.addEventListener('click', openBuyerDetails);
+  }
+  var resetPivotBtn = document.getElementById('resetPivotFiltersBtn');
   if (resetPivotBtn) {
     resetPivotBtn.addEventListener('click', resetPivotFilters);
   }
