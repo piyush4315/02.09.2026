@@ -3,7 +3,7 @@
 A self-contained, browser-based cash receivables app for scrap-sale lots:
 
 - **Lot Details** table with live filtering, sorting, grouping, column reorder, and inline editing.
-- **Buyer Ledger Analytics** pivot with a selectable **Buyer Details** vertical Field / Value view, complete buyer totals, collapsible lot cards, and one-click drill-down into the filtered Lot Details table.
+- **Buyer Ledger Analytics** pivot with a selectable **Buyer Details** Field / Value view, complete buyer totals, collapsible lot cards, switchable vertical or horizontal card layouts, and one-click drill-down into the filtered Lot Details table.
 - **Excel worksheet preview** (in-app, like Outlook's attachment preview) with live formulas, in-place editing, and Excel-style selection/clipboard/find.
 - **Full Univer workbook** with native cell editing, formulas, formatting, fill/clipboard, undo/redo, sheet tabs, sorting, filtering, validation, conditional formatting, find/replace, tables, hyperlinks, images, notes, comments, and a zen editor. It lazy-loads pinned Univer `0.25.1` assets and keeps a signature-guarded workbook snapshot in IndexedDB.
 - **Dashboard bridge** that writes the Univer `Lot Data` sheet—including newly added columns—back into ScrapSale KPIs and exports through **Save to Dashboard**.

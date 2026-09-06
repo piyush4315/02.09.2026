@@ -4230,6 +4230,15 @@ body.univer-maximized-open{overflow:hidden!important}
 .buyer-v-actions .btn{min-height:42px;display:flex;align-items:center;justify-content:flex-start;text-align:left;gap:8px;white-space:normal;line-height:1.25;padding:7px 10px}
 .buyer-v-action-no{display:inline-flex;align-items:center;justify-content:center;flex:0 0 23px;width:23px;height:23px;border-radius:50%;background:rgba(0,245,255,.12);color:var(--cyan);border:1px solid rgba(0,245,255,.28);font-size:10px;font-weight:900}
 .buyer-v-actions .primary .buyer-v-action-no{background:rgba(0,0,0,.2);color:inherit;border-color:rgba(255,255,255,.25)}
+.buyer-v-layout-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.025)}
+.buyer-v-layout-copy{min-width:0}
+.buyer-v-layout-copy strong{display:block;color:var(--text);font-size:11.5px}
+.buyer-v-layout-copy span{display:block;color:var(--dim);font-size:10px;line-height:1.35;margin-top:2px}
+.buyer-v-layout-options{display:inline-flex;flex:0 0 auto;padding:3px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.18)}
+.buyer-v-layout-btn{min-height:31px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-family:inherit;font-size:10.5px;font-weight:750;cursor:pointer;padding:6px 11px;white-space:nowrap}
+.buyer-v-layout-btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.buyer-v-layout-btn.active{color:#071018;background:var(--cyan);box-shadow:0 2px 10px rgba(0,245,255,.22)}
+.buyer-v-layout-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .buyer-v-summary{border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.025)}
 .buyer-v-summary-head{
   display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;
@@ -4261,9 +4270,10 @@ body.univer-maximized-open{overflow:hidden!important}
 .buyer-v-lots-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:2px 1px}
 .buyer-v-lots-head h4{margin:0;color:var(--text);font-size:13px}
 .buyer-v-lots-head p{margin:2px 0 0;color:var(--dim);font-size:10.5px;line-height:1.4}
-.buyer-v-lot-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;align-items:stretch}
+.buyer-v-lot-list{display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch}
+.buyer-v-lot-list[data-layout="vertical"]{grid-template-columns:1fr}
+.buyer-v-lot-list[data-layout="horizontal"]{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .buyer-v-lot{border:1px solid rgba(255,255,255,.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.02)}
-.buyer-v-lot:not(.collapsed){grid-column:1/-1}
 .buyer-v-lot-head{display:flex;align-items:stretch;background:rgba(255,255,255,.035);border-bottom:1px solid rgba(255,255,255,.075)}
 .buyer-v-lot.collapsed .buyer-v-lot-head{border-bottom:0}
 .buyer-v-lot.collapsed .buyer-v-lot-heading{align-items:flex-start;flex-direction:column;gap:7px}
@@ -4284,6 +4294,11 @@ body.univer-maximized-open{overflow:hidden!important}
 
 [data-theme="light"] .buyer-v-picker{background:#f0f9ff;border-color:#bae6fd}
 [data-theme="light"] .buyer-v-picker select{background:#fff;border-color:#cbd5e1;color:#0f172a}
+[data-theme="light"] .buyer-v-layout-bar{background:#f8fafc;border-color:#dbe3ee}
+[data-theme="light"] .buyer-v-layout-options{background:#fff;border-color:#cbd5e1}
+[data-theme="light"] .buyer-v-layout-btn{color:#475569}
+[data-theme="light"] .buyer-v-layout-btn:hover{color:#0f172a;background:#f1f5f9}
+[data-theme="light"] .buyer-v-layout-btn.active{color:#fff;background:#2563eb;box-shadow:0 2px 9px rgba(37,99,235,.22)}
 [data-theme="light"] .buyer-v-summary,[data-theme="light"] .buyer-v-lot{background:#fff;border-color:#dbe3ee}
 [data-theme="light"] .buyer-v-summary-head{background:linear-gradient(90deg,#ecfeff,#f5f3ff);border-bottom-color:#dbe3ee}
 [data-theme="light"] .buyer-v-chip{background:#fff;border-color:#cbd5e1;color:#475569}
@@ -4307,22 +4322,42 @@ body.univer-maximized-open{overflow:hidden!important}
   .buyer-v-picker{grid-template-columns:1fr;gap:8px;padding:10px 11px}
   .buyer-v-actions{grid-template-columns:1fr}
   .buyer-v-actions .btn{min-height:40px}
+  .buyer-v-layout-bar{align-items:stretch;flex-direction:column;gap:8px}
+  .buyer-v-layout-options{display:grid;grid-template-columns:1fr 1fr;width:100%}
   .buyer-v-summary-head{align-items:flex-start;flex-direction:column;padding:10px 11px}
   .buyer-v-summary-chips{justify-content:flex-start}
   .buyer-v-table{font-size:11px}
   .buyer-v-table thead th:first-child{width:43%}
   .buyer-v-table thead th,.buyer-v-table tbody th,.buyer-v-table tbody td{padding:7px 9px}
   .buyer-v-lots-head{align-items:flex-start;flex-direction:column}
-  .buyer-v-lot-list{grid-template-columns:1fr}
+  .buyer-v-lot-list[data-layout="vertical"]{grid-template-columns:1fr}
+  .buyer-v-lot-list[data-layout="horizontal"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot:not(.collapsed){grid-column:1/-1}
   .buyer-v-lot-heading{align-items:flex-start;flex-direction:column;gap:7px;padding:9px 10px}
   .buyer-v-lot-meta{justify-content:flex-start;text-align:left}
   .buyer-v-card-toggle{min-width:68px;padding:7px 5px}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-head{height:100%;flex-direction:column}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-heading{padding:8px}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-title strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:11px;line-height:1.3}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-title span{display:none}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-amount{white-space:normal;font-size:9.5px}
+  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-card-toggle{width:100%;min-height:31px;border-left:0;border-top:1px solid rgba(255,255,255,.08)}
   .buyer-v-lot-foot{justify-content:stretch}
   .buyer-v-lot-foot .btn{flex:1 1 calc(50% - 4px);justify-content:center;min-height:36px}
 }
 [data-view-mode="mobile"] .buyer-v-picker{grid-template-columns:1fr;gap:8px}
 [data-view-mode="mobile"] .buyer-v-actions{grid-template-columns:1fr}
-[data-view-mode="mobile"] .buyer-v-lot-list{grid-template-columns:1fr}
+[data-view-mode="mobile"] .buyer-v-layout-bar{align-items:stretch;flex-direction:column;gap:8px}
+[data-view-mode="mobile"] .buyer-v-layout-options{display:grid;grid-template-columns:1fr 1fr;width:100%}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="vertical"]{grid-template-columns:1fr}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot:not(.collapsed){grid-column:1/-1}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-head{height:100%;flex-direction:column}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-heading{padding:8px}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-title strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:11px;line-height:1.3}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-title span{display:none}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-amount{white-space:normal;font-size:9.5px}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-card-toggle{width:100%;min-height:31px;border-left:0;border-top:1px solid rgba(255,255,255,.08)}
 [data-view-mode="mobile"] .buyer-v-summary-head,[data-view-mode="mobile"] .buyer-v-lot-heading{align-items:flex-start;flex-direction:column}
 
 </style>
@@ -4404,7 +4439,7 @@ body.univer-maximized-open{overflow:hidden!important}
           <div class="detail-header" style="margin-bottom:10px">
             <h2>Buyer Ledger Analytics</h2>
             <div class="toolbar-right">
-              <button class="btn primary" id="buyerDetailsBtn" type="button" aria-haspopup="dialog" title="Select any buyer and view the complete buyer ledger and every lot as vertical Field / Value rows">↕ Buyer Details</button>
+              <button class="btn primary" id="buyerDetailsBtn" type="button" aria-haspopup="dialog" title="Select any buyer and view the complete ledger with vertical or horizontal lot-card layouts">↕ Buyer Details</button>
               <button class="btn" id="hideSelPivotColsBtn" type="button" style="display:none;color:#ff6b6b;font-weight:700;border-color:rgba(255,107,107,.3)">⊗ Hide 0 columns</button>
             </div>
           </div>
@@ -7176,7 +7211,7 @@ var storage = (function () {
 })();
 
 var lots = [];
-var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat', detailGroupTotals: 'hide', detailGroupTotalPos: 'below', pivotGroupLayout: 'summary', pivotDefaultView: 'buyer', pivotGroupTotals: 'hide', pivotGroupTotalPos: 'below' };
+var ui = { groupBy: 'buyer', auction: 'all', settlement: 'all', dashSearch: '', detailSearch: '', freezeDetailField: null, freezePivotField: null, collapseLotCols: true, collapseBidCols: true, collapseChargeCols: true, expandedCols: {}, showDetailFormulaBar: false, colFilters: {}, detailGroupBy: 'default', detailGroupLayout: 'sections', detailDefaultView: 'flat', detailGroupTotals: 'hide', detailGroupTotalPos: 'below', pivotGroupLayout: 'summary', pivotDefaultView: 'buyer', pivotGroupTotals: 'hide', pivotGroupTotalPos: 'below', buyerDetailsLayout: 'horizontal' };
 var selectedGroup = null;
 var sortState = { table: 'pivot', key: null, dir: -1 };
 var pendingHeaderSort = null; /* deferred single-click sort for parent headers (vs dblclick) */
@@ -7894,7 +7929,7 @@ function saveState() {
     gdriveClientId: gdriveClientId,
     gsheetUrl: gsheetUrl,
     gsheetSync: { enabled: gsheetSync.enabled, lastSyncAt: gsheetSync.lastSyncAt, lastPullAt: gsheetSync.lastPullAt, lastPushAt: gsheetSync.lastPushAt, sheetTitle: gsheetSync.sheetTitle, sheetFileTitle: gsheetSync.sheetFileTitle, sheetTab: gsheetSync.sheetTab, sheetModifiedTime: gsheetSync.sheetModifiedTime, snapshot: gsheetSync.snapshot, account: gsheetSync.account },
-    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos }
+    ui: { groupBy: ui.groupBy, auction: ui.auction, settlement: ui.settlement, dashSearch: ui.dashSearch, detailSearch: ui.detailSearch, freezeDetailField: ui.freezeDetailField, freezePivotField: ui.freezePivotField, collapseLotCols: ui.collapseLotCols, collapseBidCols: ui.collapseBidCols, collapseChargeCols: ui.collapseChargeCols, expandedCols: ui.expandedCols, showDetailFormulaBar: ui.showDetailFormulaBar, colFilters: ui.colFilters, detailGroupBy: ui.detailGroupBy, detailGroupLayout: ui.detailGroupLayout, detailDefaultView: ui.detailDefaultView, detailGroupTotals: ui.detailGroupTotals, detailGroupTotalPos: ui.detailGroupTotalPos, pivotGroupLayout: ui.pivotGroupLayout, pivotDefaultView: ui.pivotDefaultView, pivotGroupTotals: ui.pivotGroupTotals, pivotGroupTotalPos: ui.pivotGroupTotalPos, buyerDetailsLayout: ui.buyerDetailsLayout }
   }));
   lastSaved = new Date();
   updateSaveIndicator();
@@ -7951,6 +7986,7 @@ function loadState() {
       ui.pivotDefaultView = data.ui.pivotDefaultView || 'buyer';
       ui.pivotGroupTotals = data.ui.pivotGroupTotals || 'hide';
       ui.pivotGroupTotalPos = data.ui.pivotGroupTotalPos || 'below';
+      ui.buyerDetailsLayout = data.ui.buyerDetailsLayout === 'vertical' ? 'vertical' : 'horizontal';
     }
     if (Array.isArray(data.customCols)) customCols = data.customCols;
     if (data.colLayout && typeof data.colLayout === 'object') {
@@ -16990,6 +17026,7 @@ function renderBuyerDetails(state) {
   var settled = rows.filter(function (row) { return settlementStatus(row) === 'Settled'; }).length;
   var unsettled = rows.length - settled;
   var allCollapsed = buyerDetailsAllCardsCollapsed(state, rows);
+  var layout = state.layout === 'vertical' ? 'vertical' : 'horizontal';
   var summaryRows = buyerDetailsSummaryRows(rows, state.buyer);
   var cards = rows.map(function (row) {
     var globalIndex = lots.indexOf(row);
@@ -17024,6 +17061,13 @@ function renderBuyerDetails(state) {
       '<button type="button" class="btn primary" id="buyerDetailsOpenTable" aria-controls="dashDetailPanel"><span class="buyer-v-action-no">2</span><span>Open filtered Lot Details table</span></button>' +
       '<button type="button" class="btn" id="buyerDetailsToggleCards" aria-controls="buyerDetailsLots"><span class="buyer-v-action-no">3</span><span>' + (allCollapsed ? 'Expand all individual lot cards' : 'Collapse all individual lot cards') + '</span></button>' +
     '</div>' +
+    '<div class="buyer-v-layout-bar">' +
+      '<div class="buyer-v-layout-copy"><strong>Lot card view</strong><span>Choose one below another or side by side. Expanded fields remain in Field / Value format.</span></div>' +
+      '<div class="buyer-v-layout-options" role="group" aria-label="Lot card view orientation">' +
+        '<button type="button" class="buyer-v-layout-btn' + (layout === 'vertical' ? ' active' : '') + '" data-buyer-layout="vertical" aria-pressed="' + (layout === 'vertical') + '" title="Stack lot cards one below another">↕ Vertical</button>' +
+        '<button type="button" class="buyer-v-layout-btn' + (layout === 'horizontal' ? ' active' : '') + '" data-buyer-layout="horizontal" aria-pressed="' + (layout === 'horizontal') + '" title="Arrange lot cards side by side">↔ Horizontal</button>' +
+      '</div>' +
+    '</div>' +
     '<section class="buyer-v-summary" aria-labelledby="buyerDetailsSummaryName">' +
       '<div class="buyer-v-summary-head" id="buyerDetailsSummaryToggle" role="button" tabindex="0" aria-expanded="' + (!state.lotsHidden) + '" aria-controls="buyerDetailsLots" title="Double-click to ' + (state.lotsHidden ? 'show' : 'hide') + ' all lot details">' +
         '<div class="buyer-v-summary-title"><strong id="buyerDetailsSummaryName">' + escHtml(buyerDetailsBuyerLabel(state.buyer)) + '</strong><span>Complete buyer ledger · Field / Value view · Double-click this heading to ' + (state.lotsHidden ? 'show' : 'hide') + ' all lots</span></div>' +
@@ -17032,8 +17076,8 @@ function renderBuyerDetails(state) {
       '<table class="buyer-v-table"><caption class="buyer-v-sr">Buyer summary information for ' + escHtml(buyerDetailsBuyerLabel(state.buyer)) + '</caption><thead><tr><th scope="col">Field</th><th scope="col">Value</th></tr></thead><tbody>' + buyerDetailsRowsHtml(summaryRows) + '</tbody></table>' +
     '</section>' +
     '<section class="buyer-v-lots" id="buyerDetailsLots" aria-labelledby="buyerDetailsLotsTitle"' + (state.lotsHidden ? ' hidden' : '') + '>' +
-      '<div class="buyer-v-lots-head"><div><h4 id="buyerDetailsLotsTitle">Vertical lot details (' + rows.length + ')</h4><p>Every stored lot field is listed below. Double-click an individual lot heading, press Enter / Space on it, or use its Expand / Collapse button.</p></div></div>' +
-      '<div class="buyer-v-lot-list">' + cards + '</div>' +
+      '<div class="buyer-v-lots-head"><div><h4 id="buyerDetailsLotsTitle">Lot details (' + rows.length + ')</h4><p>Every stored lot field is listed below. Double-click an individual lot heading, press Enter / Space on it, or use its Expand / Collapse button.</p></div></div>' +
+      '<div class="buyer-v-lot-list" data-layout="' + layout + '">' + cards + '</div>' +
     '</section>';
 }
 function buyerDetailsAnnounce(message) {
@@ -17103,13 +17147,13 @@ function openBuyerDetails() {
   var preferred = selectedGroup && selectedGroup.groupKey === 'buyer' ? String(selectedGroup.value) : '';
   var selectedIndex = names.indexOf(preferred);
   if (selectedIndex < 0) selectedIndex = 0;
-  var state = { buyer: names[selectedIndex], lotsHidden: false, collapsed: {}, modal: null };
+  var state = { buyer: names[selectedIndex], lotsHidden: false, collapsed: {}, layout: ui.buyerDetailsLayout === 'vertical' ? 'vertical' : 'horizontal', modal: null };
   var options = names.map(function (name, index) {
     var count = buyerDetailsSortedRows(name).length;
     return '<option value="' + index + '"' + (index === selectedIndex ? ' selected' : '') + '>' + escHtml(buyerDetailsBuyerLabel(name)) + ' — ' + count + ' lot' + (count === 1 ? '' : 's') + '</option>';
   }).join('');
   var modal = openModal({
-    title: 'Buyer Details — vertical Field / Value view',
+    title: 'Buyer Details — Field / Value view',
     wide: true,
     cls: 'buyer-details-modal',
     body: '<div class="buyer-v-wrap">' +
@@ -17146,6 +17190,17 @@ function openBuyerDetails() {
   if (content) {
     content.addEventListener('click', function (event) {
       var target = event.target;
+      var layoutButton = target.closest && target.closest('[data-buyer-layout]');
+      if (layoutButton) {
+        var nextLayout = layoutButton.getAttribute('data-buyer-layout') === 'vertical' ? 'vertical' : 'horizontal';
+        state.layout = nextLayout;
+        ui.buyerDetailsLayout = nextLayout;
+        saveState();
+        renderBuyerDetails(state);
+        buyerDetailsRefocus('[data-buyer-layout="' + nextLayout + '"]');
+        buyerDetailsAnnounce(nextLayout === 'vertical' ? 'Vertical lot card view selected.' : 'Horizontal lot card view selected.');
+        return;
+      }
       var toggleSection = target.closest && target.closest('#buyerDetailsToggleSection');
       if (toggleSection) {
         state.lotsHidden = !state.lotsHidden;
