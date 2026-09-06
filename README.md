@@ -25,3 +25,7 @@ GitHub Pages: https://piyush4315.github.io/02.09.2026/
 
 The spreadsheet engine is loaded only when the **Univer** tab is opened. An internet connection is required on first load for the pinned CDN assets; jsDelivr is primary and unpkg is the automatic fallback. Workbook values, formatting, comments, drawings, and extra sheets are autosaved to the browser's `scrapsale_univer_v1` IndexedDB database. Existing `scrapsale_univer_workbook_v2` localStorage snapshots are migrated automatically after the first successful IndexedDB write, and writes are serialized so older snapshots cannot overwrite newer ones. The complete open-source spreadsheet suite is enabled by default. Charts, pivots, shapes, print, and exchange features belong to Univer's Pro preset and are enabled only when a deployment supplies the corresponding license/server configuration; if that setup fails, the app automatically reopens the stable standard suite.
 
+## Google authorization
+
+Opening the GitHub Pages site never initiates Google OAuth. Google Sheets/Drive authorization is explicitly opt-in and starts only after a user action such as **Connect & enable sync**, enabling **Auto-sync**, **Edit**, **Sync now**, **Pull**, **Push**, or a Google Drive export. Once connected, optional automatic synchronization can run during that page session.
+

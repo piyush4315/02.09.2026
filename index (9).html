@@ -4629,7 +4629,7 @@ body.univer-maximized-open{overflow:hidden!important}
           <div class="gsheet-sync-row">
             <div class="gsheet-sync-title">
               <b>Two-way sync <span class="sync-ver" id="gsheetSyncVer">v11</span></b>
-              <span class="muted" id="gsheetSyncStatus">Auto-sync on — connecting to Google…</span>
+              <span class="muted" id="gsheetSyncStatus">Google sync is off — connect only when needed.</span>
               <span class="gsheet-account" id="gsheetSyncAccount" hidden title="The Google account this app is connected to"></span>
             </div>
             <label class="chk gsheet-sync-toggle"><input type="checkbox" id="gsheetSyncToggle"/> Auto-sync</label>
@@ -7076,7 +7076,7 @@ var gdriveToken = null;
 var gsheetUrl = 'https://docs.google.com/spreadsheets/d/1ihLs7bScvTLYB-Ez-Rr5rokJebSAZyRFNsbRt7jid2Q/edit?usp=drivesdk';
 var gsheetToken = null;
 var gsheetSync = {
-  enabled: true,     /* auto-sync is ON by default — the app connects & syncs on open */
+  enabled: false,    /* Google authorization is opt-in; startup must never open a sign-in prompt. */
   applying: false,
   lastSyncAt: 0,
   lastPullAt: 0,
@@ -7923,7 +7923,7 @@ var ADDON_GUIDES = {
       '<li>Reload the sheet (F5) → <b>Extensions → ScrapSale Pro Editor → Open editor</b>.</li>' +
       '<li>Authorize — it requests only your current spreadsheet. If Google says "unverified app", click <b>Advanced → Go to ScrapSale Pro Editor (unsafe)</b> (it is your own script).</li>' +
       '</ol>' +
-      '<p class="addon-note"><b>Test it:</b> edit a Qty or Rate, press <b>Save changes</b> — GST, TRIC, SD/FP Expected, Outstanding and the <b>TOTAL row</b> recompute with the dashboard\'s exact formulas. The dashboard (auto-sync every 45 s) reads the same sheet, so edits flow both ways. The script travels with the sheet: anyone you share it with (Edit access) also gets the menu and authorizes once.</p>' +
+      '<p class="addon-note"><b>Test it:</b> edit a Qty or Rate, press <b>Save changes</b> — GST, TRIC, SD/FP Expected, Outstanding and the <b>TOTAL row</b> recompute with the dashboard\'s exact formulas. When Google auto-sync is enabled, the dashboard reads the same sheet every 45 s, so edits flow both ways. The script travels with the sheet: anyone you share it with (Edit access) also gets the menu and authorizes once.</p>' +
       '</div>'
   },
   publish: {
@@ -14291,7 +14291,7 @@ function gsheetSyncUi() {
   var acct = document.getElementById('gsheetSyncAccount');
   if (acct) {
     var a = gsheetSync.account;
-    acct.hidden = !a || !a.email;
+    acct.hidden = !gsheetToken || !a || !a.email;
     acct.textContent = 'Signed in as ' + ((a && a.name) ? a.name + ' · ' : '') + ((a && a.email) ? a.email : '');
   }
   var sel = document.getElementById('gsheetTabSelect');
@@ -14303,8 +14303,7 @@ function gsheetSyncUi() {
     if (!gsheetSync.tabs.some(function (n) { return n === cur; })) sel.value = gsheetSync.tabs[0];
   }
 }
-function gsheetGetToken(cb, opts) {
-  opts = opts || {};
+function gsheetGetToken(cb) {
   if (!gdriveClientId) {
     showToast('Add a Google OAuth Client ID in Data & Backup → Workspace first, then connect.', 'error');
     cb({ error: 'No Google OAuth Client ID configured.' });
@@ -14322,9 +14321,9 @@ function gsheetGetToken(cb, opts) {
         cb(null, gsheetToken);
       }
     });
-    /* silent: reuse the existing grant without any popup (used for the
-       automatic connect-on-open); otherwise ask for consent interactively. */
-    client.requestAccessToken({ prompt: opts.silent ? '' : (gsheetToken ? '' : 'consent') });
+    /* This function is called only from a user-initiated Connect/Sync action,
+       so Google authorization can never interrupt the GitHub Pages visit. */
+    client.requestAccessToken({ prompt: gsheetToken ? '' : 'consent' });
   }).catch(function (e) { cb({ error: e.message }); });
 }
 function gsheetConnectIfNeeded(done) {
@@ -14560,32 +14559,16 @@ function gsheetSyncOnce(opts) {
       return res;
     });
 }
-/* Startup auto-connect: brings the app into an enabled + synced state on open
-   with zero clicks. Tries a silent re-auth first (reuses the existing Google
-   grant, so no popup); if that isn't possible yet (fresh browser/consent),
-   auto-sync stays ON and one tap on "Connect & enable sync" finishes sign-in. */
-function gsheetAutoConnect() {
-  if (!gsheetSync.enabled) return;
-  var id = gsheetIdFromUrl(gsheetUrl);
-  if (!id) { gsheetSetSyncStatus('Auto-sync on — paste a Google Sheets link to start syncing.', ''); return; }
-  if (!gdriveClientId) { gsheetSetSyncStatus('Auto-sync on — add a Google OAuth Client ID to connect.', ''); return; }
-  if (gsheetToken) {
-    gsheetSyncUi();
-    gsheetSyncOnce({ silent: true }).then(function () { gsheetAutoStart(); });
-    return;
+/* Startup is deliberately passive. Google Identity Services is loaded only after
+   a Connect/Sync button click, preventing account or consent prompts on site visit. */
+function gsheetPrepareStartup() {
+  gsheetAutoStop();
+  gsheetSyncUi();
+  if (gsheetSync.enabled) {
+    gsheetSetSyncStatus('Auto-sync is enabled — click “Connect & enable sync” to sign in.', '');
+  } else {
+    gsheetSetSyncStatus('Google sync is off — connect only when needed.', '');
   }
-  gsheetSetSyncStatus('Connecting to Google…', 'busy');
-  gsheetGetToken(function (err) {
-    if (err) {
-      gsheetSyncUi();
-      gsheetSetSyncStatus('Auto-sync is on — tap “Connect & enable sync” to finish signing in.', '');
-      return;
-    }
-    gsheetSync.enabled = true;
-    saveState();
-    gsheetSyncUi();
-    gsheetSyncOnce({ silent: true }).then(function () { gsheetAutoStart(); });
-  }, { silent: true });
 }
 function gsheetConnect() {
   gsheetSetSyncStatus('Connecting to Google…', 'busy');
@@ -17658,13 +17641,9 @@ function init() {
     saveState();
     if (gsheetToken && gsheetSync.enabled) gsheetSyncOnce({});
   });
-  gsheetSyncUi();
-  /* The app starts in an enabled + synced state by itself: force auto-sync on
-     and connect automatically (no manual "enable / connect" step needed). */
-  gsheetSync.enabled = true;
-  saveState();
-  gsheetSyncUi();
-  gsheetAutoConnect();
+  /* Never initiate Google OAuth during page startup. Authorization happens only
+     after an explicit Connect, Sync, Pull, Push, or Auto-sync user action. */
+  gsheetPrepareStartup();
   document.getElementById('groupBy').addEventListener('change', function (e) {
     ui.groupBy = e.target.value; selectedGroup = null;
     sortState = { table: 'pivot', key: null, dir: -1 };
