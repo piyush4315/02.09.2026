@@ -119,12 +119,12 @@ The dashboard re-derives everything live when you edit/import a row:
 - `Total Receivables = Mat.Value + GST + TCS − Net Service Charge − TDS 194O − GST TDS`  *(equals H×117.65% − R)*
 - `SD Expected = ROUND(Mat.Value × 25%, 0)`
 - `FP Expected = Total Receivables − SD Expected`
-- `Total Received = SD Received + FP Received + Late Fees Received`
-- `Late Fees Received` = money actually collected against accrued Late Fees (manual entry) with its `Received Date`
-- `Outstanding = Total Receivables + Late Fees − Total Received`
+- `Total Received = SD Received + FP Received + LPP Received`
+- `LPP Received` = money actually collected against accrued LPP (manual entry) with its `Received Date`
+- `Outstanding = Total Receivables + LPP − Total Received`
 - `GST TDS = ROUND(GST ÷ 9, 0)`  *(GST = H×18%, so GST÷9 = H×2% — same as Excel)*
 - Default **GST TDS Rate = 2%** when `Mat.Value > ₹2,50,000` **and** unit is KG/MT, else 0%
-- Late fees = `ROUND(Mat.Value × weeks × 0.0118, 0)` — delay counted from **22 Aug 2026**; waived if FP received on/before **24 Aug 2026**
+- LPP = `ROUND(Mat.Value × weeks × 0.0118, 0)` — delay counted from **22 Aug 2026**; waived if FP received on/before **24 Aug 2026**
 - Collection % = `Total Received ÷ Total Receivables`
 
 ---

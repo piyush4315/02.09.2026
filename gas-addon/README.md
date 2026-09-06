@@ -75,7 +75,7 @@ personal/team use. Full plan → [`PUBLISH.md`](PUBLISH.md).
 
 ## Current limitations & follow-ups
 
-- **Manual overrides** made inside the *dashboard* (a hand-set GST / Late Fee /
+- **Manual overrides** made inside the *dashboard* (a hand-set GST / LPP /
   SD-FP expected) are kept in the app's memory, not the sheet. The add-on
   reconstructs what it can the same way the dashboard's own import does:
   - `sd_expected` / `fp_expected` differing from the standard formula by > ₹1

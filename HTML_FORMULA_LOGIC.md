@@ -137,10 +137,10 @@ r.fp_expected = (standardRates && !r._manual.sd_expected)
     ? Math.round(mv * 0.9265 - n('gst_tds'))
     : (r.total_receivables - r.sd_expected);
 
-// Late Fees (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
+// LPP (1.18% per week on Material Value — delay from 22.08.2026, waived if paid by 24.08.2026)
 r.late_fee = calcLateFee(r);
 
-// Total Received & Outstanding (Total Received includes Late Fees Received)
+// Total Received & Outstanding (Total Received includes LPP Received)
 r.total_received = n('sd_received') + n('fp_received') + n('late_fee_received');
 r.outstanding = Math.round(n('total_receivables') + n('late_fee') - r.total_received);
 r.settlement_status = settlementStatus(r);
@@ -173,11 +173,11 @@ formulas it displays:
 | Total Receivables | `ROUND(Mat Value × 117.65% − GST TDS, 0)` |
 | SD Expected | `ROUND(Material Value × 25%, 0)` |
 | FP Expected | `ROUND(Mat Value × 92.65% − GST TDS, 0)` |
-| Late Fees | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−22.08.2026)/7) × 1.18%, 0), 0)` |
-| Late Fees Received | manual receipt amount collected against accrued Late Fees (editable ₹) |
-| Received Date | date the Late Fees receipt was received (editable date) |
-| Total Received | `SD Received + FP Received + Late Fees Received` |
-| Outstanding | `ROUND(Total Receivables + Late Fees − Total Received, 0)` |
+| LPP | `IF(FP Date > 24.08.2026, ROUND(Mat Value × CEIL((FP Date−22.08.2026)/7) × 1.18%, 0), 0)` |
+| LPP Received | manual receipt amount collected against accrued LPP (editable ₹) |
+| Received Date | date the LPP receipt was received (editable date) |
+| Total Received | `SD Received + FP Received + LPP Received` |
+| Outstanding | `ROUND(Total Receivables + LPP − Total Received, 0)` |
 | Settlement | `IF(Outstanding ≤ 5, "Settled", "Unsettled")` |
 | Footer total | `SUM(col2:colN)` |
 
@@ -186,7 +186,7 @@ rates as Excel (TCS 2%, SC 2.655%, 194H 2% on base, 194O 0.1%).
 
 ---
 
-## 5. Late fees & settlement logic
+## 5. LPP & settlement logic
 
 ```js
 function calcLateFee(r) {
@@ -231,10 +231,10 @@ GST TDS             f:ROUND(H*Q,0)
 Total Receivables   f:ROUND(H*117.65%-R,0)
 SD Expected         f:ROUND(H*25%,0)
 FP Expected         f:ROUND(H*92.65%-R,0)
-Late Fees Received  n        (col AG — raw editable value)
-Late Fees Rec Date  s        (col AH — raw editable date)
-Total Received      f:ROUND(U+X+AG,0)   (SD + FP + Late Fees Received)
-Outstanding         f:ROUND(S+Z-AA,0)   (uses late-fee col Z)
+LPP Received  n        (col AG — raw editable value)
+LPP Rec Date  s        (col AH — raw editable date)
+Total Received      f:ROUND(U+X+AG,0)   (SD + FP + LPP Received)
+Outstanding         f:ROUND(S+Z-AA,0)   (uses LPP col Z)
 Settlement          f:IF(AB<=5,"Settled","Unsettled")
 ```
 

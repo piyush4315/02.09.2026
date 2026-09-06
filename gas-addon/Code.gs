@@ -83,7 +83,7 @@ var LABELS = {
   service_charge_to_mstc: 'Service Charge to MSTC', gst_tds_rate: 'GST TDS Rate', gst_tds: 'GST TDS',
   total_receivables: 'TRIC', sd_expected: 'SD Expected', sd_received: 'SD Received', sd_date: 'SD Date',
   fp_expected: 'FP Expected', fp_received: 'FP Received', fp_date: 'FP Date',
-  late_fee: 'Late Fee', late_fee_received: 'Late Fee Received', late_fee_received_date: 'Received Date',
+  late_fee: 'LPP', late_fee_received: 'LPP Received', late_fee_received_date: 'Received Date',
   total_received: 'Total Received', outstanding: 'Outstanding', settlement_status: 'Settled/Unsettled',
   invoice_no: 'Invoice No.', sap_document_date: 'SAP Doc No.', doc_invoice_date: 'Doc/Invoice Date'
 };
@@ -105,6 +105,8 @@ var HEADER_ALIASES = {
   'sd expected': 'sd_expected', 'sd received': 'sd_received', 'sd date': 'sd_date',
   'fp expected': 'fp_expected', 'fp received': 'fp_received', 'fp date': 'fp_date',
   'late fees expected': 'late_fee', 'late fees received': 'late_fee_received',
+  'lpp': 'late_fee', 'lpp expected': 'late_fee', 'lpp received': 'late_fee_received',
+  'lpp received date': 'late_fee_received_date', 'lpp date': 'late_fee_received_date',
   'received date': 'late_fee_received_date', 'total received': 'total_received',
   'outstanding': 'outstanding', 'settled unsettled': 'settlement_status',
   'invoice no': 'invoice_no', 'sap document no': 'sap_document_date',
@@ -138,7 +140,7 @@ function parseDateStr(s) {
   return null;
 }
 
-/* Late fee: 1.18% per week on Material Value, delay from 22.08.2026, waived if
+/* LPP: 1.18% per week on Material Value, delay from 22.08.2026, waived if
    paid on/before 24.08.2026. Mirrors the dashboard's calcLateFee(). */
 function calcLateFee(r) {
   var delayStart = new Date(2026, 7, 22);
@@ -250,7 +252,7 @@ function recalcLot(r, changed, fromSheet) {
     r.fp_expected = fpDerived;
   }
 
-  /* Late Fee (1.18%/week) — auto unless manually overridden. */
+  /* LPP (1.18%/week) — auto unless manually overridden. */
   if (!r._manual.late_fee) {
     r.late_fee = calcLateFee(r);
   }
