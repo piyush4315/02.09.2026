@@ -4270,10 +4270,15 @@ body.univer-maximized-open{overflow:hidden!important}
 .buyer-v-lots-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:2px 1px}
 .buyer-v-lots-head h4{margin:0;color:var(--text);font-size:13px}
 .buyer-v-lots-head p{margin:2px 0 0;color:var(--dim);font-size:10.5px;line-height:1.4}
-.buyer-v-lot-list{display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch}
-.buyer-v-lot-list[data-layout="vertical"]{grid-template-columns:1fr}
-.buyer-v-lot-list[data-layout="horizontal"]{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-.buyer-v-lot{border:1px solid rgba(255,255,255,.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.02)}
+.buyer-v-lot-list{display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch;min-width:0}
+.buyer-v-lot-list[data-layout="vertical"]{display:grid;grid-template-columns:1fr;overflow:visible}
+.buyer-v-lot-list[data-layout="horizontal"]{display:flex;flex-flow:row nowrap;align-items:stretch;gap:10px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;padding-bottom:5px}
+.buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot{flex:0 0 calc((100% - 10px)/2);min-width:300px;scroll-snap-align:start}
+.buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot:only-child{flex-basis:100%;min-width:0}
+.buyer-v-lot-list[data-layout="horizontal"]::-webkit-scrollbar{height:8px}
+.buyer-v-lot-list[data-layout="horizontal"]::-webkit-scrollbar-thumb{background:rgba(0,245,255,.24);border-radius:999px}
+.buyer-v-lot-list[data-layout="horizontal"]::-webkit-scrollbar-track{background:rgba(255,255,255,.035);border-radius:999px}
+.buyer-v-lot{min-width:0;border:1px solid rgba(255,255,255,.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.02)}
 .buyer-v-lot-head{display:flex;align-items:stretch;background:rgba(255,255,255,.035);border-bottom:1px solid rgba(255,255,255,.075)}
 .buyer-v-lot.collapsed .buyer-v-lot-head{border-bottom:0}
 .buyer-v-lot.collapsed .buyer-v-lot-heading{align-items:flex-start;flex-direction:column;gap:7px}
@@ -4330,9 +4335,11 @@ body.univer-maximized-open{overflow:hidden!important}
   .buyer-v-table thead th:first-child{width:43%}
   .buyer-v-table thead th,.buyer-v-table tbody th,.buyer-v-table tbody td{padding:7px 9px}
   .buyer-v-lots-head{align-items:flex-start;flex-direction:column}
-  .buyer-v-lot-list[data-layout="vertical"]{grid-template-columns:1fr}
-  .buyer-v-lot-list[data-layout="horizontal"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot:not(.collapsed){grid-column:1/-1}
+  .buyer-v-lot-list[data-layout="vertical"]{display:grid;grid-template-columns:1fr}
+  .buyer-v-lot-list[data-layout="horizontal"]{display:flex;flex-flow:row nowrap;overflow-x:auto}
+  .buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot{flex:0 0 88%;min-width:280px}
+  .buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot.collapsed{flex-basis:calc((100% - 10px)/2);min-width:0}
+  .buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot:only-child{flex-basis:100%;min-width:0}
   .buyer-v-lot-heading{align-items:flex-start;flex-direction:column;gap:7px;padding:9px 10px}
   .buyer-v-lot-meta{justify-content:flex-start;text-align:left}
   .buyer-v-card-toggle{min-width:68px;padding:7px 5px}
@@ -4349,9 +4356,11 @@ body.univer-maximized-open{overflow:hidden!important}
 [data-view-mode="mobile"] .buyer-v-actions{grid-template-columns:1fr}
 [data-view-mode="mobile"] .buyer-v-layout-bar{align-items:stretch;flex-direction:column;gap:8px}
 [data-view-mode="mobile"] .buyer-v-layout-options{display:grid;grid-template-columns:1fr 1fr;width:100%}
-[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="vertical"]{grid-template-columns:1fr}
-[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot:not(.collapsed){grid-column:1/-1}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="vertical"]{display:grid;grid-template-columns:1fr}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"]{display:flex;flex-flow:row nowrap;overflow-x:auto}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot{flex:0 0 88%;min-width:280px}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot.collapsed{flex-basis:calc((100% - 10px)/2);min-width:0}
+[data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"]>.buyer-v-lot:only-child{flex-basis:100%;min-width:0}
 [data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-head{height:100%;flex-direction:column}
 [data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-heading{padding:8px}
 [data-view-mode="mobile"] .buyer-v-lot-list[data-layout="horizontal"] .buyer-v-lot.collapsed .buyer-v-lot-title strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:11px;line-height:1.3}
